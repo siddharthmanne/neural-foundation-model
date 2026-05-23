@@ -30,12 +30,18 @@ import sys
 # script is invoked from anywhere on the laptop. On Modal's remote container,
 # `add_local_python_source("neural_tokenizers")` already mounts the package
 # (and the script itself lives at /root/script.py, where parents[3] would
-# IndexError), so we skip the tweak whenever the import already works.
+# IndexError), so we skip the tweak whenever the import already works OR the
+# file isn't deep enough on disk to have a sensible parents[3].
 try:
     import neural_tokenizers  # noqa: F401
 except ImportError:
-    _REPO_ROOT = Path(__file__).resolve().parents[3]
-    sys.path.insert(0, str(_REPO_ROOT))
+    try:
+        _REPO_ROOT = Path(__file__).resolve().parents[3]
+        sys.path.insert(0, str(_REPO_ROOT))
+    except IndexError:
+        # Remote container — neural_tokenizers should already be on sys.path
+        # via add_local_python_source. If it isn't, fail loudly downstream.
+        pass
 
 import modal  # noqa: E402
 
@@ -62,32 +68,51 @@ meg_image = (
     memory=16 * 1024,
     timeout=60 * 30,
 )
-def fit_remote(n_sample: int = 2000, seed: int = 0) -> dict:
+def fit_remote(
+    n_sample: int = 2000,
+    seed: int = 0,
+    mu: float = 255.0,
+    vocab_size: int = 256,
+    clip_lo_pct: float = 0.5,
+    clip_hi_pct: float = 99.5,
+    channel_mode: str = "per_channel",
+) -> dict:
     """Fit μ-transform calibration on the THINGS-MEG train split.
 
     Args:
-        n_sample: number of trials to pool from the train split. 2000 trials
-            × 281 samples = 562k samples per channel — plenty for the
-            0.5%/99.5% percentile estimate to be tight.
-        seed: rng seed (also threads into split_by_image so identical seeds
-              produce identical (train, test) sets across runs).
+        n_sample: trials pooled from the train split. 2000 × 281 = 562k
+            samples per channel — plenty for tight 0.5%/99.5% estimates.
+        seed: split seed. Threads into split_by_image so identical seeds
+            give identical (train, test) trials across runs.
+        mu, vocab_size, clip_lo_pct, clip_hi_pct, channel_mode: μ-transform
+            hyperparameters (defaults reproduce the paper baseline).
+            Override to sweep V or clip percentiles.
 
     Returns:
-        The calibration dict (MuCalibration.to_json()). Small enough to ship
+        The calibration dict (MuCalibration.to_json()), small enough to ship
         back through `.remote()`.
     """
     import torch
 
     from neural_tokenizers.meg import (
         MU_SPLIT_DEFAULTS,
-        MU_TRANSFORM_DEFAULT,
+        MuTransformConfig,
         SplitDefaults,
         fit_calibration,
     )
     from neural_tokenizers.meg.data import list_subjects, sample_train_trials
     from neural_tokenizers.meg.splits import split_by_image
 
-    # Allow caller-provided seed to override the dataclass default.
+    # Compose a per-run config; do NOT mutate the global MU_TRANSFORM_DEFAULT.
+    cfg = MuTransformConfig(
+        mu=mu,
+        vocab_size=vocab_size,
+        clip_lo_pct=clip_lo_pct,
+        clip_hi_pct=clip_hi_pct,
+        channel_mode=channel_mode,
+    )
+    print(f"[calib] config: {cfg}")
+
     split_cfg = SplitDefaults(
         train_frac=MU_SPLIT_DEFAULTS.train_frac,
         val_frac=MU_SPLIT_DEFAULTS.val_frac,
@@ -115,7 +140,7 @@ def fit_remote(n_sample: int = 2000, seed: int = 0) -> dict:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     X_sample = X_sample.to(device)
     print(f"[calib] fitting on device={device} ...")
-    calib = fit_calibration(X_sample, MU_TRANSFORM_DEFAULT)
+    calib = fit_calibration(X_sample, cfg)
     print(
         f"[calib] done. scaler stats: "
         f"min={calib.scaler.min().item():.3e} "
@@ -129,23 +154,47 @@ def fit_remote(n_sample: int = 2000, seed: int = 0) -> dict:
 def calibrate(
     n_sample: int = 2000,
     seed: int = 0,
-    output: str = "neural_tokenizers/meg/mu_transform/calibration.json",
+    mu: float = 255.0,
+    vocab_size: int = 256,
+    clip_lo_pct: float = 0.5,
+    clip_hi_pct: float = 99.5,
+    channel_mode: str = "per_channel",
+    runs_dir: str = "neural_tokenizers/meg/mu_transform/runs",
 ):
-    """Run calibration remotely, write the returned JSON to `output` locally.
+    """Run calibration remotely; write the returned JSON locally under
+    `<runs_dir>/<slug>/calibration.json`.
 
-    Default output path lands the calibration in the git-tracked location
-    declared by meg/CLAUDE.md §7.
+    Per-config subdir (slug) prevents sweeps from overwriting each other.
+    The slug encodes (V, μ, clip percentiles, channel mode, seed) — anything
+    that changes the calibration math gets its own directory.
 
     Invoke:
-        modal run neural_tokenizers/meg/modal/modal_meg_calibrate_mu.py::calibrate
+        modal run neural_tokenizers/meg/modal/modal_meg_calibrate_mu.py::calibrate \\
+            --vocab-size 256 --mu 255 --seed 0
     """
     import json
 
-    payload = fit_remote.remote(n_sample=n_sample, seed=seed)
-    out_path = Path(output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    from neural_tokenizers.meg.mu_transform import run_slug
+
+    payload = fit_remote.remote(
+        n_sample=n_sample, seed=seed, mu=mu, vocab_size=vocab_size,
+        clip_lo_pct=clip_lo_pct, clip_hi_pct=clip_hi_pct, channel_mode=channel_mode,
+    )
+    slug = run_slug(mu, vocab_size, clip_lo_pct, clip_hi_pct, channel_mode, seed)
+    out_dir = Path(runs_dir) / slug
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "calibration.json"
     out_path.write_text(json.dumps(payload, indent=2))
-    print(f"[calib] wrote calibration to {out_path}")
+
+    # Drop a tiny `config.json` next to it so the directory is self-describing.
+    (out_dir / "config.json").write_text(json.dumps({
+        "slug": slug, "mu": mu, "vocab_size": vocab_size,
+        "clip_lo_pct": clip_lo_pct, "clip_hi_pct": clip_hi_pct,
+        "channel_mode": channel_mode, "seed": seed, "n_sample": n_sample,
+    }, indent=2))
+
+    print(f"[calib] slug: {slug}")
+    print(f"[calib] wrote {out_path}")
     print(f"[calib] preview (first 3 channels):")
     for k in ("clip_lo", "clip_hi", "scaler"):
         print(f"  {k}[:3] = {payload[k][:3]}")

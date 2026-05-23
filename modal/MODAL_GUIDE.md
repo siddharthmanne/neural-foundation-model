@@ -166,6 +166,67 @@ IMPORTANT: Always set `timeout=` so a job can't run indefinitely.
 - **Anything outside `/data` disappears when the container ends.** Don't save to `/root/` or `/tmp/` expecting it to stick around.
 - **Call `data_volume.commit()`** at the end of any function that writes to `/data`, or your writes won't persist to the Volume.
 
+## Architecture gotchas (learned the hard way)
+
+Five traps that bit us building the MEG tokenizer Modal scripts under
+`neural_tokenizers/meg/modal/`. Read these before adding new scripts that
+import from project subpackages.
+
+### 1. Make every project package a *regular* package, not a namespace package
+If `neural_tokenizers/__init__.py` is missing, `neural_tokenizers` becomes a
+namespace package. `add_local_python_source("neural_tokenizers")` then packs
+a confusing union of every matching directory on `sys.path` (e.g., if the
+repo is checked out twice). Symptom: `neural_tokenizers.__path__` shows the
+same dir twice, and imports succeed locally but the container can't find
+submodules. Fix: add an empty `__init__.py` at the package root.
+
+### 2. `pip_install_from_requirements("requirements.txt")` is evaluated at import time
+`modal_app.py` uses a relative path. Any script that does
+`from modal_app import app, image` from outside the `modal/` directory dies
+with `FileNotFoundError: requirements.txt`. Workaround: don't inherit the
+image. Build your own with `modal.Image.debian_slim(...).pip_install(...)`
+in your script and create a separate `app = modal.App("neural-fm")` —
+Modal groups by App name in the dashboard, so jobs still cluster correctly.
+
+### 3. `modal_app.py` registers `@app.local_entrypoint() def main()`
+If you import `modal_app`'s `app` and add your own `def main():` entrypoint,
+Modal errors with `Duplicate local entrypoint name: main`. Use any name
+other than `main` (e.g. `def run():`, `def calibrate():`).
+
+### 4. `__file__`-based `parents[N]` paths break on the remote container
+On the laptop, your script is at `<repo>/sub/dir/script.py` and
+`Path(__file__).resolve().parents[3]` = `<repo>`. On the Modal container,
+Modal copies your script to `/root/script.py` (top-level), so the same
+expression `IndexError`s. Always wrap such `parents[N]` lookups in
+`try/except IndexError`, and rely on `add_local_python_source` to make
+your package importable remotely:
+
+```python
+try:
+    import my_package  # noqa: F401
+except ImportError:
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+    except IndexError:
+        pass   # remote container — add_local_python_source handles it
+```
+
+### 5. `modal run` resolves paths from cwd, not from the script's location
+`modal run neural_tokenizers/meg/modal/foo.py` from the wrong directory →
+`FileNotFoundError`. The script must always be reachable as a relative path
+from the cwd where you invoked `modal run`. Practical implication: always
+run from the inner repo root (`neural-foundation-model/neural-foundation-model/`),
+or use an absolute path.
+
+### Bonus: `add_local_python_source` packs *.py only*
+Non-Python files (JSON sidecars, weights, calibration files) shipped beside
+your code DO NOT get packed by `add_local_python_source`. Either (a) put
+them on a Volume the container mounts, or (b) ship them as function
+arguments via `.remote()` (small files only), or (c) use
+`image.add_local_file(...)` / `image.add_local_dir(...)` explicitly.
+We use (a) for the THINGS image-id→concept-id mapping (lives on the
+`project` Volume, plus a git-tracked local copy for laptop use).
+
 ## Where to look for more
 
 - Working examples in this folder: `modal_app.py` (shared setup + `hello` test), `modal_demo.py` + `demo_train.py` (the two-file wrapper pattern).

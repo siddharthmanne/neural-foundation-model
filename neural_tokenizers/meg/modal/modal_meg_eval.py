@@ -28,12 +28,18 @@ import sys
 # script is invoked from anywhere on the laptop. On Modal's remote container,
 # `add_local_python_source("neural_tokenizers")` already mounts the package
 # (and the script itself lives at /root/script.py, where parents[3] would
-# IndexError), so we skip the tweak whenever the import already works.
+# IndexError), so we skip the tweak whenever the import already works OR the
+# file isn't deep enough on disk to have a sensible parents[3].
 try:
     import neural_tokenizers  # noqa: F401
 except ImportError:
-    _REPO_ROOT = Path(__file__).resolve().parents[3]
-    sys.path.insert(0, str(_REPO_ROOT))
+    try:
+        _REPO_ROOT = Path(__file__).resolve().parents[3]
+        sys.path.insert(0, str(_REPO_ROOT))
+    except IndexError:
+        # Remote container — neural_tokenizers should already be on sys.path
+        # via add_local_python_source. If it isn't, fail loudly downstream.
+        pass
 
 import modal  # noqa: E402
 
@@ -46,7 +52,22 @@ PROJECT_MOUNT = "/project"
 
 meg_image = (
     modal.Image.debian_slim(python_version="3.11")
-    .pip_install("mne", "scipy", "torch", "numpy")
+    .pip_install(
+        "mne",
+        "scipy",
+        "torch",
+        "numpy",
+        "einops",
+        "vector-quantize-pytorch",
+        "einx",
+        "huggingface_hub",
+    )
+    .add_local_dir(
+        "external/BrainOmni",
+        remote_path="/root/external/BrainOmni",
+        # Submodule source only; weights fetched at runtime if absent.
+        ignore=["ckpt_collection", ".cache", "**/__pycache__"],
+    )
     .add_local_python_source("neural_tokenizers")
 )
 
@@ -64,8 +85,30 @@ def _build_mu_transform(calibration_payload: dict[str, Any]):
     return MuTransformTokenizer(calib)
 
 
+def _build_brainomni(payload: dict[str, Any]):
+    """Construct Phase-3 BrainOmniTokenizer from a config.json dict."""
+    import os
+    import sys
+
+    repo = payload.get("brainomni_repo", "/root/external/BrainOmni")
+    if repo not in sys.path:
+        sys.path.insert(0, repo)
+
+    from neural_tokenizers.meg.brainomni.adapter import build_tokenizer_from_payload
+    from neural_tokenizers.meg.brainomni.checkpoint import resolve_ckpt_dir
+
+    device = "cuda" if __import__("torch").cuda.is_available() else "cpu"
+    ckpt_dir = resolve_ckpt_dir(payload.get("ckpt_dir"), repo)
+    # Finetuned runs store on the project volume.
+    if not os.path.isdir(ckpt_dir) and payload.get("ckpt_dir", "").startswith("/project"):
+        ckpt_dir = payload["ckpt_dir"]
+    payload = {**payload, "device": device, "ckpt_dir": ckpt_dir, "brainomni_repo": repo}
+    return build_tokenizer_from_payload(payload)
+
+
 _TOKENIZER_FACTORIES = {
     "mu_transform": _build_mu_transform,
+    "brainomni": _build_brainomni,
     # "cho2026":    _build_cho2026,   # add when Phase 2 lands
 }
 
@@ -108,12 +151,17 @@ def evaluate_remote(
 
     from neural_tokenizers.evaluation import EvalConfig, evaluate
     from neural_tokenizers.meg import (
+        BRAINOMNI_EVAL_DEFAULTS,
         EVAL_DEFAULTS,
         LEARNABLE_SPLIT_DEFAULTS,
         MU_SPLIT_DEFAULTS,
         SplitDefaults,
     )
-    from neural_tokenizers.meg.data import list_subjects, load_trials_pooled
+    from neural_tokenizers.meg.data import (
+        ConceptMapping,
+        list_subjects,
+        load_trials_pooled,
+    )
     from neural_tokenizers.meg.splits import split_by_image
 
     if tokenizer_name not in _TOKENIZER_FACTORIES:
@@ -160,27 +208,44 @@ def evaluate_remote(
     factory = _TOKENIZER_FACTORIES[tokenizer_name]
     tok = factory(tokenizer_payload)
 
-    # Labels for the §5.3 probe: re-encode image_ids to a contiguous 0..K-1
-    # range. The full THINGS image-id → concept_id mapping is not yet wired
-    # (see meg/CLAUDE.md §8), so this is a placeholder dense relabeling.
-    # Probe numbers should be read relative to the in-trial random baseline
-    # the harness also computes, NOT as absolute concept accuracy yet.
-    _, dense_labels = np.unique(image_ids, return_inverse=True)
+    # Labels for the §5.3 probe: THINGS concept IDs (1..1854) → dense
+    # [0..K-1] for cross-entropy. Two-step densification:
+    #   (a) image_id → THINGS concept_id (via ConceptMapping; full 1854 space)
+    #   (b) collapse to ONLY the concepts that appear in our 3000-trial eval
+    #       set. CRITICAL: skipping (b) gives the probe ~800 "phantom" output
+    #       columns (concepts in THINGS but absent here), which weight decay
+    #       pulls toward zero and distorts argmax. With (b), n_classes equals
+    #       the actual unique concept count in the eval set.
+    concept_map = ConceptMapping.load()
+    full_labels, valid = concept_map.encode(image_ids)
+    n_dropped = int((~valid).sum())
+    if n_dropped > 0:
+        print(f"[eval] dropping {n_dropped} trials with unmapped image_ids")
+        keep_idx = torch.from_numpy(np.nonzero(valid)[0].astype("int64"))
+        X = X[keep_idx]
+        full_labels = full_labels[valid]
+    # Step (b): re-densify to [0, K_observed).
+    _, dense_labels = np.unique(full_labels, return_inverse=True)
     labels = torch.from_numpy(dense_labels.astype("int64"))
+    print(
+        f"[eval] probe labels: {len(np.unique(dense_labels))} concepts in eval set "
+        f"({X.shape[0]} trials, out of {concept_map.n_concepts} THINGS total)"
+    )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     X = X.to(device)
     print(f"[eval] running harness on device={device} ...")
+    eval_defaults = BRAINOMNI_EVAL_DEFAULTS if tokenizer_name == "brainomni" else EVAL_DEFAULTS
     cfg = EvalConfig(
-        sample_rate_hz=EVAL_DEFAULTS.sample_rate_hz,
-        bands=dict(EVAL_DEFAULTS.bands),
+        sample_rate_hz=eval_defaults.sample_rate_hz,
+        bands=dict(eval_defaults.bands),
         device=device,
         batch_size=64,
         seed=seed,
-        psd_nperseg=EVAL_DEFAULTS.psd_nperseg,
-        probe_epochs=EVAL_DEFAULTS.probe_epochs,
-        probe_top_k=EVAL_DEFAULTS.probe_top_k,
-        probe_test_frac=EVAL_DEFAULTS.probe_test_frac,
+        psd_nperseg=eval_defaults.psd_nperseg,
+        probe_epochs=eval_defaults.probe_epochs,
+        probe_top_k=eval_defaults.probe_top_k,
+        probe_test_frac=eval_defaults.probe_test_frac,
     )
     report = evaluate(tok, X, labels, cfg)
     print(report)
@@ -192,24 +257,48 @@ def evaluate_remote(
     }
 
 
+def _eval_slug(n_test: int, seed: int) -> str:
+    """Filename suffix that distinguishes eval invocations against one calibration.
+
+    Two eval runs with the same (n_test, seed) are deterministic and identical,
+    so overwriting is fine. Different (n_test, seed) get different files so
+    they don't clobber each other.
+    """
+    n_part = "full" if n_test <= 0 else f"n{n_test}"
+    return f"ntest={n_part}_s{seed}"
+
+
 @app.local_entrypoint()
 def run(
     tokenizer: str = "mu_transform",
-    calibration: str = "neural_tokenizers/meg/mu_transform/calibration.json",
+    calibration: str = "",
     n_test: int = 3000,
     seed: int = 0,
     output: str = "",
 ):
-    """Run the §5 harness remotely and print / save the report.
+    """Run the §5 harness remotely; report lands next to the calibration in
+    `<calibration_dir>/evals/eval_<eval_slug>.json`.
+
+    Args:
+        tokenizer: which factory to dispatch.
+        calibration: path to the calibration.json. If empty, picks the most
+            recent run under
+            `neural_tokenizers/meg/mu_transform/runs/*/calibration.json`.
+        n_test: cap on test-trial count (0 = use full test split).
+        seed: split seed (must match calibration's seed).
+        output: optional explicit report path. If empty, writes
+            `<calibration_dir>/evals/eval_<eval_slug>.json` — same calibration
+            can host multiple eval reports under different eval configs without
+            overwriting.
 
     Invoke:
         modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \\
-            --tokenizer mu_transform \\
-            --calibration neural_tokenizers/meg/mu_transform/calibration.json
+            --calibration neural_tokenizers/meg/mu_transform/runs/<slug>/calibration.json
     """
     import json
 
-    payload = json.loads(Path(calibration).read_text())
+    calib_path = Path(_resolve_config(tokenizer, calibration))
+    payload = json.loads(calib_path.read_text())
     use_mu_split = tokenizer == "mu_transform"
     report = evaluate_remote.remote(
         tokenizer_name=tokenizer,
@@ -225,5 +314,51 @@ def run(
             print(f"    {k:<32s} {v:.4f}")
 
     if output:
-        Path(output).write_text(json.dumps(report, indent=2))
-        print(f"[eval] wrote report to {output}")
+        out_path = Path(output)
+    else:
+        evals_dir = calib_path.parent / "evals"
+        evals_dir.mkdir(parents=True, exist_ok=True)
+        out_path = evals_dir / f"eval_{_eval_slug(n_test, seed)}.json"
+    out_path.write_text(json.dumps(report, indent=2))
+    print(f"[eval] wrote report to {out_path}")
+
+
+def _resolve_config(tokenizer: str, config_path: str) -> str:
+    """Resolve --calibration/config path for each tokenizer phase."""
+    if config_path:
+        return config_path
+    if tokenizer == "brainomni":
+        runs_dir = Path("neural_tokenizers/meg/brainomni/runs")
+        candidates = sorted(
+            runs_dir.glob("*/config.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if not candidates:
+            # Fall back to bundled pretrained checkpoint config.
+            default = Path("neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/config.json")
+            if default.exists():
+                return str(default)
+            raise FileNotFoundError(
+                f"No config.json under {runs_dir}. "
+                "Pass --calibration <path> or create the 3a config."
+            )
+        print(f"[eval] using newest brainomni config: {candidates[0]}")
+        return str(candidates[0])
+    return _resolve_calibration(config_path)
+
+
+def _resolve_calibration(calibration: str) -> str:
+    """Resolve --calibration: explicit path, or the newest under runs_dir."""
+    if calibration:
+        return calibration
+    runs_dir = Path("neural_tokenizers/meg/mu_transform/runs")
+    candidates = sorted(runs_dir.glob("*/calibration.json"),
+                        key=lambda p: p.stat().st_mtime, reverse=True)
+    if not candidates:
+        raise FileNotFoundError(
+            f"No calibration.json found under {runs_dir}. "
+            f"Pass --calibration <path> or run modal_meg_calibrate_mu.py first."
+        )
+    print(f"[eval] using newest calibration: {candidates[0]}")
+    return str(candidates[0])

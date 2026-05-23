@@ -4,6 +4,14 @@ Scope: this file applies only to work in `neural_tokenizers/`. Read it before
 making changes in this subdir. Repo-wide engineering norms live in the user's
 global `~/.claude/CLAUDE.md` and are not restated here.
 
+**Per-modality docs live in subfolders.** MEG-specific work goes in
+[`meg/CLAUDE.md`](meg/CLAUDE.md); EEG-specific work goes in an `eeg/`
+subfolder (to be created by the EEG owner). This file is the umbrella
+contract — the `Tokenizer` protocol, the four §5 evaluation axes, the
+file-layout norms — and it applies to every modality. Modality-specific
+plans (data spec, recalibration recipes, vendored model choices) live in
+the subfolder.
+
 ## 1. Goal
 
 Build per-modality tokenizers for a mini-4M model. Each tokenizer maps raw
@@ -52,21 +60,23 @@ When in doubt, mirror the human_poses config rather than the image configs.
 
 ## 3. Data — working assumptions
 
-Data is not yet downloaded locally. Numbers below are from the canonical
-public releases and **must be verified** on first contact.
-
+- **THINGS-MEG** (Hebart et al. 2023): **verified** on the team `project`
+  Modal Volume — see [`meg/CLAUDE.md`](meg/CLAUDE.md) §3 for exact shapes
+  (271 mag channels, 200 Hz, 281 timepoints, 27,048 trials/subject × 4
+  subjects). Preprocessed `.fif` files live at
+  `/project/data/things-meg/preprocessed/`.
 - **THINGS-EEG2** (Gifford et al. 2022): 63 channels, 100 Hz, ~1.1s epochs →
-  trial tensor shape roughly `(63, 100)`. ~10 subjects, ~16k training trials each.
-- **THINGS-MEG** (Hebart et al. 2023): 272 channels, sampling rate depends on
-  preprocessing pipeline (200 Hz or 1200 Hz), epoch length comparable.
+  trial tensor shape roughly `(63, 100)`. ~10 subjects, ~16k training trials
+  each. Not yet verified in this repo.
 - Both: 2D `(channels, time)` per trial. Channels are *not* a spatial grid —
   treat as an unordered set or a sensor-topography graph, not as image rows.
-- Stimulus labels: THINGS has ~1,854 object concepts (use for downstream probes).
+- Stimulus labels: THINGS has ~1,854 object concepts (use for downstream probes);
+  THINGS-MEG trigger codes are **image-level** (~22k), not concept-level.
 
-Open data questions to resolve before training:
-- exact preprocessed shape of each dataset
+Open data questions (EEG / TVSD):
+- exact preprocessed shape of THINGS-EEG2 on our volume
 - which preprocessing pipeline (raw vs. ICA-cleaned vs. baseline-corrected)
-- where the data lives at training time (Modal Volume path)
+- where EEG data lives at training time (Modal Volume path)
 
 ## 4. Architecture — baseline vs target
 
@@ -150,11 +160,15 @@ The harness consumes any object implementing this interface:
 
 ```python
 class Tokenizer(Protocol):
-    def encode(self, x: Tensor) -> LongTensor: ...   # (B, C, T) -> (B, L)
-    def decode(self, t: LongTensor) -> Tensor:  ...  # (B, L)    -> (B, C, T)
-    @property
-    def codebook_size(self) -> int: ...
+    codebook_size: int
+
+    def tokenize(self, x: Tensor) -> LongTensor: ...       # (B, C, T) -> (B, ...)
+    def decode_tokens(self, tokens: LongTensor) -> Tensor: ...  # (B, ...) -> (B, C, T)
+    # optional: tokens_to_embedding(tokens) -> (B, L, D) for probe features
 ```
+
+Tokens may have any shape `(B, ...)`; the harness flattens to `(B, L)` where
+needed. See [`evaluation/protocol.py`](evaluation/protocol.py).
 
 Four required evaluation axes — implement one module per axis so they can be
 run independently:
@@ -283,7 +297,92 @@ when you pick one.
 - No magic constants — codebook size, channel counts, sampling rates all
   named and centralized.
 
-## 8. Notes on automation / `.claude` layering
+## 8. MEG progress (2026-05)
+
+MEG-specific detail lives in [`meg/CLAUDE.md`](meg/CLAUDE.md). Current state:
+
+| Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+| 4 | Production token cache + `tok_meg/` shards aligned with RGB split | **Done (2026-05-23)** — 98,592 trials, 27 shards, 28/28 audit pass; see [`meg/CLAUDE.md`](meg/CLAUDE.md) §13 |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** wire `meg_tokens_brainomni` in ml-4m `modality_info.py`
+(draft in `meg/modality_registration.py`). Token cache + shard export is
+shipped — see [`meg/CLAUDE.md`](meg/CLAUDE.md) §13.
+
+## 9. Shared THINGS data layout on the `project` Volume (2026-05-23)
+
+This section is cross-modality — every modality owner needs to read it. The
+shared infrastructure is implemented under top-level [`../modal/`](../modal/),
+NOT under `neural_tokenizers/<modality>/modal/`.
+
+### 9.1 Layout
+
+```
+/project/data/
+  things_catalog.json                # 26,107 image_id ↔ filename, split-invariant
+  train/
+    things_manifest.json             # which image_ids in each train shard
+    things_meg_manifest.json         # per-shard MEG entry counts (see meg/CLAUDE.md §13)
+    things/
+      rgb/shard_NNN.tar              # 23 shards (~85% of images)
+      tok_meg/shard_NNN.tar          # 23 shards (BrainOmni 3b tokens)
+      tok_eeg/                       # EEG owner's tokens (separate convention)
+  val/
+    things_manifest.json
+    things_meg_manifest.json
+    things/
+      rgb/shard_NNN.tar              # 4 shards (~15%)
+      tok_meg/shard_NNN.tar          # 4 shards
+      tok_eeg/
+```
+
+### 9.2 Conventions every modality must respect
+
+- **`image_id`** = 9-digit zero-padded *alphabetical rank* of the THINGS image
+  filename. `things_catalog.json` is the only source of truth — the same
+  image_id refers to the same image forever, regardless of split.
+- **Split** = image-level random, seed=0, 85/15 train/val. Stored in
+  `train/things_manifest.json` + `val/things_manifest.json`. **Do not produce
+  a different split** — modalities pair on identical image_id sets so 4M
+  can ingest them jointly.
+- **Per-modality shard subfolder**: `things/<modality>/shard_NNN.tar`,
+  using the **4M `tok_<modality>/` prefix** for tokenized modalities
+  (`tok_meg`, `tok_eeg`, …) and the bare modality name for raw image data
+  (`rgb`). 23 train + 4 val shards per modality, indexed identically to RGB.
+- **WebDataset key convention** inside each tar:
+  - one-sample-per-image modality → `<image_id>.<ext>` (RGB: `.jpg` + `.txt`)
+  - multi-trial modality (MEG) → `<image_id>_<provenance>.<ext>`
+    (e.g. `<image_id>_<subject>_t<trial_idx>.meg.npy`).
+  - 4M loaders pair across modalities by stripping everything after the
+    first `_` to recover image_id.
+
+### 9.3 Source files (top-level `modal/`)
+
+| File | Purpose |
+|---|---|
+| [`../modal/things_manifest.py`](../modal/things_manifest.py) | Pure-logic THINGS catalog + split + RGB shard repack |
+| [`../modal/modal_things_repack.py`](../modal/modal_things_repack.py) | Modal entrypoints: `plan` / `repack` / `verify` for the RGB train/val split |
+| [`../modal/meg_token_shard.py`](../modal/meg_token_shard.py) | Pure-logic MEG shard packer (filename convention, planning, tar I/O) |
+| [`../modal/modal_meg_pack_shards.py`](../modal/modal_meg_pack_shards.py) | Modal entrypoints: `plan` / `pack` / `verify` for MEG token shards |
+| [`../modal/modal_meg_pipeline_audit.py`](../modal/modal_meg_pipeline_audit.py) | End-to-end 28-check audit (structural / consistency / integrity / protocol) |
+
+### 9.4 Adding a new modality (EEG, fMRI, intracortical, …)
+
+Mirror this layout. Write your tokens into `things/tok_<modality>/shard_NNN.tar`
+for each split, using the **same shard indexing as the catalog manifests** —
+read `train/things_manifest.json` and `val/things_manifest.json` to know
+which image_ids belong in each shard. Don't invent your own split.
+
+## 10. Notes on automation / `.claude` layering
 
 This subdir is a candidate for a scoped `.claude/` later:
 - A `train-tokenizer` skill or slash command that wraps the Modal launch + log

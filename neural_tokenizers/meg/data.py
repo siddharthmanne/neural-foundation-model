@@ -28,12 +28,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from glob import glob
+import json
 import os
 
 import numpy as np
 import torch
 
 from .meg_config import MEG_DATA
+
+
+# Default location of the image_id → concept_id mapping. Produced by
+# `modal/modal_download_things_labels.py`; checked into git as well as
+# living on the Volume. The local path is what eval code reads; the Volume
+# copy is the source of truth in case the local copy is missing.
+DEFAULT_CONCEPT_MAP_LOCAL = "neural_tokenizers/meg/data/image_id_to_concept.json"
+DEFAULT_CONCEPT_MAP_REMOTE = "/project/data/things-meg/labels/image_id_to_concept.json"
 
 
 # ---------- types ---------------------------------------------------------
@@ -221,3 +230,77 @@ def sample_train_trials(
         X_s, _ = load_trials(s, np.asarray(ts, dtype=np.int64), dtype=dtype)
         xs.append(X_s)
     return torch.cat(xs, dim=0)
+
+
+# ---------- image_id → concept_id mapping (THINGS, 1854 concepts) ---------
+
+@dataclass(frozen=True)
+class ConceptMapping:
+    """Lookup table from THINGS image trigger codes → dense concept indices.
+
+    `image_id_to_concept_id[image_id]` gives a THINGS category number in
+    [1, 1854] (the canonical THINGS concept ID). For the linear probe we
+    additionally re-encode to dense [0, K) indices so cross-entropy works
+    without holes in the label range.
+
+    Attributes:
+        image_id_to_concept_id: dict[int, int] — direct from events.tsv.
+        dense_index:            dict[int, int] — concept_id → [0, K).
+        concept_ids:            sorted unique THINGS concept IDs (length K).
+        n_concepts:             K (= 1854 for the full THINGS pool).
+    """
+
+    image_id_to_concept_id: dict[int, int]
+    dense_index: dict[int, int]
+    concept_ids: np.ndarray
+    n_concepts: int
+
+    @classmethod
+    def from_json(cls, payload: dict) -> "ConceptMapping":
+        raw = payload["image_id_to_concept_id"]
+        m = {int(k): int(v) for k, v in raw.items()}
+        concept_ids = np.array(sorted(set(m.values())), dtype=np.int64)
+        dense_index = {int(c): i for i, c in enumerate(concept_ids)}
+        return cls(
+            image_id_to_concept_id=m,
+            dense_index=dense_index,
+            concept_ids=concept_ids,
+            n_concepts=len(concept_ids),
+        )
+
+    @classmethod
+    def load(cls, path: str | os.PathLike | None = None) -> "ConceptMapping":
+        """Read the mapping file. Tries the local checked-in copy first,
+        then the Modal Volume path; raises if neither exists.
+        """
+        if path is not None:
+            return cls.from_json(json.loads(open(path).read()))
+        for candidate in (DEFAULT_CONCEPT_MAP_LOCAL, DEFAULT_CONCEPT_MAP_REMOTE):
+            if os.path.exists(candidate):
+                return cls.from_json(json.loads(open(candidate).read()))
+        raise FileNotFoundError(
+            f"image_id_to_concept.json not found at any of "
+            f"({DEFAULT_CONCEPT_MAP_LOCAL!r}, {DEFAULT_CONCEPT_MAP_REMOTE!r}). "
+            f"Run `modal run neural_tokenizers/meg/modal/modal_download_things_labels.py::download`."
+        )
+
+    def encode(self, image_ids: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Translate (N,) image_ids → (N,) dense concept indices.
+
+        Returns:
+            dense_labels: (N,) int64 — index into `self.concept_ids`, suitable
+                          for cross-entropy with `num_classes=n_concepts`.
+            valid_mask:   (N,) bool — True where the image_id was found in
+                          the mapping. Callers may want to filter unknown
+                          codes (should be rare; logs a warning if any).
+        """
+        out = np.empty(len(image_ids), dtype=np.int64)
+        valid = np.ones(len(image_ids), dtype=bool)
+        for i, code in enumerate(image_ids):
+            concept = self.image_id_to_concept_id.get(int(code))
+            if concept is None:
+                valid[i] = False
+                out[i] = -1
+            else:
+                out[i] = self.dense_index[concept]
+        return out, valid

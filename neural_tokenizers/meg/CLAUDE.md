@@ -58,19 +58,19 @@ registration that goes into 4M has to declare both.
 Sensible starting points, derived from Cho 2026 + the verified THINGS-MEG
 data spec in §3 + 4M conventions:
 
-| Tokenizer            | V                              | num_codebooks | per-channel max_length |
+| Tokenizer            | V                              | num_codebooks | per-trial token shape |
 |----------------------|--------------------------------|---------------|------------------------|
-| Phase 1 (μ-transform)| 256 (paper default)            | 1             | 281 (= trial timepoints) |
-| Phase 2 (Cho2026 learned) | 128 (paper) → V* after refactor | 1        | 281                    |
-| Phase 3 (BrainOmni)  | TBD                            | TBD           | TBD                    |
+| Phase 1 (μ-transform)| 256 (paper default)            | 1             | 271 × 281 (per sample) |
+| Phase 2 (Cho2026 learned) | 128 (paper) → V* after refactor | 1        | 271 × 281 (target)     |
+| Phase 3 (BrainOmni)  | **512** (per RVQ layer)        | **4**         | **16 × 8 × 4 = 512** indices |
 
-Registration shape (per-channel sequence, **not** flattened):
-`num_channels = 271`, `max_length = 281`. The alternative — flatten to one
-giant sequence of 271 × 281 = 76,151 tokens per trial — blows past every
-sensible context length and discards the channel/time factorization 4M can
-exploit. Mirror `human_poses`, which keeps `num_channels = 207` separate
-from `max_length = 263`. Document the final choice in
-`meg/modality_registration.py` when phase 1 lands.
+Registration shape for sample-level tokenizers (Phase 1/2):
+`num_channels = 271`, `max_length = 281`. BrainOmni registers separately as
+`meg_tokens_brainomni`: `num_channels = 16` latent sources, `max_length = 8`
+temporal tokens, `num_codebooks = 4`, `vocab_size = 512`. See
+`meg/modality_registration.py`. Flattening 271 × 281 = 76,151 tokens per trial
+blows past sensible 4M context — BrainOmni's 512-token grid is the practical
+production shape for 4M.
 
 ## 3. Data — verified, not assumed
 
@@ -125,9 +125,11 @@ Three non-obvious things the verification surfaced:
 
 ### What's NOT yet on the volume
 
-- `/project/data/things-meg/splits/` — train/val/test split manifests.
-  None exist yet. Splits will be by held-out image ID (cf.
-  `modal_download_things_meg.py` docstring), not by trial index.
+- `/project/data/things-meg/splits/` — persisted split manifests (optional).
+  **In-repo split logic exists:** `meg/splits.py` with `LEARNABLE_SPLIT_DEFAULTS`
+  (80/10/10) for BrainOmni/Cho2026 and `MU_SPLIT_DEFAULTS` (90/0/10) for
+  μ-transform calibration. Test indices are determined by `(seed, test_frac)`
+  alone so all tokenizers evaluate on the same held-out trials.
 - `/project/data/things-meg/source/` — source-reconstructed parcels.
   Not yet computed. Only needed if phase 2 ends up requiring it (see §4).
 
@@ -146,11 +148,11 @@ wired for MEG-shaped data, (b) put a floor on the leaderboard, and (c) avoid
 prematurely committing to a deep architecture before we know what "good
 enough" looks like on this specific THINGS-MEG distribution.
 
-| Phase | Tokenizer                                | Learns? | Cost     | Role                         |
-|-------|------------------------------------------|---------|----------|------------------------------|
-| 1     | μ-transform (Cho 2026 baseline)          | No¹     | seconds  | Floor + harness sanity check |
-| 2     | Cho 2026 learnable AE (causal / non-causal) | Yes  | hours-GPU | Likely production tokenizer |
-| 3     | BrainOmni tokenizer, finetuned           | Yes     | hours-GPU | Stretch / comparison         |
+| Phase | Tokenizer                                | Learns? | Cost     | Role                         | Status |
+|-------|------------------------------------------|---------|----------|------------------------------|--------|
+| 1     | μ-transform (Cho 2026 baseline)          | No¹     | seconds  | Floor + harness sanity check | **Shipped** |
+| 2     | Cho 2026 learnable AE (causal / non-causal) | Yes  | hours-GPU | Likely production tokenizer | Not started |
+| 3     | BrainOmni BrainTokenizer, finetuned        | Yes     | hours-GPU | Learned compression + 4M-friendly grid | **Shipped (3a+3b)** |
 
 ¹ "Non-learnable" means no gradient-descent weights — but the μ-transform
 still has dataset-fit parameters (clip thresholds and max-abs scaler) that
@@ -197,6 +199,11 @@ calibration.json` step that produces a small JSON sidecar with
 `{s_per_channel, q_lo, q_hi, mu, V, channel_mode}`. At inference we load
 that JSON and apply the stateless transform. Treat the calibration JSON as
 a versioned tokenizer checkpoint.
+
+**Phase 1 status (shipped):** calibrated on THINGS-MEG train split with
+μ=255, V=256, per-channel clip `[0.5, 99.5]` percentiles. Run slug:
+`V256_mu255_clip0.5-99.5_per_channel_s0`. Eval via
+`modal_meg_eval.py --tokenizer mu_transform` (see §9).
 
 > Verified §3 fact that matters here: all 271 channels are `mag`, so the
 > grad-vs-mag amplitude disparity problem does not apply. Per-channel `s`
@@ -272,11 +279,96 @@ acceptable. Do not skip 2a — the gap between 2a and 2b is the answer to
 > the §5.3 linear probe quietly tanks — watch that metric closely after
 > each of 2a/2b/2c.
 
-### Phase 3 — BrainOmni (deferred)
+### Phase 3 — BrainOmni BrainTokenizer (implemented)
 
-Multi-modal tokenizer. Not the path forward unless phase 2 has clear
-distribution-mismatch symptoms AND BrainOmni's pretraining corpus includes
-event-related MEG. Revisit after phase 2 numbers land.
+Adapter over [OpenTSLab/BrainOmni](https://github.com/OpenTSLab/BrainOmni)
+**Stage 1 only** (`BrainTokenizer` — reconstruction + RVQ). We do **not** use
+BrainOmni Stage 2 (masked token prediction on discrete codes). Checkpoint
+auto-downloads from HuggingFace `OpenTSLab/BrainOmni` on first Modal run.
+
+**Preprocessing** (`meg/brainomni/preprocess.py`):
+
+1. Resample 200 Hz → 256 Hz (460 samples from 281)
+2. Per-trial per-channel z-score (computed **before** zero-pad)
+3. Zero-pad post-stimulus tail to **512** samples
+
+**Token shape:** `(B, 16, 8, 4)` — 16 latent neuro sources, 8 temporal
+tokens (SEANet ratios `[8,4,2]` on 512 samples), 4 RVQ layers @ V=512 each
+→ **512 integer indices per trial**.
+
+**Finetune modes** (`meg/brainomni/trainer.py`):
+
+| Mode | What's trainable | Params (approx) |
+|------|------------------|-----------------|
+| `adapt` (default) | sensor embed, cross-attn, latent neuros, RVQ | ~959k / 5.05M |
+| `rvq_only` | RVQ codebooks only | smaller |
+| `full` | entire BrainTokenizer | 5.05M |
+
+Default `adapt` freezes SEANet encoder/decoder (~81% of weights). RVQ
+codebooks update via EMA during training.
+
+**Hyperparameter sweeps (smoke: 1k train / 200 val):**
+
+| Sweep | Grid | Winner | Smoke best val |
+|-------|------|--------|----------------|
+| LR | `{3e-6, 1e-5, 3e-5}` × 5 ep | **3e-5** | 1.597 |
+| Codebook | `{256, 512, 1024}` × 10 ep | **512** | 1.543 |
+| LR coarse | `{1e-4, 1e-3}` × 10 ep | 1e-4 (both worse than 3e-5) | 1.620 |
+
+Summaries: `brainomni/runs/3b_smoke_sweep/`, `3b_codebook_sweep/`,
+`3b_lr_sweep_coarse/`.
+
+**Full finetune (3b) — completed:**
+
+- Config: `adapt`, lr=**3e-5**, batch=**32**, 10 epochs, V=512
+- Data: 88,340 train / 9,816 val (80/10/10 `LEARNABLE_SPLIT_DEFAULTS`)
+- Best val loss: **~1.401** (BrainOmni composite recon loss)
+- Checkpoint: Modal volume `/project/checkpoints/meg/brainomni/V512_rvq4_win512_sf256_3b/`
+- Local config pointer: `brainomni/runs/V512_rvq4_win512_sf256_3b/config.json`
+
+**Modal resources (finetune/eval):** L40S GPU, 32 GB RAM, batch 32.
+Long jobs: use `finetune_detached` with `modal run --detach` (`.spawn()` —
+survives laptop close). Do **not** use `.remote()` for multi-hour runs.
+
+**Modal entrypoints:**
+
+```bash
+# 3a zero-shot eval
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/config.json \
+  --n-test 3000 --seed 0
+
+# 3b finetuned eval
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+  --n-test 3000 --seed 0
+
+# Full finetune (detached)
+modal run --detach neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py::finetune_detached \
+  --finetune-mode adapt --lr 3e-05 --epochs 10 --batch-size 32 --stage 3b
+```
+
+**4M integration (draft, not wired in ml-4m yet):**
+
+- Registration: `meg/modality_registration.py` → `meg_tokens_brainomni`
+- At 4M boundary: flatten `(16,8,4)` → `(512,)` seq **or** treat as
+  `(16, 32)` 2D grid (`ImageTokenEncoderEmbedding`); both are discrete
+  lookup — RVQ layers are extra positions, not a 512⁴ joint vocab
+- **Pending:** token-cache export script; add entry to ml-4m `modality_info.py`
+
+**Key implementation notes:**
+
+- Subsample split indices **before** loading `.fif` data (88k trials ≈ 30 GB
+  if loaded at once)
+- `codebook_size` override re-inits quantizer; filter quantizer keys in
+  `load_state_dict` (`brainomni/load.py`)
+- DeepSpeed import stubbed in `load.py` for HF checkpoint load
+- Finetune loss masked on zero-pad region; minor `norm_target()` on full 512
+  window including pad — deterministic, not worth restarting training
+
+See also `meg/brainomni/README.md` for command cheat sheet.
 
 ## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
 
@@ -322,6 +414,7 @@ meg/
   meg_config.py               # channels (271), sfreq (200 Hz), tmin/tmax, named bands
   modality_registration.py    # MEG entry for 4M's MODALITY_INFO (V, max_len, ...)
   data.py                     # mne.read_epochs(...) loader, pooled across P1–P4
+  splits.py                   # image-aware train/val/test splits
   __init__.py                 # exports the three Tokenizer-protocol classes
 
   mu_transform/               # Phase 1
@@ -340,11 +433,36 @@ meg/
     README.md                 # which checkpoint, which config, why
     # NO model code lives here — that lives in external/ (see §6)
 
-  brainomni/                  # Phase 3 — empty until phase 2 ships
+  brainomni/                  # Phase 3 — BrainOmni BrainTokenizer adapter
+    __init__.py
+    adapter.py                # BrainOmniTokenizer → Tokenizer protocol
+    preprocess.py             # 200→256 Hz, z-score, pad→512
+    load.py                   # HF checkpoint load + codebook override
+    trainer.py                # finetune modes (adapt/full/rvq_only)
+    config.py                 # BrainOmniConfig dataclass
+    sensor_metadata.py        # MNE sensor positions → BrainOmni format
+    checkpoint.py             # save/load finetuned weights on Modal volume
+    compare_eval.py           # side-by-side vs μ-transform eval JSONs
+    test_brainomni.py         # unit/smoke tests
+    README.md
+    runs/                     # config.json + evals/ per stage (git-tracked)
+      V512_rvq4_win512_sf256_3a/
+      V512_rvq4_win512_sf256_3b/
+      3b_smoke_sweep/
+      3b_codebook_sweep/
+      3b_lr_sweep_coarse/
+
+  modal/                      # Modal entrypoints (eval, finetune, sweeps)
+    modal_meg_eval.py         # --tokenizer {mu_transform, brainomni}
+    modal_meg_finetune_brainomni.py
 ```
 
 This keeps each phase replaceable in isolation: deleting `cho2026/` does
-not break phase 1; adding `brainomni/` does not touch phase 2.
+not break phase 1; `brainomni/` is independent of phase 2.
+
+Phase 1 run artifact:
+`mu_transform/runs/V256_mu255_clip0.5-99.5_per_channel_s0/` (calibration.json,
+config.json, evals/).
 
 ## 8. Evaluation contract
 
@@ -374,14 +492,114 @@ MEG-specific harness parameters (PSD frequency range, named bands) go in
 `meg_config.py` and are passed into the harness as `EvalConfig`. Do not
 hardcode them.
 
-## 9. Open decisions
+Run eval via Modal:
+
+```bash
+# μ-transform baseline
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer mu_transform \
+  --calibration neural_tokenizers/meg/mu_transform/runs/V256_mu255_clip0.5-99.5_per_channel_s0/config.json \
+  --n-test 3000 --seed 0
+
+# BrainOmni — see §5 Phase 3 for brainomni commands
+```
+
+Compare JSON reports locally:
+
+```bash
+python neural_tokenizers/meg/brainomni/compare_eval.py
+```
+
+## 9. §5 leaderboard — μ-transform vs BrainOmni (2026-05-22)
+
+All runs: **n=3000 test trials**, **seed=0**, learnable split 80/10/10
+(BrainOmni) / μ-transform uses same test indices via `splits.py`. Eval JSONs
+under each run's `evals/` folder.
+
+### Reconstruction (§5.1)
+
+| Metric | μ-transform | BrainOmni 3a (zero-shot) | BrainOmni 3b (finetuned) |
+|--------|-------------|--------------------------|--------------------------|
+| MSE ↓ | **0.999** | 4.35 | 1.20 |
+| Channel Pearson ↑ | **0.998** | 0.345 | 0.870 |
+| PSD MSE ↓ | 1.01×10⁹ | 1.88×10⁸ | **6.13×10⁷** |
+
+μ-transform's near-perfect channel correlation is **misleading** — it is a
+near-invertible per-sample codec (clip → μ-law → 256 bins). BrainOmni is a
+real compressor (271×281 → 512 codes). **3b finetune** closes most of the
+reconstruction gap vs 3a; μ-transform still wins trivial round-trip fidelity.
+
+### Codebook (§5.2)
+
+| Metric | μ-transform (V=256) | BrainOmni 3a/3b (V=512) |
+|--------|----------------------|-------------------------|
+| Codes used | 256/256 | 512/512 |
+| Utilization | 100% | 100% |
+| Perplexity | 194 | 443 → **494** (3b) |
+| Entropy (nats) | 5.27 | 6.09 → **6.20** (3b) |
+
+Both use full vocab. BrainOmni spreads mass over a larger codebook.
+
+### Sequence structure (§5.4)
+
+| Metric | μ-transform | BrainOmni 3a | BrainOmni 3b |
+|--------|-------------|--------------|--------------|
+| Entropy gap % ↑ | **22.9%** | 9.7% | 5.6% |
+| Mean run length | 1.06 | ~1.00 | ~1.00 |
+| frac runs ≥ 2 | **1.0** | 0.58 | 0.63 |
+
+Different token geometries (76k sample tokens vs 512 latent codes) — entropy
+gap is not directly comparable. μ-transform shows strong local temporal
+redundancy; BrainOmni tokens look more i.i.d.
+
+### Linear probe (§5.3) — **gate metric**
+
+| Metric | μ-transform | BrainOmni 3a | BrainOmni 3b | Random |
+|--------|-------------|--------------|--------------|--------|
+| top-1 tokens | 0.17% | 0.17% | **0.00%** | 0.17% |
+| top-5 tokens | 2.0% | **2.67%** | 2.17% | 2.17% |
+| top-1 raw | 0.33% | 0.33% | 0.33% | — |
+
+**Neither tokenizer passes the probe gate** (~1152 concepts in this 3000-trial
+subset). Finetune improved reconstruction, not linear object decodability.
+Raw waveform probe is identical across runs (~0.33% top-1) — barely above
+chance. Full test split (~10k trials): μ-transform top-1 tokens 0.25% vs
+0.40% random — still essentially chance.
+
+### Verdict for 4M
+
+| Criterion | μ-transform | BrainOmni 3b |
+|-----------|-------------|--------------|
+| Tokens / trial | ~76,151 | **512** |
+| 4M context cost | Very high | **Practical** |
+| Reconstruction | Excellent (near-identity) | Good (post-finetune) |
+| Linear object info in tokens | None detected | None detected |
+| Trained on THINGS | Calibration only | **Yes (adapt finetune)** |
+
+**Recommendation:** ship **BrainOmni 3b** into 4M for token caching.
+Probe failure is expected under reconstruction-only training; semantic readout
+may require 4M's nonlinear/multimodal objective (cf. BrainOmni Stage 2 in
+the paper — not implemented here).
+
+**Pending:** full ~10k test eval (`--n-test 0`); token-cache export;
+ml-4m `modality_info.py` registration.
+
+## 10. Open decisions
 
 Resolve in the PR that implements each phase, not here.
 
-- **Phase 1**: per-channel vs. global max-abs scaler. (Strong prior:
-  per-channel — see §5.)
-- **Phase 1**: vocab size `V`. Defaults to 256 (paper). Sweep `{64, 128,
-  256, 512}` once the §5 harness is producing stable numbers.
+- **Phase 1**: per-channel vs. global max-abs scaler. **Resolved:** per-channel
+  (`clip0.5-99.5`, max-abs per channel). Run:
+  `V256_mu255_clip0.5-99.5_per_channel_s0`.
+- **Phase 1**: vocab size `V`. **Resolved:** V=256 (paper default). Optional
+  sweep `{64, 128, 256, 512}` deferred — 256 passes harness with full codebook use.
+- **Phase 3**: BrainOmni codebook size. **Resolved:** V=512 (codebook sweep).
+- **Phase 3**: finetune LR. **Resolved:** 3e-5 (`adapt` mode, 10 epochs).
+- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.
+- **Phase 3 → 4M token cache + shard export**: **Resolved (2026-05-23).** See
+  §13 for the production pipeline. BrainOmni 3b tokens for all 98,592 trials
+  are cached on the Volume and packed into `tok_meg/` shards aligned with the
+  RGB train/val split. 28/28 audit checks pass.
 - **Phase 2**: causal vs. non-causal decoder. Non-causal has strictly more
   reconstruction capacity; causal is needed only for real-time downstream
   uses. For 4M offline pretraining, **non-causal is the default** unless
@@ -397,13 +615,14 @@ Resolve in the PR that implements each phase, not here.
   their standardize-per-channel step for 2b** (the obvious cheap win),
   **own pipeline for 2c**.
 - **4M registration**: per-channel sequence (`num_channels=271,
-  max_length=281`) vs. flattened sequence (`max_length=271 × 281`).
-  Strong prior: per-channel (see §2).
-- **Split policy**: implement `/project/data/things-meg/splits/by_image.json`
-  before training any tokenizer; trial-index splits leak THINGS image
-  identity across train/val. Owner: whoever ships phase 1.
+  max_length=281`) for μ-transform / Cho2026; **separate** `meg_tokens_brainomni`
+  for BrainOmni (16 × 8 × 4). **Draft in** `modality_registration.py`; not yet
+  in ml-4m.
+- **Split policy**: **Resolved in-repo** via `meg/splits.py` +
+  `LEARNABLE_SPLIT_DEFAULTS` / `MU_SPLIT_DEFAULTS`. Optional persisted
+  `/project/data/things-meg/splits/` still TBD.
 
-## 10. Engineering norms specific to this subdir
+## 11. Engineering norms specific to this subdir
 
 (Inherits everything from parent §7. The below is additional.)
 
@@ -411,8 +630,10 @@ Resolve in the PR that implements each phase, not here.
   pass through `test_tokenizer.py` identically. Do not add MEG-specific
   code paths inside the harness.
 - Calibration JSON (`mu_transform/calibration.json`) and finetune
-  checkpoints (`cho2026/*.ckpt`) are versioned tokenizer state. JSON goes
-  in git; checkpoints go on the Modal Volume with a pointer file in git.
+  checkpoints (`brainomni/` on Modal volume at
+  `/project/checkpoints/meg/brainomni/<slug>/`; `cho2026/*.ckpt` when
+  phase 2 lands) are versioned tokenizer state. JSON/config pointers go
+  in git; weight checkpoints go on the Modal Volume.
 - No magic numbers: clip percentiles, `μ`, `V`, sampling rate, channel
   counts (271, not 272), anneal schedule all named in `meg_config.py`.
 - Phase 1 is testable on a laptop with synthetic `(271, 281)` tensors —
@@ -425,8 +646,14 @@ Resolve in the PR that implements each phase, not here.
 - Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
   after any preprocessing pipeline change, and update §3 of this doc with
   the new verified numbers.
+- After any change to the BrainOmni checkpoint, the bridge, the catalog, or
+  the shard packer, **re-run the full pipeline audit** before considering the
+  cache trustworthy:
+  `cd modal && modal run modal_meg_pipeline_audit.py::audit`
+  (28 cross-layer checks — structural / consistency / integrity / protocol).
+  Treat any FAIL as a stop-the-world condition.
 
-## 11. Automation / `.claude` candidates
+## 12. Automation / `.claude` candidates
 
 Worth building once the phase-1 recipe stabilizes, not before:
 
@@ -439,9 +666,118 @@ Worth building once the phase-1 recipe stabilizes, not before:
 - A `tokenize-things-meg` slash command that takes a tokenizer name
   (`mu_transform | cho2026 | brainomni`) and produces a token cache on
   the Modal Volume at `/project/data/things-meg/tokens/<tokenizer>/`,
-  ready for 4M consumption. Wraps `modal run` so we don't retype the
-  same incantation.
+  ready for 4M consumption. **Partially built (2026-05-23):** the
+  BrainOmni 3b recipe is fully scripted in §13 — promoting it to a slash
+  command is now a thin wrapper. The mu_transform and cho2026 token
+  exports are not yet scripted; build those into the same skill when
+  those tokenizers are ready to ship into 4M.
+- A `meg-pipeline-audit` slash command wrapping
+  [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py).
+  This script is already stable; promoting to a skill or a pre-commit hook
+  is now safe.
 
 Each of these locks in a workflow. Do not build them while the workflow
 is still in flux — the global CLAUDE.md's "automation should follow
 stable recipes" rule applies.
+
+## 13. Production token cache + tok_meg/ shard export (2026-05-23, shipped)
+
+This is the pipeline that turns the BrainOmni 3b finetuned checkpoint into
+4M-consumable shards. Read this before re-tokenizing, switching checkpoints,
+or changing the shard layout. The shared cross-modality data layout is in
+[`../CLAUDE.md`](../CLAUDE.md) §9 — read that first if you've never seen the
+`things_catalog.json` / `things_manifest.json` / `things/<modality>/` convention.
+
+### 13.1 Pipeline (four idempotent Modal jobs)
+
+| Step | Script | Cost | Run from | Output |
+|---|---|---|---|---|
+| 1. Bridge | [`modal/modal_download_meg_image_bridge.py`](modal/modal_download_meg_image_bridge.py) `::build` | ~$0.10, ~2 min CPU | inner repo root | `meg_trigger_to_image_id.json` |
+| 2. Tokenize | [`modal/modal_meg_tokenize_all.py`](modal/modal_meg_tokenize_all.py) `::tokenize_all` | ~$1, ~6 min L40S | inner repo root | `tokens/brainomni/<slug>/{config,P1..P4}.{json,npz}` |
+| 3. Pack shards | [`../../modal/modal_meg_pack_shards.py`](../../modal/modal_meg_pack_shards.py) `::{plan,pack,verify}` | ~$0.30, ~5 min CPU | `modal/` subdir | `train/things/tok_meg/`, `val/things/tok_meg/` |
+| 4. Audit | [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py) `::audit` | ~$0.10, ~3 min CPU | `modal/` subdir | 28-check report (PASS/FAIL per check) |
+
+All four are idempotent — re-running on a clean Volume produces the same
+artifacts (modulo non-determinism in any future stochastic step, of which
+there are none today).
+
+### 13.2 On-Volume artifacts
+
+```
+/project/data/things-meg/
+  labels/meg_trigger_to_image_id.json    # 22,448 triggers → 9-digit image_ids
+                                         # built from OpenNeuro sample_attributes_P*.csv
+                                         # 100% catalog coverage (no orphans)
+  tokens/brainomni/V512_rvq4_win512_sf256_3b/   # slug == producing checkpoint
+    config.json                          # tokenizer + checkpoint metadata
+    P{1..4}.npz                          # per-subject cache:
+                                         #   tokens             (24648, 16, 8, 4) int16
+                                         #   meg_trigger_codes  (24648,)         int64
+                                         #   trial_idx          (24648,)         int64
+                                         #   subject            ()                str
+
+/project/data/train/things/tok_meg/shard_NNN.tar     # 23 shards, 83,456 entries
+/project/data/val/things/tok_meg/shard_NNN.tar       # 4 shards,  15,136 entries
+/project/data/{train,val}/things_meg_manifest.json   # per-shard entry counts + tokenizer cfg
+```
+
+Per-tar entry: `<image_id>_<subject>_t<trial_idx>.meg.npy`, shape `(16,8,4) int16`.
+Aligns with the RGB shards by `image_id // 1000`-within-split (the canonical
+catalog ID lookup is the manifest JSON, not arithmetic).
+
+### 13.3 Filtering policy + corpus counts
+
+- **Catch trials** (artificial oddball stimuli, ~2400/subject) are filtered out
+  at tokenize time. They're not THINGS images and have no entry in the
+  trigger→image_id bridge.
+- **exp images** (~22,248): each shown 1× per subject → **88,992 trials total**
+  (4 per image). Filename pattern: `<id>_<subj>_t0.meg.npy`.
+- **test images** (200, used for within-subject reliability analysis): each
+  shown 12× per subject → **9,600 trials total** (48 per image). Filename
+  pattern: `<id>_<subj>_t{0..11}.meg.npy`.
+- **Total: 98,592 trials** across all 4 subjects, **24,648 per subject**.
+
+### 13.4 4M-side consumption (how to pair RGB ↔ MEG)
+
+```python
+# WebDataset pseudo-code (4M ingest):
+rgb_sample = next(wds.WebDataset("train/things/rgb/shard_005.tar"))
+# rgb_sample["__key__"] = "000005847", rgb_sample["jpg"] = <bytes>
+
+meg_sample = next(wds.WebDataset("train/things/tok_meg/shard_005.tar"))
+# meg_sample["__key__"] = "000005847_P1_t0", meg_sample["meg.npy"] = <(16,8,4) int16>
+
+# Pair by stripping everything after the first '_' in the MEG key:
+image_id = meg_sample["__key__"].split("_", 1)[0]   # "000005847"
+# Then look up rgb_sample[image_id] from the RGB shard or zip across both
+# WebDatasets with a custom collator.
+```
+
+### 13.5 Re-running triggers
+
+| Change | Steps to re-run |
+|---|---|
+| BrainOmni 3b checkpoint moves or is replaced | Update `CHECKPOINT_SLUG` constant in both `modal/modal_meg_tokenize_all.py` AND `../../modal/modal_meg_pack_shards.py`, then re-run Steps 2, 3, 4. New tokens dir slug → old cache stays intact for comparison. |
+| New finetune (3c, 3d, …) | Tokenize step writes to a new slug-named dir, leaving existing cache untouched. Pack step's `CHECKPOINT_SLUG` constant determines which cache feeds the shards. |
+| RGB split (`things_manifest.json`) changes | Re-run Step 3 only — no GPU re-cost. Cache is split-invariant. |
+| Bridge file regenerated | Re-run Step 3. Step 2 is bridge-aware at filter time, so the cache may also need rebuild if the bridge gained/lost triggers. |
+
+### 13.6 The audit (mandatory after any change to the pipeline)
+
+[`../../modal/modal_meg_pipeline_audit.py::audit`](../../modal/modal_meg_pipeline_audit.py)
+runs 28 cross-layer checks in 4 categories. Last run: **2026-05-23, 28/28 pass**:
+
+- **Layer 1 — Structural (9 checks):** file presence, JSON schema, shard count
+  vs manifest.
+- **Layer 2 — Cross-artifact consistency (6 checks):** bridge ⊆ catalog,
+  cache triggers ⊆ bridge, MEG image_ids ⊆ matching RGB shard,
+  train ∩ val = ∅ (both RGB and MEG), cache total == shard total.
+- **Layer 3 — Data integrity (5 checks):** every filename parses, every
+  tensor is `(16,8,4) int16`, all values in `[0, 512)`, no duplicate
+  `(image_id, subject, trial_idx)` anywhere, 200-sample cache↔shard
+  byte-identical round trip.
+- **Layer 4 — THINGS-MEG protocol (8 checks):** total 98,592 trials,
+  per-subject 24,648, distribution `[(1, 88992), (12, 800)]` (exp singletons
+  + test 12-repeats), all 512 codes used on all 4 RVQ layers.
+
+Treat any FAIL as stop-the-world.

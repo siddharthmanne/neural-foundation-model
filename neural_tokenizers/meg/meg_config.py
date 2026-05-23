@@ -172,3 +172,38 @@ MU_SPLIT_DEFAULTS = SplitDefaults(train_frac=0.90, val_frac=0.0, test_frac=0.10,
 LEARNABLE_SPLIT_DEFAULTS = SplitDefaults(
     train_frac=0.80, val_frac=0.10, test_frac=0.10, seed=0
 )
+
+
+# ---------- Phase 3: BrainOmni BrainTokenizer config ----------------------
+
+@dataclass(frozen=True)
+class BrainOmniConfig:
+    """BrainTokenizer adapter knobs — see meg/brainomni/."""
+
+    source_sfreq_hz: float = MEG_DATA.sfreq_hz
+    target_sfreq_hz: float = 256.0
+    window_length: int = 512
+    overlap_ratio: float = 0.0
+    codebook_size: int = 512
+    num_quantizers: int = 4
+    n_latent_sources: int = 16
+    ckpt_dir: str = "external/BrainOmni/ckpt_collection/braintokenizer"
+    brainomni_repo: str = "external/BrainOmni"
+
+    @property
+    def resampled_n_timepoints(self) -> int:
+        ratio = self.target_sfreq_hz / self.source_sfreq_hz
+        return int(round(MEG_DATA.n_timepoints * ratio))
+
+    @property
+    def pad_width(self) -> int:
+        return self.window_length - self.resampled_n_timepoints
+
+
+BRAINOMNI_DEFAULT = BrainOmniConfig()
+
+# Reconstruction eval compares decode output back at THINGS rate (200 Hz).
+BRAINOMNI_EVAL_DEFAULTS = EvalDefaults(
+    sample_rate_hz=MEG_DATA.sfreq_hz,
+    psd_nperseg=EVAL_DEFAULTS.psd_nperseg,
+)
