@@ -47,6 +47,21 @@ CATALOG_PATH_REMOTE = "/project/data/things_catalog.json"
 OUTPUT_DIR_REMOTE = "/project/data/things-meg/labels"
 OUTPUT_FILE = "meg_trigger_to_image_id.json"
 DEFAULT_LOCAL_OUT = "neural_tokenizers/meg/data/meg_trigger_to_image_id.json"
+DEFAULT_LOCAL_MEG_COVERAGE = "neural_tokenizers/meg/data/meg_coverage.json"
+
+
+def _build_meg_coverage_payload(trigger_to_image_id: dict[str, str]) -> dict:
+    image_ids = sorted(set(trigger_to_image_id.values()))
+    return {
+        "version": "1",
+        "modality": "meg",
+        "n_image_ids": len(image_ids),
+        "id_format": (
+            "9-digit zero-padded alphabetical rank of the THINGS image filename"
+        ),
+        "source": "things-meg/labels/meg_trigger_to_image_id.json",
+        "image_ids": image_ids,
+    }
 
 bridge_image = (
     modal.Image.debian_slim(python_version="3.11").pip_install("awscli", "pandas")
@@ -199,6 +214,16 @@ def build_bridge_remote() -> dict:
     with open(out_path, "w") as fh:
         json.dump(payload, fh, indent=2)
     print(f"[bridge] wrote {out_path} ({os.path.getsize(out_path) / 1024:.1f} KB)")
+
+    meg_coverage_path = f"{OUTPUT_DIR_REMOTE}/meg_coverage.json"
+    meg_coverage = _build_meg_coverage_payload(payload["trigger_to_image_id"])
+    with open(meg_coverage_path, "w") as fh:
+        json.dump(meg_coverage, fh, indent=2)
+    print(
+        f"[bridge] wrote {meg_coverage_path} "
+        f"({os.path.getsize(meg_coverage_path) / 1024:.1f} KB)"
+    )
+
     project_volume.commit()
 
     # Ship full payload back so the local entrypoint can git-track it.
@@ -211,8 +236,8 @@ def build_bridge_remote() -> dict:
 
 
 @app.local_entrypoint()
-def build(output: str = DEFAULT_LOCAL_OUT):
-    """Run the bridge build remotely, write a git-trackable local copy."""
+def build(output: str = DEFAULT_LOCAL_OUT, meg_coverage: str = DEFAULT_LOCAL_MEG_COVERAGE):
+    """Run the bridge build remotely, write git-trackable local copies."""
     import json
 
     summary = build_bridge_remote.remote()
@@ -225,3 +250,9 @@ def build(output: str = DEFAULT_LOCAL_OUT):
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path.write_text(json.dumps(payload, indent=2))
     print(f"[bridge] wrote local copy to {local_path}")
+
+    meg_cov = _build_meg_coverage_payload(payload["trigger_to_image_id"])
+    meg_path = Path(meg_coverage)
+    meg_path.parent.mkdir(parents=True, exist_ok=True)
+    meg_path.write_text(json.dumps(meg_cov, indent=2))
+    print(f"[bridge] wrote meg_coverage to {meg_path}")
