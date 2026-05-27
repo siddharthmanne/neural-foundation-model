@@ -1,0 +1,40 @@
+# Named validation tasks for THINGS. Run all of them, or select a subset with
+#   python 4m_training/validate_4m.py --config <main> --tasks 4m_training/configs/4m_things_val_tasks.yaml --select rgb2depth,anyany_neural
+# Each task is evaluated independently and reports its own loss (total + per-modality).
+#
+# A task = a masking scheme over val shards:
+#   in_domains  : modalities the encoder sees
+#   out_domains : modalities the decoder must predict (the loss is on these)
+#   modalities  : which on-disk folders to load (must cover in+out; masks for neural)
+# Neural mods (tok_meg/tok_eeg) may only appear in in_domains (input-only).
+
+val_root: /project/data/val/things
+shards: "shard_{000..026}.tar"
+main_augment_domain: tok_rgb
+
+# Fixed token budgets so eval numbers are comparable across runs.
+fixed_eval_input_tokens: 128
+fixed_eval_target_tokens: 128
+
+tasks:
+  # --- Task 1: any-to-any masked prediction (predict the masked ~50% of vision) ---
+  anyany_neural:        # ...with MEG + EEG as extra encoder context
+    modalities: [tok_rgb, tok_depth, tok_meg, tok_eeg, meg_mask, eeg_mask]
+    in_domains: tok_rgb-tok_depth-tok_meg-tok_eeg
+    out_domains: tok_rgb-tok_depth
+
+  anyany_noneural:      # ...vision only, no brain signals
+    modalities: [tok_rgb, tok_depth]
+    in_domains: tok_rgb-tok_depth
+    out_domains: tok_rgb-tok_depth
+
+  # --- Task 2: cross-modal vision prediction ---
+  rgb2depth:
+    modalities: [tok_rgb, tok_depth]
+    in_domains: tok_rgb
+    out_domains: tok_depth
+
+  depth2rgb:
+    modalities: [tok_rgb, tok_depth]
+    in_domains: tok_depth
+    out_domains: tok_rgb
