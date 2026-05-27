@@ -329,8 +329,12 @@ NOT under `neural_tokenizers/<modality>/modal/`.
 ```
 /project/data/
   things_catalog.json                # 26,107 image_id ↔ filename, split-invariant
+  things_split.json                  # canonical train/val membership (v2 policy)
+  things-meg/labels/meg_coverage.json
+  things-eeg/labels/eeg_coverage.json   # optional alt path
+  eeg_coverage.json                  # EEG1 ∩ EEG2 IDs (Volume root today)
   train/
-    things_manifest.json             # which image_ids in each train shard
+    things_manifest.json             # legacy 85/15 shard layout (until repack)
     things_meg_manifest.json         # per-shard MEG entry counts (see meg/CLAUDE.md §13)
     things/
       rgb/shard_NNN.tar              # 23 shards (~85% of images)
@@ -345,15 +349,32 @@ NOT under `neural_tokenizers/<modality>/modal/`.
       tok_eeg/
 ```
 
-### 9.2 Conventions every modality must respect
+### 9.2 Split JSON artifacts (v2, 2026-05)
+
+**Canonical membership:** [`things_split.json`](../modal/data/things_split.json) on the
+Volume (git mirror under `modal/data/`). Built by
+[`modal_build_things_split.py`](../modal/modal_build_things_split.py) — **does not**
+overwrite legacy `train/things_manifest.json` or shard tars.
+
+| File | Role |
+|------|------|
+| `things_split.json` | `train_image_ids`, `val_image_ids`, `intersection_image_ids` (~16,718); val = 20% sample of intersection pool |
+| `things-meg/labels/meg_coverage.json` | Unique catalog IDs with MEG trials (~22,448) |
+| `eeg_coverage.json` | EEG1 / EEG2 separate counts; val pool uses EEG1 ∩ EEG2 |
+
+Legacy manifests under `train/` and `val/` still reflect the original 85/15 repack.
+Use `things_split.json` when reshuffling — derive shard maps from the ID lists
+when repacking.
+
+### 9.3 Conventions every modality must respect
 
 - **`image_id`** = 9-digit zero-padded *alphabetical rank* of the THINGS image
   filename. `things_catalog.json` is the only source of truth — the same
   image_id refers to the same image forever, regardless of split.
-- **Split** = image-level random, seed=0, 85/15 train/val. Stored in
-  `train/things_manifest.json` + `val/things_manifest.json`. **Do not produce
-  a different split** — modalities pair on identical image_id sets so 4M
-  can ingest them jointly.
+- **Split (v2)** = image-level, seed=0, val_frac=0.20 of
+  `catalog ∩ meg_coverage ∩ eeg_coverage`. Full ID lists in
+  `things_split.json`. Legacy 85/15 manifests remain until an explicit repack
+  consumes `things_split.json`.
 - **Per-modality shard subfolder**: `things/<modality>/shard_NNN.tar`,
   using the **4M `tok_<modality>/` prefix** for tokenized modalities
   (`tok_meg`, `tok_eeg`, …) and the bare modality name for raw image data
@@ -365,22 +386,23 @@ NOT under `neural_tokenizers/<modality>/modal/`.
   - 4M loaders pair across modalities by stripping everything after the
     first `_` to recover image_id.
 
-### 9.3 Source files (top-level `modal/`)
+### 9.4 Source files (top-level `modal/`)
 
 | File | Purpose |
 |---|---|
 | [`../modal/things_manifest.py`](../modal/things_manifest.py) | Pure-logic THINGS catalog + split + RGB shard repack |
+| [`../modal/modal_build_things_split.py`](../modal/modal_build_things_split.py) | Build `things_split.json` + `meg_coverage.json` (JSON only, non-destructive) |
 | [`../modal/modal_things_repack.py`](../modal/modal_things_repack.py) | Modal entrypoints: `plan` / `repack` / `verify` for the RGB train/val split |
 | [`../modal/meg_token_shard.py`](../modal/meg_token_shard.py) | Pure-logic MEG shard packer (filename convention, planning, tar I/O) |
 | [`../modal/modal_meg_pack_shards.py`](../modal/modal_meg_pack_shards.py) | Modal entrypoints: `plan` / `pack` / `verify` for MEG token shards |
 | [`../modal/modal_meg_pipeline_audit.py`](../modal/modal_meg_pipeline_audit.py) | End-to-end 28-check audit (structural / consistency / integrity / protocol) |
 
-### 9.4 Adding a new modality (EEG, fMRI, intracortical, …)
+### 9.5 Adding a new modality (EEG, fMRI, intracortical, …)
 
 Mirror this layout. Write your tokens into `things/tok_<modality>/shard_NNN.tar`
 for each split, using the **same shard indexing as the catalog manifests** —
-read `train/things_manifest.json` and `val/things_manifest.json` to know
-which image_ids belong in each shard. Don't invent your own split.
+read `things_split.json` (or legacy `train/things_manifest.json` until repack)
+to know which image_ids belong in each shard. Don't invent your own split.
 
 ## 10. Notes on automation / `.claude` layering
 
