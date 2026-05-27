@@ -1,0 +1,47 @@
+# Main 4M training config for THINGS vision + MEG/EEG.
+# Dataset paths, masking, and mixtures live in 4m_things_data.yaml.
+
+run_name: 4m_things_neural
+
+# Registered FourM presets (encoder_depth, decoder_depth, dim, heads):
+#   fm_tiny_6e_6d_swiglu_nobias      —  6e /  6d, 384-dim,  6 heads  (~tiny)
+#   fm_small_8e_8d_swiglu_nobias     —  8e /  8d, 512-dim,  8 heads  (~small)
+#   fm_base_12e_12d_swiglu_nobias    — 12e / 12d, 768-dim, 12 heads  (~base, default)
+#   fm_large_24e_24d_swiglu_nobias   — 24e / 24d, 1024-dim, 16 heads (~large)
+#   fm_xlarge_24e_24d_swiglu_nobias  — 24e / 24d, 2048-dim, 16 heads (~xl)
+# GELU and *_qknorm_nobias variants also exist in external/ml-4m/fourm/models/fm.py.
+# Custom depth/heads require registering a new model there — not arbitrary YAML fields.
+model: fm_base_12e_12d_swiglu_nobias
+
+input_size: 224
+patch_size: 16
+batch_size: 8
+epochs: 100
+num_input_tokens: 256
+num_target_tokens: 256
+loss_type: mod  # mod = mean per-modality loss; token = mean per-token loss
+dtype: bfloat16
+
+data_config: 4m_training/configs/4m_things_data.yaml
+text_tokenizer_path: external/ml-4m/fourm/utils/tokenizer/trained/text_tokenizer_4m_wordpiece_30k.json
+
+epoch_size: 10000
+eval_freq: 1
+save_ckpt_freq: 10
+output_dir: /project/runs/4m_things_neural
+
+# Checkpoints (uncomment one; paths are under output_dir after training):
+# resume: /project/runs/4m_things_neural/checkpoint-last.pth
+#   Continue the same run (optimizer, epoch counter, LR schedule). Set auto_resume: false
+#   if you want resume ignored when the file is missing.
+# finetune: /project/runs/4m_things_neural/checkpoint-best.pth
+#   Load weights only (new stage / new data mix). Optimizer state is not restored.
+# auto_resume: true  # if true and resume empty, trainer picks latest checkpoint in output_dir
+# start_epoch: 0      # only used when not resuming
+
+opt: adamw
+blr: 0.0001
+weight_decay: 0.05
+clip_grad: 3.0
+
+log_wandb: false
