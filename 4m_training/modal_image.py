@@ -19,7 +19,7 @@ from pathlib import Path
 import modal
 
 REPO = "/opt/repo"
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = "/home/users/liubr/projects/neural-image-foundation/neural-foundation-model/" #Path(__file__).resolve().parent.parent
 
 # Python 3.10, not 3.11+: stock 4M's decoder forward calls
 # random.sample(mod_dict.items(), ...) (fourm/models/fm.py), and random.sample
@@ -51,7 +51,7 @@ def ensure_fourm() -> None:
     if os.path.isfile(_FOURM_READY):
         return
     subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "-e", f"{REPO}/external/ml-4m"],
+        [sys.executable, "-m", "pip", "install", "-q", "-e", f"{REPO}/ml-4m"],
         check=True,
     )
     Path(_FOURM_READY).write_text("ok\n")
@@ -61,7 +61,7 @@ def training_env() -> dict[str, str]:
     """Env for single-GPU runs (4M trainer always wraps DDP; needs torchrun-style vars)."""
     return {
         **os.environ,
-        "PYTHONPATH": f"{REPO}/4m_training:{REPO}/external/ml-4m",
+        "PYTHONPATH": f"{REPO}/4m_training:{REPO}/ml-4m",
         "RANK": "0",
         "WORLD_SIZE": "1",
         "LOCAL_RANK": "0",

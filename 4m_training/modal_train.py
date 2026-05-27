@@ -48,19 +48,24 @@ PROJECT = "/project"
 
 def _run_train(config: str, dryrun: bool, n_batches: int) -> None:
     ensure_fourm()
-    cfg = config
-    if not os.path.isabs(cfg):
-        cfg = os.path.join(REPO, cfg)
+    # cfg = config
+    # if not os.path.isabs(cfg):
+    #     cfg = os.path.join(REPO, cfg)
 
+    # cmd = [
+    #     sys.executable,
+    #     os.path.join(REPO, "4m_training/train_4m.py"),
+    #     "dryrun" if dryrun else "train",
+    #     "--config",
+    #     cfg,
+    # ]
     cmd = [
         sys.executable,
-        os.path.join(REPO, "4m_training/train_4m.py"),
-        "dryrun" if dryrun else "train",
-        "--config",
-        cfg,
+        os.path.join(REPO, "ml-4m/run_scaling_experiment_2.py"),
+        "--mode", "sweep",
     ]
     if dryrun:
-        cmd.extend(["--n-batches", str(n_batches)])
+        cmd.append("--test_run")
 
     env = training_env()
     print("running:", " ".join(cmd), flush=True)
