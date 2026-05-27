@@ -27,6 +27,21 @@ EEG_TRIAL_SHAPE: tuple[int] = (17,)
 EEG_TOKENS_PER_TRIAL: int = EEG_TRIAL_SHAPE[0]
 EEG_CODE_MAX: int = EEG_VOCAB_SIZE - 1
 
+# --- Neural OUTPUT (target) modalities ---
+# MEG/EEG can be predicted as a reconstruction regularizer (see notes §6). They use a
+# custom modality ``type`` so 4M routes them through the PARALLEL decoder branch
+# (fm.py cat_decoder_tensors) rather than the autoregressive seq_token path, and so the
+# trainer's square ``max_tokens`` rule for ``img`` (run_training_4m.setup_modality_info)
+# leaves their non-square grids (128, 17) untouched.
+NEURAL_GRID_TYPE: str = "neural_grid"
+# One target head per RVQ layer (layer-specific 512-vocab codebooks): 4 modalities, each a
+# 128-cell (16x8) grid of single codes. All read the on-disk ``tok_meg`` folder.
+MEG_RVQ_OUT_MODALITIES: tuple[str, ...] = tuple(f"tok_meg_rvq{q}" for q in range(MEG_N_RVQ))
+MEG_OUT_SOURCE_PATH: str = "tok_meg"
+# EEG is a single codebook -> one head over its 17-token sequence; reads ``tok_eeg`` folder.
+EEG_OUT_MODALITY: str = "tok_eeg_out"
+EEG_OUT_SOURCE_PATH: str = "tok_eeg"
+
 # --- THINGS vision pretokens (stock ``tok_rgb@224`` / ``tok_depth@224``) ---
 THINGS_IMAGE_SIZE: int = 224
 THINGS_PATCH_SIZE: int = 16

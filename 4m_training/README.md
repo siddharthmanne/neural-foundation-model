@@ -22,10 +22,10 @@ pytest 4m_training/ -v
 | File | Why it exists |
 |------|----------------|
 | **`train_4m.py`** | Entry point: demo / dryrun / delegates to `run_training_4m.py` |
-| **`fourm_neural_modalities.py`** | Registers `tok_meg`, `tok_eeg`, masks into stock `MODALITY_INFO` |
-| **`fourm_neural_transforms.py`** | Stock `AbstractTransform` adapters (trial pick in `preprocess`) |
-| **`fourm_neural_embeddings.py`** | `MegEncoderEmbedding`: sum 4 RVQ codebooks per cell + axial (source/time) positions |
-| **`neural_trial_transform.py`** | Pick one trial: MEG `(16,8,4)→(128,4)`, EEG `(17,)`; sentinel handling |
+| **`fourm_neural_modalities.py`** | Registers inputs (`tok_meg`, `tok_eeg`, masks) + output heads (`tok_meg_rvq0..3`, `tok_eeg_out`) into stock `MODALITY_INFO` |
+| **`fourm_neural_transforms.py`** | Stock `AbstractTransform` adapters (trial pick in `preprocess`); `NeuralTargetTransform` for output heads |
+| **`fourm_neural_embeddings.py`** | `MegEncoderEmbedding` (sum 4 RVQ codebooks + axial pos); `MegRVQDecoderEmbedding` / `EegDecoderEmbedding` parallel output heads |
+| **`neural_trial_transform.py`** | Pick one trial: MEG `(16,8,4)→(128,4)`, EEG `(17,)`; `NeuralTargetSplitter` (coherent per-head output split); sentinel handling |
 | **`neural_masking.py`** | Subclass of stock `UnifiedMasking`; zero budget when mask=0 |
 | **`things_augmenter.py`** | THINGS vision shims: `ThingsImageAugmenter` (no `crop_settings` tars) + `ThingsTokTransform` (flat `(196,)` tokens, no on-disk augmentation axis) |
 | **`fourm_dataloader.py`** | Patches above into stock 4M + small WDS val loader (stock val is folder-only) |
@@ -47,7 +47,7 @@ Production layout (what downstream users should copy):
 
 All training data lives on the shared Modal **`project`** volume; you do not need separate repo directories per dataset. Point `data_path` at `/project/data/train/things/...` or `/project/data/train/cc12m/...`.
 
-Edit **`4m_things_data.yaml`** for `in_domains` / `out_domains` / alphas. Keep `meg_mask` / `eeg_mask` out of domain lists (presence flags only), and keep `tok_meg` / `tok_eeg` out of `out_domains` — they are **input-only** (encoder-only); see [`notes/4m_neural_modality_design.md`](../notes/4m_neural_modality_design.md). To try a new task without touching the main config, swap only the data file:
+Edit **`4m_things_data.yaml`** for `in_domains` / `out_domains` / alphas. Keep `meg_mask` / `eeg_mask` out of domain lists (presence flags only). `tok_meg` / `tok_eeg` are **input-only** (encoder-only) — keep them out of `out_domains`; to *predict* neural use the output heads `tok_meg_rvq0..3` / `tok_eeg_out` in `out_domains` instead (see [`notes/4m_neural_modality_design.md`](../notes/4m_neural_modality_design.md) §6). To try a new task without touching the main config, swap only the data file:
 
 ```bash
 python 4m_training/train_4m.py train --config 4m_training/configs/4m_things_main.yaml -- \
@@ -110,12 +110,20 @@ Defined in `neural_constants.py` (import constants instead of hardcoding literal
 |----------|---------|------------------|------|----------------|
 | `tok_meg` | `(n_trials, 16, 8, 4)` | `(128, 4)` = `(16·8 cells, 4 RVQ)` | input-only | `MEG_VOCAB_SIZE` (per layer) |
 | `tok_eeg` | `(n_trials, 17)` | `(17,)` | input-only | `EEG_VOCAB_SIZE` |
+| `tok_meg_rvq0..3` | reads `tok_meg` folder | `(128,)` each (one RVQ layer) | **output** (4 heads) | `MEG_VOCAB_SIZE` |
+| `tok_eeg_out` | reads `tok_eeg` folder | `(17,)` | **output** (1 head) | `EEG_VOCAB_SIZE` |
 | `tok_rgb` | `(196,)` int16 | `(196,)` | input + target | `TOK_RGB_VOCAB_SIZE` |
 | `tok_depth` | `(196,)` int16 | `(196,)` | input + target | `TOK_DEPTH_VOCAB_SIZE` |
 
-MEG keeps its `16×8` spatiotemporal grid; the 4 RVQ layers are summed inside
-`MegEncoderEmbedding` (not flattened). MEG/EEG are **input-only** — encoded but never
-predicted. Why each axis is treated this way: [`notes/4m_neural_modality_design.md`](../notes/4m_neural_modality_design.md).
+As **inputs**, MEG keeps its `16×8` spatiotemporal grid (4 RVQ layers summed inside
+`MegEncoderEmbedding`); `tok_meg` / `tok_eeg` are encoded but never predicted. As
+**outputs** (a reconstruction regularizer, e.g. `configs/4m_smoke_things_neural_out_data.yaml`),
+MEG is predicted by 4 parallel heads — one per RVQ layer (`tok_meg_rvq0..3`,
+`type: neural_grid`) — and EEG by one head (`tok_eeg_out`). The output heads read the same
+on-disk folders (no repack); the loader picks one trial per sample and splits it so the 4
+MEG heads stay coherent, and they are kept **out of the validation tasks** by design. Why
+each axis/role is treated this way + the trial↔loss coherence guarantee:
+[`notes/4m_neural_modality_design.md`](../notes/4m_neural_modality_design.md) §6.
 
 Missing neural: sentinel `(1, …)` filled with `-1`, mask `0`; presence masking zeroes
 its input budget so the placeholder never reaches the encoder.

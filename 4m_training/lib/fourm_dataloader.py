@@ -42,6 +42,10 @@ from things_augmenter import ThingsImageAugmenter
 
 _PRESENCE_PATHS = {"meg_mask": "meg_mask", "eeg_mask": "eeg_mask"}
 
+# Picks ONE trial per sample and splits it into the neural output heads (coherent across
+# the 4 MEG RVQ layers). None until a loader is built; set for train vs eval trial sampling.
+_NEURAL_SPLITTER = None
+
 _ORIG_UNIFIED_MASKING = ud.UnifiedMasking
 _ORIG_PRETOKENIZED_AUG = ia.PreTokenizedImageAugmenter
 _ORIG_GET_VAL = pretrain_utils.get_val_dataloader
@@ -68,12 +72,29 @@ class _SeqSafeRandom:
         return getattr(self._real, name)
 
 
+def _set_neural_target_splitter(training: bool) -> None:
+    """Install the per-sample neural-output trial splitter (train vs eval sampling)."""
+    global _NEURAL_SPLITTER
+    from neural_trial_transform import NeuralTargetSplitter
+
+    _NEURAL_SPLITTER = NeuralTargetSplitter(training=training)
+
+
 def _rename_modalities(sample, modality_paths):
-    """Stock rename assumes every path exists; THINGS omits optional ``crop_settings`` tars."""
+    """Stock rename assumes every path exists; THINGS omits optional ``crop_settings`` tars.
+
+    Also the single point where neural OUTPUT heads are materialized: rename fans the
+    ``tok_meg`` / ``tok_eeg`` folder out to the output modalities (aliasing one array),
+    then the splitter picks one trial and slices the per-head targets — so the 4 MEG RVQ
+    heads stay coherent. No-op when no neural output modality is requested.
+    """
     present = {out: src for out, src in modality_paths.items() if src in sample}
     if not present:
         return sample
-    return _ORIG_RENAME_MODALITIES(sample, present)
+    renamed = _ORIG_RENAME_MODALITIES(sample, present)
+    if _NEURAL_SPLITTER is not None:
+        _NEURAL_SPLITTER(renamed)
+    return renamed
 
 
 def _extend_modality_paths(modality_info: dict) -> dict[str, str]:
@@ -103,6 +124,7 @@ def _wds_eval_loader(
     Pipeline differs only in shard source (``SimpleShardList``, no shuffle/repeat).
     """
     fourm_neural_modalities.register(training=False)
+    _set_neural_target_splitter(training=False)  # eval: deterministic trial 0
 
     modality_paths = _extend_modality_paths(modality_info)
     modality_transforms = copy.deepcopy(modality_transforms)
@@ -283,6 +305,7 @@ def patch_pretrain_utils() -> None:
         _fm.random = _SeqSafeRandom(_fm.random)
 
     fourm_neural_modalities.register(training=True)
+    _set_neural_target_splitter(training=True)  # train: random trial per sample
 
     pretrain_utils.get_val_dataloader = _neural_get_val_dataloader
     import fourm.data as fd
@@ -293,7 +316,8 @@ def patch_pretrain_utils() -> None:
 
 def unpatch_pretrain_utils() -> None:
     """Restore stock 4M (for tests)."""
-    global _PATCHED
+    global _PATCHED, _NEURAL_SPLITTER
+    _NEURAL_SPLITTER = None
     ud.UnifiedMasking = _ORIG_UNIFIED_MASKING
     ia.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG
     pretrain_utils.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG

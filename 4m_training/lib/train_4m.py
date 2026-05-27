@@ -25,8 +25,13 @@ from typing import Any
 import numpy as np
 
 _HERE = Path(__file__).resolve().parent
-_REPO_ROOT = _HERE.parent
 sys.path.insert(0, str(_HERE))
+
+# Paths come from repo_paths (the single source of truth) — never recompute the repo root
+# from __file__, or moving this module (e.g. into lib/) silently breaks every relative path.
+import repo_paths  # noqa: E402
+
+_REPO_ROOT = repo_paths.REPO_ROOT
 
 import fourm_neural_modalities  # noqa: F401,E402
 from fourm_dataloader import patch_pretrain_utils
@@ -184,10 +189,7 @@ def _load_configs(config_path: Path) -> tuple[dict[str, Any], dict[str, Any], di
             "num_target_tokens": 256,
             "batch_size": 4,
             "epoch_size": 64,
-            "text_tokenizer_path": str(
-                _REPO_ROOT
-                / "external/ml-4m/fourm/utils/tokenizer/trained/text_tokenizer_4m_wordpiece_30k.json"
-            ),
+            "text_tokenizer_path": str(repo_paths.TEXT_TOKENIZER),
         }
         train_ds = next(iter(cfg["train"]["datasets"].values()))
         val_ds = {}
@@ -282,10 +284,7 @@ def run_dryrun(config_path: Path, n_batches: int = 4) -> None:
     modality_info_full = _build_modality_info(all_domains, input_size)
     mod_info, sampling_weights = setup_sampling_mod_info(train_ds, modality_info_full)
 
-    tok_path = main_cfg.get(
-        "text_tokenizer_path",
-        str(_REPO_ROOT / "external/ml-4m/fourm/utils/tokenizer/trained/text_tokenizer_4m_wordpiece_30k.json"),
-    )
+    tok_path = main_cfg.get("text_tokenizer_path", str(repo_paths.TEXT_TOKENIZER))
     text_tokenizer = Tokenizer.from_file(tok_path)
 
     train_loader = get_train_dataloader(
@@ -356,7 +355,7 @@ def run_train(config_path: Path, extra_argv: list[str]) -> None:
     os.environ.setdefault("MASTER_ADDR", "127.0.0.1")
     os.environ.setdefault("MASTER_PORT", "29500")
 
-    ml_4m_root = _REPO_ROOT / "external" / "ml-4m"
+    ml_4m_root = repo_paths.ML4M_DIR
     if not (ml_4m_root / "run_training_4m.py").exists():
         raise FileNotFoundError(
             f"4M trainer not found at {ml_4m_root}. "
@@ -366,6 +365,17 @@ def run_train(config_path: Path, extra_argv: list[str]) -> None:
     config_path = config_path.resolve()
     if not config_path.is_absolute():
         config_path = (_REPO_ROOT / config_path).resolve()
+
+    # Stock run_training_4m.py defaults --text_tokenizer_path to a cwd-relative path that
+    # does not exist outside the 4M checkout (e.g. on Modal). Realize the configs'
+    # "auto-derived from FOURM_ML4M_DIR" promise: inject the resolved tokenizer unless the
+    # config or caller already provides one. (CLI args override the config's defaults.)
+    import yaml
+
+    with open(config_path) as f:
+        _main_cfg = yaml.safe_load(f) or {}
+    if "--text_tokenizer_path" not in extra_argv and not _main_cfg.get("text_tokenizer_path"):
+        extra_argv = [*extra_argv, "--text_tokenizer_path", str(repo_paths.TEXT_TOKENIZER)]
 
     sys.argv = ["run_training_4m.py", "-c", str(config_path), *extra_argv]
     print(f"handing off to 4M trainer: argv = {sys.argv}\n")

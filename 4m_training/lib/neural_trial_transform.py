@@ -16,9 +16,11 @@ from __future__ import annotations
 import numpy as np
 
 from neural_constants import (
+    EEG_OUT_MODALITY,
     EEG_TRIAL_SHAPE,
     EEG_TOKENS_PER_TRIAL,
     MEG_GRID_SHAPE,
+    MEG_RVQ_OUT_MODALITIES,
     MEG_TRIAL_SHAPE,
     MEG_TOKENS_PER_TRIAL,
     NEURAL_PLACEHOLDER_CODE,
@@ -109,3 +111,35 @@ class EegTrialSampleTransform(NeuralTrialSampleTransform):
 
     def __init__(self, training: bool = True, seed: int | None = None):
         super().__init__(trial_shape=EEG_TRIAL_SHAPE, training=training, seed=seed)
+
+
+class NeuralTargetSplitter:
+    """Materialize neural OUTPUT heads from one shared trial, in-place on a sample dict.
+
+    The dataloader's ``rename_modalities`` step fans the on-disk ``tok_meg`` / ``tok_eeg``
+    folder out to every output modality that reads it, so all four ``tok_meg_rvq*`` keys
+    initially **alias the same** ``(n_trials, 16, 8, 4)`` array. This splitter picks **one**
+    trial for that array and slices it into the four per-RVQ-layer ``(128,)`` targets — so
+    the four MEG heads always describe the *same* MEG token. EEG (single codebook) is a
+    single ``(17,)`` head. Absent (sentinel) data becomes the placeholder code; presence
+    masking then zeroes its loss. See ``notes/4m_neural_modality_design.md`` §6.
+
+    One pick per source per call ⇒ coherent across heads; the picked trial is exactly what
+    the loss scores, because that single array is both embedded and used as the target ids.
+    """
+
+    def __init__(self, training: bool = True, seed: int | None = None):
+        self._meg = MegTrialSampleTransform(training=training, seed=seed)
+        self._eeg = EegTrialSampleTransform(training=training, seed=seed)
+
+    def __call__(self, sample: dict) -> dict:
+        meg_mods = [m for m in MEG_RVQ_OUT_MODALITIES if m in sample]
+        if meg_mods:
+            grid, _valid = self._meg(sample[meg_mods[0]])  # (128, n_rvq); one shared pick
+            for q, mod in enumerate(MEG_RVQ_OUT_MODALITIES):
+                if mod in sample:
+                    sample[mod] = np.ascontiguousarray(grid[:, q])
+        if EEG_OUT_MODALITY in sample:
+            tokens, _valid = self._eeg(sample[EEG_OUT_MODALITY])  # (17,)
+            sample[EEG_OUT_MODALITY] = tokens
+        return sample
