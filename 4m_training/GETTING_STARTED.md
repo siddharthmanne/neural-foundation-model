@@ -50,7 +50,9 @@ data_path: /project/data/train/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mas
 ```
 - The `[...]` lists the modality folders to zip together; `{000..026}` is a brace range.
 - `in_domains` = what the encoder sees; `out_domains` = what gets predicted (the loss).
-- **`tok_meg` / `tok_eeg` may only be inputs** (`in_domains`), never `out_domains`.
+- **Neural is symmetric**: list `tok_meg_rvq0..3` and `tok_eeg` in `in_domains` AND `out_domains`
+  to use brain signals as both context and reconstruction targets (leak-free). `tok_meg` alone
+  is a folder, not a modality — the 4 `tok_meg_rvq*` modalities read it.
 - `meg_mask` / `eeg_mask` stay out of both lists (they are presence flags, used automatically).
 
 ## Step 3 — Sanity-check before paying for a GPU
@@ -70,6 +72,13 @@ modal run 4m_training/modal/modal_smoke_train.py --case prod_things           # 
 modal run 4m_training/modal/modal_train.py --config 4m_training/configs/4m_things_main.yaml   # full training (A100)
 ```
 Checkpoints and logs land in `output_dir` (on the volume).
+
+**Validation during training:** with `in_loop_val_tasks` set in the main YAML (it is, by
+default), the named-task suite is scored on the *live* weights every `eval_freq` epochs and
+the per-task loss is written to `log.txt` / wandb — no separate run needed. Tune with
+`eval_freq` (cadence), `in_loop_val_select` (subset), `in_loop_val_n_batches` (cost cap).
+Remove `in_loop_val_tasks` to fall back to stock single-task eval only. The same suite can
+still be run standalone against a saved checkpoint — see Step 6.
 
 ## Step 5 — Checkpoint and resume
 

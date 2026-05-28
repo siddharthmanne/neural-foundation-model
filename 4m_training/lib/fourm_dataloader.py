@@ -36,11 +36,24 @@ from fourm.data.unified_datasets import (
 import torchvision.transforms as transforms
 from fourm.data.modality_transforms import UnifiedDataTransform
 
+from fourm.utils import logger as _fourm_logger
+
 import fourm_neural_modalities
 from neural_masking import PresenceAwareUnifiedMasking
 from things_augmenter import ThingsImageAugmenter
 
 _PRESENCE_PATHS = {"meg_mask": "meg_mask", "eeg_mask": "eeg_mask"}
+
+# Stock 4M hardcodes ``print_freq = 10`` in its train/eval loops (no CLI/YAML knob), which is
+# noisy for long epochs. We override it process-wide via the ``MetricLogger.log_every`` patch
+# below; train_4m sets this from the main YAML's ``print_freq`` field. None = leave stock (10).
+_LOG_PRINT_FREQ: int | None = None
+
+
+def set_log_print_freq(n: int | None) -> None:
+    """Set the progress-print interval (steps) for the stock trainer's MetricLogger."""
+    global _LOG_PRINT_FREQ
+    _LOG_PRINT_FREQ = int(n) if n else None
 
 # Picks ONE trial per sample and splits it into the neural output heads (coherent across
 # the 4 MEG RVQ layers). None until a loader is built; set for train vs eval trial sampling.
@@ -50,7 +63,15 @@ _ORIG_UNIFIED_MASKING = ud.UnifiedMasking
 _ORIG_PRETOKENIZED_AUG = ia.PreTokenizedImageAugmenter
 _ORIG_GET_VAL = pretrain_utils.get_val_dataloader
 _ORIG_RENAME_MODALITIES = ud.rename_modalities
+_ORIG_LOG_EVERY = _fourm_logger.MetricLogger.log_every
 _PATCHED = False
+
+
+def _log_every(self, iterable, print_freq, *args, **kwargs):
+    """``MetricLogger.log_every`` with a configurable print interval (see ``set_log_print_freq``)."""
+    if _LOG_PRINT_FREQ is not None:
+        print_freq = max(1, _LOG_PRINT_FREQ)
+    return _ORIG_LOG_EVERY(self, iterable, print_freq, *args, **kwargs)
 
 
 class _SeqSafeRandom:
@@ -297,6 +318,7 @@ def patch_pretrain_utils() -> None:
     ia.PreTokenizedImageAugmenter = ThingsImageAugmenter
     pretrain_utils.PreTokenizedImageAugmenter = ThingsImageAugmenter
     ud.rename_modalities = _rename_modalities
+    _fourm_logger.MetricLogger.log_every = _log_every  # configurable progress-print interval
 
     # Make the decoder forward's random.sample(dict.items()) work on Python 3.11+.
     from fourm.models import fm as _fm
@@ -322,6 +344,7 @@ def unpatch_pretrain_utils() -> None:
     ia.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG
     pretrain_utils.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG
     ud.rename_modalities = _ORIG_RENAME_MODALITIES
+    _fourm_logger.MetricLogger.log_every = _ORIG_LOG_EVERY
     pretrain_utils.get_val_dataloader = _ORIG_GET_VAL
     import fourm.data as fd
 

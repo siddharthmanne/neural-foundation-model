@@ -76,6 +76,27 @@ def things_shard_root(tmp_path: Path) -> Path:
     return root
 
 
+def test_log_print_freq_override(capsys) -> None:
+    """set_log_print_freq overrides the stock trainer's hardcoded log_every interval."""
+    from fourm.utils.logger import MetricLogger
+    import fourm_dataloader as fdl
+
+    fdl.patch_pretrain_utils()
+    try:
+        fdl.set_log_print_freq(2)  # print often
+        list(MetricLogger().log_every(range(20), print_freq=999, iter_len=20, header="HDR"))
+        often = capsys.readouterr().out.count("HDR")
+
+        fdl.set_log_print_freq(10)  # print rarely
+        list(MetricLogger().log_every(range(20), print_freq=999, iter_len=20, header="HDR"))
+        rarely = capsys.readouterr().out.count("HDR")
+    finally:
+        fdl.set_log_print_freq(None)
+        unpatch_pretrain_utils()
+    # The passed print_freq=999 is ignored in favor of our override, so freq=2 logs more.
+    assert often > rarely, f"override not applied: freq2={often} freq10={rarely}"
+
+
 def test_rename_modalities_skips_missing_crop_settings() -> None:
     sample = {"tok_rgb": 1, "tok_depth": 2}
     paths = {
@@ -98,12 +119,13 @@ def test_train_dataloader_one_batch(things_shard_root: Path) -> None:
             "data_path": (
                 f"{root}/[tok_rgb,tok_depth,tok_meg,meg_mask]/shard_{{000..000}}.tar"
             ),
-            "in_domains": "tok_rgb-tok_depth-tok_meg",
-            "out_domains": "tok_rgb-tok_depth-tok_meg",
+            # tok_meg folder fans out to the 4 symmetric RVQ modalities (both in + out).
+            "in_domains": "tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3",
+            "out_domains": "tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3",
             "main_augment_domain": "tok_rgb",
             "tok_train_aug": False,
-            "input_alphas": "1.0-1.0-1.0",
-            "target_alphas": "1.0-1.0-1.0",
+            "input_alphas": "1.0",
+            "target_alphas": "1.0",
             "aligned_captions": False,
             "wds_n_repeats": 1,
             "wds_shuffle_buffer_tar": 10,

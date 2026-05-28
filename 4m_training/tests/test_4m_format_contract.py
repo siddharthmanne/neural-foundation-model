@@ -42,8 +42,6 @@ from fourm.data.unified_datasets import (
     wds_decoder,
 )
 from neural_constants import (
-    EEG_TRIAL_SHAPE,
-    MEG_TRIAL_SHAPE,
     THINGS_IMAGE_SIZE,
     TOK_DEPTH_VOCAB_SIZE,
     TOK_RGB_TOKENS_PER_IMAGE,
@@ -71,22 +69,23 @@ def _make_tar(path: Path, entries: list[tuple[str, bytes]]) -> None:
 
 
 def _write_things_shard(root: Path, key: str = "000000001") -> None:
-    """Mirror the on-disk THINGS format verified on the Modal volume."""
+    """Mirror the on-disk THINGS vision format verified on the Modal volume.
+
+    Vision-only: this contract is about ``tok_rgb`` / ``tok_depth`` surviving as a full
+    (196,) grid. Neural folders need the rename seam + splitter to become per-modality
+    tensors, which this storage-format pipeline deliberately stops before.
+    """
     rng = np.random.default_rng(0)
     mods = {
         "tok_rgb": rng.integers(0, TOK_RGB_VOCAB_SIZE, (TOK_RGB_TOKENS_PER_IMAGE,), dtype=np.int16),
         "tok_depth": rng.integers(0, TOK_DEPTH_VOCAB_SIZE, (TOK_RGB_TOKENS_PER_IMAGE,), dtype=np.int16),
-        "tok_meg": rng.integers(0, 512, (3, *MEG_TRIAL_SHAPE), dtype=np.int16),
-        "tok_eeg": rng.integers(0, 8192, (2, *EEG_TRIAL_SHAPE), dtype=np.int16),
-        "meg_mask": np.array([1], dtype=np.uint8),
-        "eeg_mask": np.array([1], dtype=np.uint8),
     }
     for mod, arr in mods.items():
         _make_tar(root / mod / "shard_000.tar", [(key, _npy_bytes(arr))])
 
 
 def _decode_one(root: Path) -> dict:
-    url = f"{root}/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{{000..000}}.tar"
+    url = f"{root}/[tok_rgb,tok_depth]/shard_{{000..000}}.tar"
     pipe = wds.DataPipeline(
         wds.SimpleShardList(url),
         partial(multi_tarfile_samples),

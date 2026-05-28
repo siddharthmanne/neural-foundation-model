@@ -1,15 +1,25 @@
-"""Modal GPU wrapper for ``train_4m.py``.
+"""Modal GPU wrapper for ``train_4m.py`` — the entry point for real training runs.
 
 This is a thin launcher: it starts a Modal container and runs train_4m.py inside it.
 Shared setup (deps, repo mount, pip install 4M) lives in modal_image.py.
 
-Run from repo root::
+Run from repo root (this is THE training command)::
 
-    modal run 4m_training/modal_train.py --config 4m_training/configs/4m_things_main.yaml
+    modal run 4m_training/modal/modal_train.py --config 4m_training/configs/4m_things_main.yaml
+
+The shipped ``4m_things_main.yaml`` / ``4m_things_data.yaml`` train vision PLUS the neural
+modalities (``tok_meg_rvq0..3`` + ``tok_eeg``) symmetrically — brain signals are both encoder
+context and reconstruction targets, as a regularizer. ``find_unused_params: true`` is already
+in the main YAML (required because a head can get 0 targets on a step), so no extra flag is
+needed. See notes/4m_neural_modality_design.md.
 
 Dryrun on the volume (no GPU, no training — fast config/data check)::
 
-    modal run 4m_training/modal_train.py --dryrun --config 4m_training/configs/4m_things_data.yaml
+    modal run 4m_training/modal/modal_train.py --dryrun --config 4m_training/configs/4m_things_data.yaml
+
+Before paying for a GPU, prove the neural heads learn (every head's loss must descend)::
+
+    modal run 4m_training/modal/modal_smoke_train.py --case neural_heads_descend
 
 Image rebuilds only when ``modal_image.py`` pip/apt deps change, not when you edit YAML or Python.
 """
@@ -83,7 +93,7 @@ def _run_train(config: str, dryrun: bool, n_batches: int) -> None:
 @app.function(
     image=train_image,
     volumes={PROJECT: project_volume},  # mount volume at /project
-    gpu="A100",
+    gpu="L40S",
     timeout=60 * 60 * 24,
     memory=64 * 1024,
 )
@@ -149,10 +159,11 @@ def main(
 ) -> None:
     """Called by `modal run` on your laptop — dispatches to a remote Modal function.
 
-    Examples::
-        modal run 4m_training/modal_train.py --dryrun --config .../4m_things_data.yaml
-        modal run 4m_training/modal_train.py --validate --select rgb2depth,anyany_neural
-        modal run 4m_training/modal_train.py --validate --checkpoint /project/runs/.../checkpoint-last.pth
+    Default (no flags) = full GPU training on the main config. Examples::
+        modal run 4m_training/modal/modal_train.py --config 4m_training/configs/4m_things_main.yaml
+        modal run 4m_training/modal/modal_train.py --dryrun --config 4m_training/configs/4m_things_data.yaml
+        modal run 4m_training/modal/modal_train.py --validate --select rgb2depth,anyany_neural
+        modal run 4m_training/modal/modal_train.py --validate --checkpoint /project/runs/.../checkpoint-last.pth
     """
     # Flags must not be named after a Modal function (e.g. `dryrun_job`/`validate_job`).
     if validate:
