@@ -7,10 +7,13 @@ val loader per task (each with its own in/out domains) and runs 4M's eval forwar
 reporting per-task loss. Pick tasks with ``--select`` or run them all.
 
     python 4m_training/validate_4m.py --config configs/4m_things_main.yaml \
-        --tasks configs/4m_things_val_tasks.yaml --checkpoint /path/to.pth
+        --tasks configs/4m_things_val_tasks.yaml          # checkpoint from the main YAML
+    python 4m_training/validate_4m.py ... --checkpoint /path/to.pth   # one-off override
     python 4m_training/validate_4m.py ... --select rgb2depth,anyany_neural
 
-Tasks are defined in the --tasks YAML; see configs/4m_things_val_tasks.yaml.
+Tasks are defined in the --tasks YAML; see configs/4m_things_val_tasks.yaml. The
+checkpoint comes from the main YAML's ``val_checkpoint:`` field unless ``--checkpoint``
+is given.
 """
 
 from __future__ import annotations
@@ -38,6 +41,17 @@ patch_pretrain_utils()
 def _resolve(path_str: str) -> Path:
     p = Path(path_str)
     return p if p.is_absolute() else (_REPO_ROOT / p).resolve()
+
+
+def _resolve_checkpoint(cli_checkpoint: Path | None, main_cfg: dict) -> Path | None:
+    """Pick the checkpoint to validate: CLI ``--checkpoint`` overrides the
+    ``val_checkpoint:`` field in the main YAML; absent both, return ``None``
+    (random-weight pipeline smoke). Keeps the path varying knob in config so a
+    plain ``--validate`` run needs no flags."""
+    if cli_checkpoint is not None:
+        return cli_checkpoint
+    yaml_checkpoint = main_cfg.get("val_checkpoint")
+    return Path(yaml_checkpoint) if yaml_checkpoint else None
 
 
 def _task_dataset_config(task: dict, defaults: dict) -> dict:
@@ -197,7 +211,9 @@ def main() -> None:
     p.add_argument("--config", type=Path, required=True, help="main yaml (model, input_size, tokenizer)")
     p.add_argument("--tasks", type=Path, required=True, help="val-tasks yaml")
     p.add_argument("--select", type=str, default=None, help="comma-separated task names (default: all)")
-    p.add_argument("--checkpoint", type=Path, default=None, help="model checkpoint (weights); omit for a pipeline smoke")
+    p.add_argument("--checkpoint", type=Path, default=None,
+                   help="model checkpoint (weights); overrides `checkpoint:` in the tasks YAML. "
+                        "Omit both for a random-weight pipeline smoke.")
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--n-batches", type=int, default=4, help="batches per task (0 = whole val set)")
@@ -206,9 +222,10 @@ def main() -> None:
     main_cfg = yaml.safe_load(_resolve(str(args.config)).read_text())
     tasks_cfg = yaml.safe_load(_resolve(str(args.tasks)).read_text())
     select = args.select.split(",") if args.select else None
+    checkpoint = _resolve_checkpoint(args.checkpoint, main_cfg)
 
     results = run_validation(
-        main_cfg, tasks_cfg, select, args.checkpoint, args.device, args.batch_size, args.n_batches,
+        main_cfg, tasks_cfg, select, checkpoint, args.device, args.batch_size, args.n_batches,
     )
     print("\n=== validation summary ===")
     for name, stats in results.items():

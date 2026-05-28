@@ -1,0 +1,80 @@
+# Data config for THINGS multimodal training (vision + MEG + EEG).
+# data_path shards use braceexpand ranges, e.g. shard_{000..026}.tar → shard_000.tar … shard_026.tar
+# (shard_{000}.tar alone is wrong — braces are not expanded and the file is missing).
+#
+# in_domains / out_domains (hyphen-separated):
+#   Modalities that may appear on the encoder (input) vs decoder (target) side.
+#   tok_meg / tok_eeg are INPUT-ONLY (encoder-only): put them in in_domains, never
+#   out_domains (config_validate enforces this). Example — predict depth from
+#   RGB + brain signals:
+#     in_domains: tok_rgb-tok_depth-tok_meg-tok_eeg
+#     out_domains: tok_depth
+#   Keep meg_mask / eeg_mask out of these lists (presence flags only, not trained tokens).
+#
+# input_alphas / target_alphas (Dirichlet concentration, one value per in/out domain):
+#   Control how the random input/target token budget is split across modalities each step.
+#   Higher alpha → that modality gets a larger share of tokens more often.
+#   Use 0.0 on an in_domain to rarely/never use it as input; 0.0 on out_domain to skip as target.
+#   Single value "1.0" applies to all listed domains. For rgb→dense mixtures see upstream
+#   cfgs/default/4m/alphas_mixture/ and set alphas_config instead of simple alphas.
+#
+# train.weights: relative sampling rate when multiple entries exist under train.datasets
+#   (e.g. [0.8, 0.2] = 80% THINGS, 20% CC12M once cc12m is uncommented).
+
+train:
+  datasets:
+    things:
+      type: multimodal
+      use_wds: true
+      data_path: /project/data/train/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{000..026}.tar
+      # MEG/EEG are INPUT-ONLY (encoder-only, never predicted) — they stay in
+      # in_domains but NOT out_domains. See notes/4m_neural_modality_design.md.
+      in_domains: tok_rgb-tok_depth-tok_meg-tok_eeg
+      out_domains: tok_rgb-tok_depth
+      main_augment_domain: tok_rgb
+      tok_train_aug: false  # THINGS shards omit crop_settings/; ThingsImageAugmenter uses center crop
+      input_alphas: "1.0-1.0-1.0-1.0"   # one per in_domain (rgb, depth, meg, eeg)
+      target_alphas: "1.0-1.0"          # one per out_domain (rgb, depth)
+      aligned_captions: false
+      wds_n_repeats: 1
+      wds_shuffle_buffer_tar: 1000
+      wds_shuffle_buffer_repeat: 1000
+
+    # --- CC12M on /project/data/train/cc12m/ (separate from THINGS; see modal/data/README.md) ---
+    # Uncomment to mix or replace THINGS. Uses stock 4M modality names (@224), not THINGS tok_rgb.
+    # type: multimodal = 4M's pretokenized loader label (many modalities per sample), NOT the
+    #   THINGS [tok_rgb,tok_meg,...] 6-folder layout. CC12M has crop_settings/ (tok_train_aug: true).
+    # Before mixing with things: domain names differ (tok_rgb vs tok_rgb@224) — run CC12M alone or
+    #   align names via modality_name_map / repack. Verify shard range: ls .../cc12m/tok_rgb@224/
+    #
+    # cc12m:
+    #   type: multimodal
+    #   use_wds: true
+    #   data_path: /project/data/train/cc12m/[rgb@224,caption,crop_settings,det,tok_rgb@224,tok_depth@224,tok_semseg@224,tok_normal@224,tok_clip@224]/shard-{00000..09999}.tar
+    #   in_domains: rgb@224-tok_rgb@224-tok_depth@224-tok_semseg@224-tok_normal@224-tok_clip@224-caption-det
+    #   out_domains: tok_rgb@224-tok_depth@224-tok_semseg@224-tok_normal@224-tok_clip@224-caption-det
+    #   main_augment_domain: rgb@224
+    #   aligned_captions: true
+    #   tok_train_aug: true
+    #   input_alphas: null
+    #   target_alphas: null
+    #   alphas_config: external/ml-4m/cfgs/default/4m/alphas_mixture/main/mix_mod7_all2all_rgb2all_a0.5.yaml
+    #   wds_n_repeats: 4
+    #   wds_shuffle_buffer_tar: 1000
+    #   wds_shuffle_buffer_repeat: 1000
+    # Folder layout (use_wds: false) if tars are not used:
+    #   data_path: /project/data/train/cc12m
+    #   use_wds: false
+
+  weights: [1.0]
+  # weights: [0.8, 0.2]  # things + cc12m when both are uncommented
+
+val:
+  datasets:
+    things:
+      use_wds: true
+      data_path: /project/data/val/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{000..026}.tar
+
+    # cc12m:
+    #   use_wds: false
+    #   data_path: /project/data/train/cc12m  # upstream CC12M val is often a local folder tree

@@ -8,6 +8,8 @@ import torch
 from tokenizers import Tokenizer
 
 from neural_constants import (
+    EEG_OUT_MODALITY,
+    MEG_RVQ_OUT_MODALITIES,
     MEG_TOKENS_PER_TRIAL,
     MEG_VOCAB_SIZE,
     TOK_RGB_TOKENS_PER_IMAGE,
@@ -58,11 +60,17 @@ class TestExtractPresenceFlags:
         presence = extract_presence_flags(mod_dict)
         assert "meg_mask" not in mod_dict
         assert "eeg_mask" not in mod_dict
-        assert presence == {"tok_meg": False, "tok_eeg": True}
+        # Every token modality gated by meg_mask is absent; those gated by eeg_mask present.
+        # The output heads share the same flags as their input-only counterparts.
+        assert presence["tok_meg"] is False
+        assert presence["tok_eeg"] is True
+        assert all(presence[m] is False for m in MEG_RVQ_OUT_MODALITIES)
+        assert presence[EEG_OUT_MODALITY] is True
 
     def test_defaults_present_when_flag_missing(self):
         presence = extract_presence_flags({"tok_rgb": 1})
-        assert presence == {"tok_meg": True, "tok_eeg": True}
+        assert all(v is True for v in presence.values())
+        assert presence["tok_meg"] and presence["tok_eeg"]
 
 
 class TestPresenceAwareUnifiedMasking:

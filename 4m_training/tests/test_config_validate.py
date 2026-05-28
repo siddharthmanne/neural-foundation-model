@@ -30,6 +30,7 @@ MAIN_DATA_PAIRS = [
 
 DATA_ONLY = [
     "4m_smoke_things_neural_in_data.yaml",
+    "4m_smoke_things_neural_out_data.yaml",
     "4m_things_data.yaml",
     "4m_smoke_things_data.yaml",
     "4m_smoke_cc12m_data.yaml",

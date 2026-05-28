@@ -53,6 +53,18 @@ SMOKE_CASES: dict[str, tuple[str, list[str]]] = {
         "4m_training/configs/4m_smoke_things_main.yaml",
         ["--data_config", "4m_training/configs/4m_smoke_things_neural_in_data.yaml"],
     ),
+    # Neural AS OUTPUT: the loss-tuned main config + the neural-output data config, so the
+    # MEG (4 RVQ heads) / EEG reconstruction losses can be watched descending on GPU.
+    # --find_unused_params: with 7 output heads and a stochastic target budget, some heads
+    # get 0 targets on a given step -> their params produce no grad -> DDP needs this.
+    "loss_decreases_neural_out": (
+        "4m_training/configs/4m_smoke_things_loss_main.yaml",
+        [
+            "--data_config",
+            "4m_training/configs/4m_smoke_things_neural_out_data.yaml",
+            "--find_unused_params",
+        ],
+    ),
     "prod_cc12m": ("4m_training/configs/4m_smoke_cc12m_main.yaml", []),
 }
 
@@ -62,7 +74,7 @@ def _run_train(main_config_rel: str, extra_argv: list[str]) -> None:
     cfg = os.path.join(REPO, main_config_rel)
     cmd = [
         sys.executable,
-        os.path.join(REPO, "4m_training/train_4m.py"),
+        os.path.join(REPO, "4m_training/lib/train_4m.py"),
         "train",
         "--config",
         cfg,
