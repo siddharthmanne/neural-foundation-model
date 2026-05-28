@@ -1,0 +1,41 @@
+# Smoke: exercise IN-LOOP validation end-to-end on GPU. Same shape as
+# 4m_smoke_things_main.yaml, but with the named-task suite enabled (one TRAIN shard,
+# 1 batch/task). With epochs: 1 the suite fires after the single (final) epoch, so
+# all four val tasks run on the live model and their per-task loss is logged.
+run_name: smoke_inloop_val
+model: fm_tiny_6e_6d_swiglu_nobias
+input_size: 224
+patch_size: 16
+batch_size: 2
+epochs: 1
+epoch_size: 8
+num_input_tokens: 64
+num_target_tokens: 64
+loss_type: mod
+dtype: bfloat16
+
+# Symmetric smoke data: in = rgb,depth,meg_rvq0..3,eeg / out = rgb,depth — spans every
+# domain the four val tasks need, so none are skipped.
+data_config: 4m_training/configs/4m_smoke_things_data.yaml
+
+# find_unused_params: the stochastic target budget can leave a head with 0 targets on a
+# step (no grad) — stock DDP would otherwise raise on unused params.
+find_unused_params: true
+
+eval_freq: 1
+save_ckpt_freq: 999
+output_dir: /project/runs/smoke/inloop_val
+num_workers: 1
+warmup_epochs: 0
+# Always start fresh: a smoke must be re-runnable, and stock auto-resume would try to
+# reload the prior run's checkpoint (which trips PyTorch's weights_only default).
+auto_resume: false
+
+# In-loop validation knobs (consumed by validate_4m/in_loop_val; ignored by the trainer).
+in_loop_val_tasks: 4m_training/configs/4m_smoke_things_val_tasks.yaml
+in_loop_val_n_batches: 1
+
+opt: adamw
+blr: 0.0001
+weight_decay: 0.05
+log_wandb: false

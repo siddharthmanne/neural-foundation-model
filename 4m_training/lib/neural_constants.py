@@ -27,20 +27,23 @@ EEG_TRIAL_SHAPE: tuple[int] = (17,)
 EEG_TOKENS_PER_TRIAL: int = EEG_TRIAL_SHAPE[0]
 EEG_CODE_MAX: int = EEG_VOCAB_SIZE - 1
 
-# --- Neural OUTPUT (target) modalities ---
-# MEG/EEG can be predicted as a reconstruction regularizer (see notes §6). They use a
-# custom modality ``type`` so 4M routes them through the PARALLEL decoder branch
+# --- Neural modalities (SYMMETRIC: both encoder input and decoder target) ---
+# MEG/EEG are predicted as a reconstruction regularizer AND fed as input. Each is one
+# modality used in both in_domains and out_domains, so 4M's masked prediction partitions
+# its cells into input vs target (disjoint on a step) — leak-free by construction. They
+# use a custom modality ``type`` so 4M routes them through the PARALLEL decoder branch
 # (fm.py cat_decoder_tensors) rather than the autoregressive seq_token path, and so the
 # trainer's square ``max_tokens`` rule for ``img`` (run_training_4m.setup_modality_info)
-# leaves their non-square grids (128, 17) untouched.
+# leaves their non-square grids (128, 17) untouched. See notes/4m_neural_modality_design.md.
 NEURAL_GRID_TYPE: str = "neural_grid"
-# One target head per RVQ layer (layer-specific 512-vocab codebooks): 4 modalities, each a
-# 128-cell (16x8) grid of single codes. All read the on-disk ``tok_meg`` folder.
-MEG_RVQ_OUT_MODALITIES: tuple[str, ...] = tuple(f"tok_meg_rvq{q}" for q in range(MEG_N_RVQ))
-MEG_OUT_SOURCE_PATH: str = "tok_meg"
-# EEG is a single codebook -> one head over its 17-token sequence; reads ``tok_eeg`` folder.
-EEG_OUT_MODALITY: str = "tok_eeg_out"
-EEG_OUT_SOURCE_PATH: str = "tok_eeg"
+# One modality per RVQ layer (layer-specific 512-vocab codebooks): 4 modalities, each a
+# 128-cell (16x8) grid of single codes. ``tok_meg`` is no longer a modality — it is only an
+# on-disk FOLDER, which all four RVQ modalities read via their ``path``.
+MEG_RVQ_MODALITIES: tuple[str, ...] = tuple(f"tok_meg_rvq{q}" for q in range(MEG_N_RVQ))
+MEG_SOURCE_PATH: str = "tok_meg"  # on-disk folder shared by the 4 RVQ modalities
+# EEG is a single codebook -> one modality over its 17-token sequence; its name doubles as
+# the on-disk folder (path defaults to the modality name).
+EEG_MODALITY: str = "tok_eeg"
 
 # --- THINGS vision pretokens (stock ``tok_rgb@224`` / ``tok_depth@224``) ---
 THINGS_IMAGE_SIZE: int = 224

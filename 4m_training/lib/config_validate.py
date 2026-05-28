@@ -12,11 +12,12 @@ import yaml
 from repo_paths import REPO_ROOT as _REPO_ROOT
 
 _PRESENCE_FLAGS = frozenset({"meg_mask", "eeg_mask"})
-# These neural modalities have no decoder embedding (encoder-only). The summed MEG grid
-# (tok_meg) and the EEG input sequence (tok_eeg) can only be inputs; to predict neural as
-# a target, use the output heads tok_meg_rvq0..3 / tok_eeg_out instead. See
-# notes/4m_neural_modality_design.md §6. Listing tok_meg/tok_eeg as targets crashes build.
-_INPUT_ONLY = frozenset({"tok_meg", "tok_eeg"})
+# ``tok_meg`` is an on-disk FOLDER, not a modality — the neural modalities are the four
+# ``tok_meg_rvq0..3`` (which read that folder) and ``tok_eeg``. Map the folder name to a
+# helpful hint when it is mistakenly used as a domain. See notes/4m_neural_modality_design.md.
+_FOLDER_NOT_MODALITY = {
+    "tok_meg": "use tok_meg_rvq0..tok_meg_rvq3 (they read the tok_meg folder)",
+}
 _TRAIN_TYPES = frozenset({"multimodal"})
 _LOSS_TYPES = frozenset({"mod", "token"})
 
@@ -99,14 +100,21 @@ def validate_dataset_config(
                 f"{name}: {dom} is a presence flag — keep it in data_path "
                 f"brackets only, not in_domains/out_domains"
             )
+        elif dom in _FOLDER_NOT_MODALITY:
+            errors.append(
+                f"{name}: {dom!r} is an on-disk folder, not a modality — "
+                f"{_FOLDER_NOT_MODALITY[dom]}. See notes/4m_neural_modality_design.md"
+            )
         elif dom not in modality_info:
             errors.append(f"{name}: unknown modality {dom!r} (not in MODALITY_INFO)")
 
+    # Neural modalities are symmetric (encoder + decoder embedding), so they may appear in
+    # in_domains, out_domains, or both. Any out_domain must have a decoder embedding.
     for dom in out_domains:
-        if dom in _INPUT_ONLY:
+        info = modality_info.get(dom)
+        if info is not None and info.get("decoder_embedding", "missing") is None:
             errors.append(
-                f"{name}: {dom} is input-only (no decoder embedding) — keep it in "
-                f"in_domains, not out_domains. See notes/4m_neural_modality_design.md"
+                f"{name}: {dom} has no decoder embedding — it cannot be an out_domain"
             )
 
     bracket_mods = _modalities_in_bracket(data_path)
@@ -115,8 +123,8 @@ def validate_dataset_config(
         if dom in _PRESENCE_FLAGS:
             continue
         # A domain is satisfied if the bracket lists either its own name (stock case,
-        # e.g. rgb@224) or its source ``path`` (output heads tok_meg_rvq*/tok_eeg_out
-        # read the tok_meg / tok_eeg folder).
+        # e.g. rgb@224) or its source ``path`` (the four tok_meg_rvq* modalities read the
+        # tok_meg folder).
         folder = modality_info.get(dom, {}).get("path", dom) if dom in modality_info else dom
         if dom not in bracket_mods and folder not in bracket_mods:
             suffix = f" (reads folder {folder!r})" if folder != dom else ""
@@ -171,6 +179,44 @@ def validate_data_config(
     return errors
 
 
+def _validate_lr_schedule(main_cfg: dict[str, Any]) -> list[str]:
+    """Catch LR-schedule footguns before a GPU run (defaults match the stock trainer).
+
+    All keys are optional; the checks only fire if a value would make the trainer abort or
+    crash. The stock scheduler choices are 'cosine' and 'inverse_sqrt-<N>'; YAML bypasses
+    argparse's ``choices`` (it goes through ``set_defaults``), so we re-check it here.
+    """
+    errors: list[str] = []
+
+    scheduler = main_cfg.get("scheduler", "cosine")
+    if scheduler != "cosine" and not str(scheduler).startswith("inverse_sqrt-"):
+        errors.append(
+            f"scheduler must be 'cosine' or 'inverse_sqrt-<N>' (e.g. inverse_sqrt-10000), "
+            f"got {scheduler!r}"
+        )
+
+    # Warmup length comes from epochs OR steps OR tokens; the trainer aborts if all negative.
+    warmups = (
+        main_cfg.get("warmup_epochs", 10),
+        main_cfg.get("warmup_steps", -1),
+        main_cfg.get("warmup_tokens", -1),
+    )
+    if all(w is not None and int(w) < 0 for w in warmups):
+        errors.append(
+            "set warmup_epochs >= 0 (use 0 to disable warmup) or warmup_steps/warmup_tokens "
+            ">= 0 — all-negative makes the trainer abort"
+        )
+
+    # Cooldown only matters for inverse_sqrt, but all-negative cooldown_* trips a stock-4M
+    # AttributeError (it reads a nonexistent args.lr_schedule), so guard it regardless.
+    cd_epochs = main_cfg.get("cooldown_epochs", 10)
+    cd_steps = main_cfg.get("cooldown_steps", -1)
+    if cd_epochs is not None and cd_steps is not None and int(cd_epochs) < 0 and int(cd_steps) < 0:
+        errors.append("keep cooldown_epochs >= 0 or set cooldown_steps >= 0 (all-negative crashes stock 4M)")
+
+    return errors
+
+
 def validate_main_config(
     main_cfg: dict[str, Any],
     repo_root: Path | None = None,
@@ -203,6 +249,8 @@ def validate_main_config(
             errors.append(
                 f"epoch_size ({epoch_size}) // batch_size ({batch_size}) must be >= 1"
             )
+
+    errors.extend(_validate_lr_schedule(main_cfg))
 
     data_config = main_cfg.get("data_config", "")
     if not data_config:

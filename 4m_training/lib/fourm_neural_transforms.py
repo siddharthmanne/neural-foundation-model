@@ -65,12 +65,13 @@ class EegTokTransform(AbstractTransform):
 
 
 class NeuralTargetTransform(AbstractTransform):
-    """Passthrough for neural OUTPUT modalities (tok_meg_rvq*, tok_eeg_out).
+    """Passthrough for the symmetric neural modalities (tok_meg_rvq*, tok_eeg).
 
     The trial pick + RVQ-layer extraction happen once per sample in the dataloader
-    rename seam (so the 4 MEG heads stay coherent), so by the time this runs the value
-    is already a single-trial 1-D code array. We only clip to the head's vocab and cast
-    to int64. See ``neural_trial_transform.NeuralTargetSplitter``.
+    rename seam (so the 4 MEG modalities stay coherent), so by the time this runs the value
+    is already a single-trial 1-D code array. We only clip to the modality's vocab and cast
+    to int64. The same array feeds both the encoder and decoder side (4M splits its cells).
+    See ``neural_trial_transform.NeuralTargetSplitter``.
     """
 
     def __init__(self, code_max: int):

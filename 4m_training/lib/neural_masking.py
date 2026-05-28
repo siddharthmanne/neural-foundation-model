@@ -15,26 +15,17 @@ from fourm.data.masking import UnifiedMasking
 from fourm.data.modality_transforms import get_transform_key
 
 from neural_constants import (
-    EEG_OUT_MODALITY,
-    MEG_RVQ_OUT_MODALITIES,
+    EEG_MODALITY,
+    MEG_RVQ_MODALITIES,
     NEURAL_GRID_TYPE,
 )
 
-# Maps token modality -> presence-flag key loaded from shard tars. Input-only
-# tok_meg/tok_eeg and the output heads derived from the same folder all gate on the
-# same flag (many token modalities -> one mask).
+# Maps token modality -> presence-flag key loaded from shard tars. The four MEG RVQ
+# modalities share ``meg_mask``; EEG gates on ``eeg_mask`` (many modalities -> one mask).
 PRESENCE_FLAGS: dict[str, str] = {
-    "tok_meg": "meg_mask",
-    "tok_eeg": "eeg_mask",
-    **{mod: "meg_mask" for mod in MEG_RVQ_OUT_MODALITIES},
-    EEG_OUT_MODALITY: "eeg_mask",
+    **{mod: "meg_mask" for mod in MEG_RVQ_MODALITIES},
+    EEG_MODALITY: "eeg_mask",
 }
-
-# The INPUT-side neural modalities that are still ``seq_token`` but must be masked as a
-# flat grid: stock ``sequence_token_mask`` would inject text-tokenizer sentinel ids and
-# break their small-vocab embeddings. (Output heads use the ``neural_grid`` type instead
-# and are routed separately, so they are NOT in this set.)
-_NEURAL_FLAT_TOKEN_MODS = frozenset({"tok_meg", "tok_eeg"})
 
 
 def _read_presence_flag(value: Any) -> bool:
@@ -144,16 +135,11 @@ class PresenceAwareUnifiedMasking(UnifiedMasking):
                     keep_scheme,
                 )
             elif mod_type == NEURAL_GRID_TYPE:
-                # Output neural heads: parallel grid masking (scatter), like img. The
-                # decoder branch in fm.cat_decoder_tensors treats any non-seq type as
-                # parallel, so these produce per-cell targets, not AR-shifted ones.
-                masked_mod_dict[mod_name] = self.image_mask(
-                    mod_dict[mod_name_load],
-                    mod_info["max_tokens"],
-                    input_budget,
-                    target_budget,
-                )
-            elif mod_type == "seq_token" and mod_name in _NEURAL_FLAT_TOKEN_MODS:
+                # Symmetric neural modalities: parallel grid masking (scatter), like img.
+                # image_mask takes BOTH budgets and partitions cells into input vs target
+                # (disjoint), so a cell is never both an encoder input and a decoder target
+                # -> no input->target leakage. The decoder branch in fm.cat_decoder_tensors
+                # treats any non-seq type as parallel, so targets are per-cell, not shifted.
                 masked_mod_dict[mod_name] = self.image_mask(
                     mod_dict[mod_name_load],
                     mod_info["max_tokens"],

@@ -34,6 +34,7 @@ import fourm_neural_modalities  # noqa: F401,E402 — register modalities/transf
 from fourm_dataloader import _wds_eval_loader, patch_pretrain_utils
 from neural_constants import THINGS_IMAGE_SIZE
 from repo_paths import TEXT_TOKENIZER
+from token_accounting import format_tokens_seen, read_tokens_seen
 
 patch_pretrain_utils()
 
@@ -95,8 +96,9 @@ def build_model(in_union: list[str], out_union: list[str], model_name: str, inpu
     )
 
 
-def load_checkpoint(model, ckpt_path: Path) -> None:
-    """Load weights only; tolerate architecture supersets (strict=False)."""
+def load_checkpoint(model, ckpt_path: Path) -> dict:
+    """Load weights only; tolerate architecture supersets (strict=False). Returns the
+    full checkpoint dict so callers can read non-weight metadata (e.g. tokens-seen)."""
     ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     state = ckpt.get("model", ckpt)
     missing, unexpected = model.load_state_dict(state, strict=False)
@@ -104,6 +106,7 @@ def load_checkpoint(model, ckpt_path: Path) -> None:
         print(f"  [ckpt] {len(missing)} missing keys (e.g. {missing[:3]})")
     if unexpected:
         print(f"  [ckpt] {len(unexpected)} unexpected keys (e.g. {unexpected[:3]})")
+    return ckpt
 
 
 def _build_task_loader(task_cfg: dict, input_size: int, in_range, out_range,
@@ -161,6 +164,78 @@ def evaluate_task(model, loader, device, all_domains, n_in, n_out, loss_type, dt
     return stats
 
 
+class ValidationSuite:
+    """Run the named validation tasks on a model → ``{task_name: stats}``.
+
+    The single home for "run the task suite on a model". It is reusable across
+    calls: deterministic WDS loaders are built lazily and cached, and the set of
+    runnable tasks is resolved once against the model's actual domains. Two
+    callers share it, differing only in *where the model comes from* and *how the
+    result is formatted*:
+
+      * ``run_validation`` (CLI) — builds a model + loads a checkpoint, runs once.
+      * ``in_loop_val`` (training) — runs on the live model every eval epoch.
+    """
+
+    def __init__(self, tasks_cfg: dict, *, input_size: int, text_tokenizer,
+                 loss_type: str, batch_size: int, n_batches: int,
+                 select: list[str] | None = None):
+        self.tasks_cfg = tasks_cfg
+        self.tasks = tasks_cfg["tasks"]
+        names = select or list(self.tasks)
+        unknown = [n for n in names if n not in self.tasks]
+        if unknown:
+            raise SystemExit(f"unknown task(s) {unknown}; available: {list(self.tasks)}")
+        self.names = names
+        self.input_size = input_size
+        self.text_tokenizer = text_tokenizer
+        self.loss_type = loss_type
+        self.batch_size = batch_size
+        self.n_batches = n_batches
+        self.n_in = tasks_cfg.get("fixed_eval_input_tokens", 128)
+        self.n_out = tasks_cfg.get("fixed_eval_target_tokens", 128)
+        self._cache: dict[str, tuple] = {}
+        self._runnable: list[str] | None = None
+
+    def _loader_for(self, name: str):
+        if name not in self._cache:
+            task_cfg = _task_dataset_config(self.tasks[name], self.tasks_cfg)
+            self._cache[name] = _build_task_loader(
+                task_cfg, self.input_size, (self.n_in, self.n_in), (self.n_out, self.n_out),
+                self.text_tokenizer, num_workers=0, batch_size=self.batch_size,
+            )
+        return self._cache[name]
+
+    def _resolve_runnable(self, model) -> list[str]:
+        """Keep only tasks the model can run: encoder needs every in_domain, decoder
+        every out_domain. Reads the (possibly DDP-wrapped) model's embedding keys."""
+        m = getattr(model, "module", model)
+        enc = set(getattr(m, "encoder_embeddings", {}).keys())
+        dec = set(getattr(m, "decoder_embeddings", {}).keys())
+        runnable = []
+        for name in self.names:
+            task = self.tasks[name]
+            missing = (set(task["in_domains"].split("-")) - enc) | (
+                set(task["out_domains"].split("-")) - dec)
+            if missing:
+                print(f"[val suite] skipping '{name}': model lacks {sorted(missing)}")
+            else:
+                runnable.append(name)
+        return runnable
+
+    def run(self, model, device, dtype) -> dict[str, dict[str, Any]]:
+        if self._runnable is None:
+            self._runnable = self._resolve_runnable(model)
+        results: dict[str, dict[str, Any]] = {}
+        for name in self._runnable:
+            loader, all_d = self._loader_for(name)
+            results[name] = evaluate_task(
+                model, loader, device, all_d, self.n_in, self.n_out,
+                self.loss_type, dtype, self.n_batches,
+            )
+        return results
+
+
 def run_validation(
     main_cfg: dict, tasks_cfg: dict, select: list[str] | None,
     checkpoint: Path | None, device: str, batch_size: int, n_batches: int,
@@ -168,39 +243,31 @@ def run_validation(
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     dtype = torch.float32 if device.type == "cpu" else torch.bfloat16
 
-    tasks = tasks_cfg["tasks"]
-    names = select or list(tasks)
-    unknown = [n for n in names if n not in tasks]
-    if unknown:
-        raise SystemExit(f"unknown task(s) {unknown}; available: {list(tasks)}")
-
-    # Model spans every modality used across the selected tasks.
-    in_union = sorted({d for n in names for d in tasks[n]["in_domains"].split("-")})
-    out_union = sorted({d for n in names for d in tasks[n]["out_domains"].split("-")})
-    print(f"model in={in_union} out={out_union} device={device.type}")
-
-    model = build_model(in_union, out_union, main_cfg["model"], main_cfg.get("input_size", THINGS_IMAGE_SIZE)).to(device)
-    if checkpoint:
-        load_checkpoint(model, checkpoint)
-
     from tokenizers import Tokenizer
 
     tok_cfg = main_cfg.get("text_tokenizer_path")
     tok = Tokenizer.from_file(str(_resolve(tok_cfg) if tok_cfg else TEXT_TOKENIZER))
-    n_in = tasks_cfg.get("fixed_eval_input_tokens", 128)
-    n_out = tasks_cfg.get("fixed_eval_target_tokens", 128)
-    loss_type = main_cfg.get("loss_type", "mod")
+    suite = ValidationSuite(
+        tasks_cfg, input_size=main_cfg.get("input_size", THINGS_IMAGE_SIZE),
+        text_tokenizer=tok, loss_type=main_cfg.get("loss_type", "mod"),
+        batch_size=batch_size, n_batches=n_batches, select=select,
+    )
 
-    results: dict[str, dict[str, Any]] = {}
-    for name in names:
-        task_cfg = _task_dataset_config(tasks[name], tasks_cfg)
-        loader, all_d = _build_task_loader(
-            task_cfg, main_cfg.get("input_size", THINGS_IMAGE_SIZE),
-            (n_in, n_in), (n_out, n_out), tok, num_workers=0, batch_size=batch_size,
-        )
-        print(f"\n[{name}] in={task_cfg['in_domains']} out={task_cfg['out_domains']}")
-        stats = evaluate_task(model, loader, device, all_d, n_in, n_out, loss_type, dtype, n_batches)
-        results[name] = stats
+    # The standalone model spans every modality across the selected tasks (so the
+    # suite never skips); the in-loop caller instead reuses the live training model.
+    tasks = tasks_cfg["tasks"]
+    in_union = sorted({d for n in suite.names for d in tasks[n]["in_domains"].split("-")})
+    out_union = sorted({d for n in suite.names for d in tasks[n]["out_domains"].split("-")})
+    print(f"model in={in_union} out={out_union} device={device.type}")
+    model = build_model(in_union, out_union, main_cfg["model"],
+                        main_cfg.get("input_size", THINGS_IMAGE_SIZE)).to(device)
+    tokens_seen = None
+    if checkpoint:
+        tokens_seen = read_tokens_seen(load_checkpoint(model, checkpoint))
+
+    results = suite.run(model, device, dtype)
+    print(format_tokens_seen(tokens_seen))
+    for name, stats in results.items():
         pretty = "  ".join(f"{k}={v:.4f}" for k, v in stats.items() if k != "n_batches")
         print(f"[{name}] {pretty}  (n_batches={stats['n_batches']})")
     return results

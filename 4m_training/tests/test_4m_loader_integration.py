@@ -291,11 +291,11 @@ class TestLoaderIntegration:
             unpatch_pretrain_utils,
         )
         from neural_constants import (
-            EEG_OUT_MODALITY,
+            EEG_MODALITY,
             EEG_TOKENS_PER_TRIAL,
             EEG_TRIAL_SHAPE,
             MEG_POSITIONS_PER_TRIAL,
-            MEG_RVQ_OUT_MODALITIES,
+            MEG_RVQ_MODALITIES,
         )
         from train_4m import _build_modality_info
 
@@ -312,7 +312,7 @@ class TestLoaderIntegration:
         ):
             _make_tar(root / f"{mod_dir}/shard_000.tar", [(k, "npy", b) for k, b in entries])
 
-        out_domains = ["tok_rgb", *MEG_RVQ_OUT_MODALITIES, EEG_OUT_MODALITY]
+        out_domains = ["tok_rgb", *MEG_RVQ_MODALITIES, EEG_MODALITY]
         mod_info = _build_modality_info(out_domains)
         paths = _extend_modality_paths(mod_info)
 
@@ -332,11 +332,11 @@ class TestLoaderIntegration:
             n = 0
             for sample in pipeline:
                 n += 1
-                for mod in MEG_RVQ_OUT_MODALITIES:
+                for mod in MEG_RVQ_MODALITIES:
                     assert sample[mod].shape == (MEG_POSITIONS_PER_TRIAL,), mod
-                assert sample[EEG_OUT_MODALITY].shape == (EEG_TOKENS_PER_TRIAL,)
+                assert sample[EEG_MODALITY].shape == (EEG_TOKENS_PER_TRIAL,)
                 # All four MEG heads must come from one trial -> one shared constant.
-                picked = {int(np.unique(sample[mod])[0]) for mod in MEG_RVQ_OUT_MODALITIES}
+                picked = {int(np.unique(sample[mod])[0]) for mod in MEG_RVQ_MODALITIES}
                 assert len(picked) == 1, f"RVQ heads decohered across trials: {picked}"
         finally:
             unpatch_pretrain_utils()

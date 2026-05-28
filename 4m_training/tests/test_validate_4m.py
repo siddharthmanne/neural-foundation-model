@@ -69,7 +69,7 @@ def tasks_cfg(tmp_path: Path) -> dict:
         "tasks": {
             "anyany_neural": {
                 "modalities": ["tok_rgb", "tok_depth", "tok_meg", "tok_eeg", "meg_mask", "eeg_mask"],
-                "in_domains": "tok_rgb-tok_depth-tok_meg-tok_eeg",
+                "in_domains": "tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg",
                 "out_domains": "tok_rgb-tok_depth",
             },
             "rgb2depth": {
@@ -105,8 +105,10 @@ def test_anyany_scores_both_vision_modalities(tasks_cfg):
                          checkpoint=None, device="cpu", batch_size=2, n_batches=1)
     stats = res["anyany_neural"]
     assert stats["tok_rgb_loss"] > 0 and stats["tok_depth_loss"] > 0
-    # neural is input-only: it never appears as a predicted-modality loss.
-    assert "tok_meg_loss" not in stats and "tok_eeg_loss" not in stats
+    # This val task uses neural as encoder context only (out_domains = vision), so no
+    # neural modality appears as a predicted-modality loss.
+    assert not any(k.startswith("tok_meg_rvq") for k in stats)
+    assert "tok_eeg_loss" not in stats
 
 
 def test_unknown_task_raises(tasks_cfg):
