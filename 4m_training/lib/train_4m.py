@@ -34,7 +34,7 @@ import repo_paths  # noqa: E402
 _REPO_ROOT = repo_paths.REPO_ROOT
 
 import fourm_neural_modalities  # noqa: F401,E402
-from fourm_dataloader import patch_pretrain_utils
+from fourm_dataloader import patch_pretrain_utils, set_log_print_freq
 from neural_constants import (
     EEG_TRIAL_SHAPE,
     MEG_TRIAL_SHAPE,
@@ -341,10 +341,85 @@ def _clean_extra_argv(extra_argv: list[str]) -> list[str]:
     return extra_argv
 
 
+def _load_trainer_module(trainer_path: Path):
+    """Import the stock trainer as a module (not ``__main__``).
+
+    Running it via ``runpy`` would execute start-to-finish in one shot, leaving
+    no seam to patch. Importing it defines its functions while skipping the
+    bottom ``if __name__ == '__main__'`` block, so we can reassign module globals
+    (``train_one_epoch`` / ``evaluate``) before driving ``main(args)`` ourselves.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("run_training_4m", trainer_path)
+    trainer = importlib.util.module_from_spec(spec)
+    sys.modules["run_training_4m"] = trainer
+    spec.loader.exec_module(trainer)
+    return trainer
+
+
+def _drive_trainer_main(trainer) -> None:
+    """Replicate the stock ``__main__`` block (run_training_4m.py:835-847), with an
+    opt-in hook to also validate the named-task suite on the live weights."""
+    import os
+
+    args = trainer.get_args()
+
+    # Make `args` the trainer module's global. Stock sets it only in its __main__ block;
+    # under our import-and-drive path it would be undefined, so (a) our per-epoch wrapper
+    # can stash tokens-seen onto the very Namespace stock save_model serializes, and
+    # (b) train_one_epoch's bare `args` reference (frozen-model branch) resolves.
+    trainer.args = args
+
+    rlimit = trainer.resource.getrlimit(trainer.resource.RLIMIT_NOFILE)
+    trainer.resource.setrlimit(trainer.resource.RLIMIT_NOFILE, (args.rlimit, rlimit[1]))
+    trainer.utils.setup_run_name(args)
+    trainer.utils.setup_s3_args(args)
+    if args.output_dir:
+        trainer.Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Quiet the logs: stock 4M prints a progress line every 10 steps with no knob. Honor the
+    # main YAML's optional `print_freq` (set on args via the trainer's set_defaults(**cfg)).
+    set_log_print_freq(getattr(args, "print_freq", None))
+
+    # Token accounting (always on): count the ACTUAL masked tokens the model trains on, so
+    # placeholder MEG/EEG samples aren't falsely counted (the stock closed-form would —
+    # see lib/token_accounting.py). Seed from the resumed checkpoint so the running total
+    # stays cumulative across auto_resume. Installed before in-loop val so the per-epoch
+    # tokens-seen is already merged into stats when the suite line prints.
+    from token_accounting import install_token_accounting, read_tokens_seen, resolve_resume_ckpt
+
+    resume_path = resolve_resume_ckpt(args)
+    resume_totals = None
+    if resume_path and os.path.exists(resume_path):
+        import torch
+
+        resume_totals = read_tokens_seen(
+            torch.load(resume_path, map_location="cpu", weights_only=False)
+        )
+    if resume_totals:
+        print(f"[tokens] resuming token count from {resume_path}: {resume_totals}\n")
+    install_token_accounting(trainer, resume_totals=resume_totals)
+
+    # Opt-in: score the named-task suite on the live model every eval_freq epochs
+    # (see lib/in_loop_val.py). Absent the `in_loop_val_tasks` YAML field, the
+    # launch path is identical to the stock trainer.
+    if getattr(args, "in_loop_val_tasks", None):
+        from in_loop_val import build_suite_fn, install_in_loop_validation
+
+        print(f"[in-loop val] enabled from {args.in_loop_val_tasks}\n")
+        install_in_loop_validation(
+            trainer, build_suite_fn(args),
+            eval_freq=getattr(args, "eval_freq", 1),
+            epochs=getattr(args, "epochs", None),
+        )
+
+    trainer.main(args)
+
+
 def run_train(config_path: Path, extra_argv: list[str]) -> None:
     """Hand off to 4M's official trainer with neural patches active."""
     import os
-    import runpy
 
     extra_argv = _clean_extra_argv(extra_argv)
 
@@ -380,7 +455,8 @@ def run_train(config_path: Path, extra_argv: list[str]) -> None:
     sys.argv = ["run_training_4m.py", "-c", str(config_path), *extra_argv]
     print(f"handing off to 4M trainer: argv = {sys.argv}\n")
     try:
-        runpy.run_path(str(ml_4m_root / "run_training_4m.py"), run_name="__main__")
+        trainer = _load_trainer_module(ml_4m_root / "run_training_4m.py")
+        _drive_trainer_main(trainer)
     finally:
         # Stock trainer inits the process group but never tears it down; doing it
         # here avoids the "destroy_process_group() was not called" NCCL warning.

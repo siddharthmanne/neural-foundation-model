@@ -4,12 +4,12 @@
 #
 # in_domains / out_domains (hyphen-separated):
 #   Modalities that may appear on the encoder (input) vs decoder (target) side.
-#   tok_meg / tok_eeg are INPUT-ONLY (encoder-only): put them in in_domains, never
-#   out_domains (config_validate enforces this). Example — predict depth from
-#   RGB + brain signals:
-#     in_domains: tok_rgb-tok_depth-tok_meg-tok_eeg
-#     out_domains: tok_depth
-#   Keep meg_mask / eeg_mask out of these lists (presence flags only, not trained tokens).
+#   Neural modalities are tok_meg_rvq0..3 (one per RVQ layer, read the tok_meg folder) and
+#   tok_eeg. They are SYMMETRIC — list them in in_domains AND out_domains. 4M's masked
+#   prediction then makes each neural cell either an encoder input or a decoder target on a
+#   step (disjoint), so predicting neural regularizes the model with no input->target leak.
+#   "tok_meg" alone is an on-disk FOLDER, not a modality (config_validate rejects it as a
+#   domain). Keep meg_mask / eeg_mask out of these lists (presence flags only).
 #
 # input_alphas / target_alphas (Dirichlet concentration, one value per in/out domain):
 #   Control how the random input/target token budget is split across modalities each step.
@@ -27,14 +27,18 @@ train:
       type: multimodal
       use_wds: true
       data_path: /project/data/train/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{000..026}.tar
-      # MEG/EEG are INPUT-ONLY (encoder-only, never predicted) — they stay in
-      # in_domains but NOT out_domains. See notes/4m_neural_modality_design.md.
-      in_domains: tok_rgb-tok_depth-tok_meg-tok_eeg
-      out_domains: tok_rgb-tok_depth
+      # Neural is SYMMETRIC: tok_meg_rvq0..3 + tok_eeg appear in BOTH lists. Predicting them
+      # acts as a reconstruction regularizer; the leak-free split is automatic (see header).
+      # The data_path bracket still lists the FOLDERS tok_meg/tok_eeg — the RVQ modalities
+      # read tok_meg. See notes/4m_neural_modality_design.md.
+      in_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg
+      out_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg
       main_augment_domain: tok_rgb
       tok_train_aug: false  # THINGS shards omit crop_settings/; ThingsImageAugmenter uses center crop
-      input_alphas: "1.0-1.0-1.0-1.0"   # one per in_domain (rgb, depth, meg, eeg)
-      target_alphas: "1.0-1.0"          # one per out_domain (rgb, depth)
+      # One alpha per domain, same order as the lists above (rgb, depth, meg_rvq0..3, eeg).
+      # Neural shares the input + target budget with vision; lower these to keep vision primary.
+      input_alphas: "1.0-1.0-1.0-1.0-1.0-1.0-1.0"
+      target_alphas: "1.0-1.0-1.0-1.0-1.0-1.0-1.0"
       aligned_captions: false
       wds_n_repeats: 1
       wds_shuffle_buffer_tar: 1000

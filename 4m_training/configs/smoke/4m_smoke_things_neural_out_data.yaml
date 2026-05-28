@@ -1,25 +1,27 @@
-# Smoke data variant: NEURAL AS OUTPUT (reconstruction regularizer).
+# Smoke data variant: NEURAL FROM VISION (reconstruction regularizer, no leak by setup).
 #
 # Predict vision + MEG + EEG tokens from vision alone. Neural is in out_domains only
 # (not in_domains), so there is nothing to copy — the heads must reconstruct the brain
 # tokens from the RGB/depth representation, which regularizes the shared encoder/decoder.
+# (The main config instead uses neural SYMMETRICALLY — in both lists — which is also
+# leak-free because 4M splits each neural modality's cells into input vs target.)
 #
-# MEG uses 4 parallel heads, one per RVQ layer (tok_meg_rvq0..3, vocab 512, 16x8 grid);
-# EEG uses one head (tok_eeg_out, vocab 8192, 17 tokens). All read the existing tok_meg /
-# tok_eeg folders (no repack). The dataloader picks ONE trial per sample and splits it so
-# the 4 MEG heads stay coherent. See notes/4m_neural_modality_design.md §6.
+# MEG uses 4 heads, one per RVQ layer (tok_meg_rvq0..3, vocab 512, 16x8 grid); EEG uses one
+# head (tok_eeg, vocab 8192, 17 tokens). All read the existing tok_meg / tok_eeg folders
+# (no repack). The dataloader picks ONE trial per sample and splits it so the 4 MEG heads
+# stay coherent. See notes/4m_neural_modality_design.md.
 #
-# These output heads are deliberately kept OUT of the validation tasks
+# These targets are deliberately kept OUT of the validation tasks
 # (configs/4m_things_val_tasks.yaml) — they exist purely to shape upstream weights.
 train:
   datasets:
     things:
       type: multimodal
       use_wds: true
-      # tok_meg / tok_eeg folders are loaded once; the output heads fan out from them.
+      # tok_meg / tok_eeg folders are loaded once; the neural modalities fan out from them.
       data_path: /project/data/train/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{000..000}.tar
       in_domains: tok_rgb-tok_depth                 # vision only on the encoder
-      out_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg_out
+      out_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg
       main_augment_domain: tok_rgb
       tok_train_aug: false
       input_alphas: "1.0-1.0"                       # rgb, depth

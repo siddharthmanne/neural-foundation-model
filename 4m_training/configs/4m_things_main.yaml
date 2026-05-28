@@ -1,7 +1,7 @@
 # Main 4M training config for THINGS vision + MEG/EEG.
 # Dataset paths, masking, and mixtures live in 4m_things_data.yaml.
 
-run_name: 4m_things_neural
+run_name: 4m_things_neural   
 
 # Registered FourM presets (encoder_depth, decoder_depth, dim, heads):
 #   fm_tiny_6e_6d_swiglu_nobias      —  6e /  6d, 384-dim,  6 heads  (~tiny)
@@ -11,43 +11,87 @@ run_name: 4m_things_neural
 #   fm_xlarge_24e_24d_swiglu_nobias  — 24e / 24d, 2048-dim, 16 heads (~xl)
 # GELU and *_qknorm_nobias variants also exist in external/ml-4m/fourm/models/fm.py.
 # Custom depth/heads require registering a new model there — not arbitrary YAML fields.
-model: fm_base_12e_12d_swiglu_nobias
+model: fm_base_12e_12d_swiglu_nobias   # architecture preset (see list above)
 
-input_size: 224
-patch_size: 16
-batch_size: 8
-epochs: 100
-num_input_tokens: 256
-num_target_tokens: 256
-loss_type: mod  # mod = mean per-modality loss; token = mean per-token loss
-dtype: bfloat16
+input_size: 224              # input image resolution (px)
+patch_size: 16               # ViT patch size; vision tokens = (input_size/patch_size)^2
+batch_size: 8                # samples per GPU per step
+epochs: 100                  # total training epochs
+num_input_tokens: 256        # encoder input-token budget per step
+num_target_tokens: 256       # decoder target-token budget per step
+loss_type: mod               # mod = mean loss per modality; token = mean loss per token
+dtype: bfloat16              # compute precision (bfloat16 / float32)
 
-data_config: 4m_training/configs/4m_things_data.yaml
-text_tokenizer_path: external/ml-4m/fourm/utils/tokenizer/trained/text_tokenizer_4m_wordpiece_30k.json
+# Required with neural targets: the stochastic Dirichlet budget can give a neural head 0
+# targets on a step, so its params produce no gradient and stock DDP would raise
+# "parameters that were not used in producing loss". See notes/4m_neural_modality_design.md.
+find_unused_params: true
 
-epoch_size: 10000
-eval_freq: 1
-save_ckpt_freq: 10
-output_dir: /project/runs/4m_things_neural
+data_config: 4m_training/configs/4m_things_data.yaml   
+text_tokenizer_path: external/ml-4m/fourm/utils/tokenizer/trained/text_tokenizer_4m_wordpiece_30k.json   # text tokenizer (text modality unused for THINGS but loaded in by stock 4M )
 
-# Checkpoints (uncomment one; paths are under output_dir after training):
-# resume: /project/runs/4m_things_neural/checkpoint-last.pth
-#   Continue the same run (optimizer, epoch counter, LR schedule). Set auto_resume: false
-#   if you want resume ignored when the file is missing.
-# finetune: /project/runs/4m_things_neural/checkpoint-best.pth
-#   Load weights only (new stage / new data mix). Optimizer state is not restored.
-# auto_resume: true  # if true and resume empty, trainer picks latest checkpoint in output_dir
-# start_epoch: 0      # only used when not resuming
+epoch_size: 10000            # samples per epoch (steps/epoch = epoch_size / batch_size)
+eval_freq: 1                 # run evaluation every N epochs
+save_ckpt_freq: 10           # write a checkpoint every N epochs
 
-# val_checkpoint: which weights `--validate` scores (loaded strict=False against `model:`
-# above). Set here so a plain `--validate` needs no flags; `--checkpoint <path>` overrides
-# it for a one-off. Leave blank for a random-weight pipeline smoke (losses meaningless).
-# (Ignored by the trainer; consumed only by validate_4m.py.)
+print_freq: 100              # progress line every N steps (stock hardcodes 10)
+output_dir: /project/runs/4m_things_neural   # checkpoints + logs dir (on the volume)
+
+
+in_loop_val_tasks: 4m_training/configs/4m_things_val_tasks.yaml   # val-task suite scored on live weights
+# in_loop_val_select: rgb2depth,anyany_neural,depth2rgb   # subset by name (default: all tasks)
+# in_loop_val_n_batches: 4                       # val batches scored per task each eval
+#                                                # (0 = whole val set; lower = faster, noisier)
+
+# ── Checkpointing & resume ───────────────────────────────────────────────────
+# The trainer writes `checkpoint-last.pth` to output_dir every `save_ckpt_freq` epochs.
+# Pick ONE mode (note how each interacts with auto_resume):
+#   1. Continue this run (DEFAULT): keep auto_resume: true and re-run the same command —
+#      it picks up output_dir/checkpoint-last.pth with full state (weights+optimizer+epoch+LR).
+#   2. Start fresh: set auto_resume: false AND point output_dir at a NEW (empty) folder.
+#   3. Fine-tune from other weights: uncomment `finetune` AND set auto_resume: false — otherwise
+#      a checkpoint already in output_dir auto-resumes and silently overrides the finetune.
+#      Loads WEIGHTS only (optimizer/epoch reset); use a fresh output_dir.
+#   4. Resume one exact file: uncomment `resume`. An explicit `resume` always wins, so
+#      auto_resume can stay true (it only kicks in when `resume` is empty).
+auto_resume: true            # mode 1 — pick up output_dir/checkpoint-last.pth if it exists
+# finetune: /project/runs/some_other_run/checkpoint-best.pth   # mode 3 — weights only (+ auto_resume: false)
+# resume:   /project/runs/4m_things_neural/checkpoint-last.pth # mode 4 — full state from this exact path
+# start_epoch: 0             # first epoch index, only when NOT resuming
+
+# ── Validation checkpoint (only for running validation SEPARATELY from training) ──
+# This field is for scoring a checkpoint on the val tasks WITHOUT training, via:
+#     modal run 4m_training/modal/modal_train.py --validate
+# It names the weights that command loads. Read only by validate_4m.py — the trainer ignores
+# it. `--checkpoint <path>` overrides it; leave blank to score random weights (pipeline smoke).
 val_checkpoint: /project/runs/4m_things_neural/checkpoint-last.pth
 
-opt: adamw
-blr: 0.0001
-weight_decay: 0.05
-clip_grad: 3.0
+# ── Optimizer ────────────────────────────────────────────────────────────────
+opt: adamw                 # optimizer
+# opt_betas: [0.9, 0.95]   # AdamW betas (default 0.9 / 0.95)
+# opt_eps: 1.0e-8          # AdamW epsilon
+clip_grad: 3.0             # global grad-norm clip (set null to disable)
+# skip_grad: null          # skip an optimizer step if grad-norm exceeds this (null = never)
+
+# ── Learning rate ──────────────────────────────────────────────────────────
+# Absolute LR is DERIVED, not set directly: lr = blr * (batch_size * num_gpus) / 256.
+# So at batch_size 8 on one GPU, blr 1e-4 -> lr 3.1e-6 (very small). To target a peak
+# lr ~1e-4 set blr 0.0032; for ~5e-5 set blr 0.0016. The trainer prints the resolved
+# "LR = ..." / "Min LR = ..." at startup — check those rather than the rounded per-step log.
+blr: 0.0001                # base LR (scaled by batch_size/256)
+min_blr: 0.0               # base-LR floor the schedule decays toward (0 = decay to zero)
+
+# ── Schedule ───────────────────────────────────────────────────────────────
+scheduler: cosine          # 'cosine' (blr -> min_blr) or 'inverse_sqrt-10000'
+warmup_epochs: 10          # linear LR warmup length in EPOCHS; set 0 to disable warmup.
+# warmup_steps: -1         # warmup length in STEPS instead (-1 = use warmup_epochs)
+# warmup_tokens: -1        # warmup length in BILLIONS of tokens instead (-1 = unused)
+# Cooldown applies only to inverse_sqrt schedulers (cosine ignores it). Keep cooldown_epochs
+# >= 0 (or set cooldown_steps >= 0) — making all cooldown_* negative trips a stock-4M bug.
+# cooldown_epochs: 10
+
+# ── Weight decay ─────────────────────────────────────────────────────────────
+weight_decay: 0.05         # AdamW weight decay (start value)
+# weight_decay_end: 0.05   # final WD (cosine WD schedule); set == weight_decay to keep it constant
 
 log_wandb: false

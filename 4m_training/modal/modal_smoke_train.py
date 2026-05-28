@@ -2,13 +2,17 @@
 
 From repo root::
 
-    modal run 4m_training/modal_smoke_train.py --case prod_things
-    modal run 4m_training/modal_smoke_train.py --case all
+    modal run 4m_training/modal/modal_smoke_train.py --case prod_things
+    modal run 4m_training/modal/modal_smoke_train.py --case all
+
+Prove the neural decoding heads learn on GPU (every head's loss must descend)::
+
+    modal run 4m_training/modal/modal_smoke_train.py --case neural_heads_descend
 
 Fast checks without GPU train (no image rebuild on code edits)::
 
-    modal run 4m_training/modal_train.py --dryrun --config 4m_training/configs/4m_smoke_things_data.yaml
-    modal run 4m_training/modal_smoke_train.py --case probe
+    modal run 4m_training/modal/modal_train.py --dryrun --config 4m_training/configs/4m_smoke_things_data.yaml
+    modal run 4m_training/modal/modal_smoke_train.py --case probe
 """
 
 from __future__ import annotations
@@ -53,7 +57,7 @@ SMOKE_CASES: dict[str, tuple[str, list[str]]] = {
         "4m_training/configs/4m_smoke_things_main.yaml",
         ["--data_config", "4m_training/configs/4m_smoke_things_neural_in_data.yaml"],
     ),
-    # Neural AS OUTPUT: the loss-tuned main config + the neural-output data config, so the
+    # Neural FROM VISION: the loss-tuned main config + the neural-output data config, so the
     # MEG (4 RVQ heads) / EEG reconstruction losses can be watched descending on GPU.
     # --find_unused_params: with 7 output heads and a stochastic target budget, some heads
     # get 0 targets on a given step -> their params produce no grad -> DDP needs this.
@@ -65,7 +69,20 @@ SMOKE_CASES: dict[str, tuple[str, list[str]]] = {
             "--find_unused_params",
         ],
     ),
+    # Neural SYMMETRIC (the production design): neural is encoder input AND decoder target
+    # in one config. Proves the real DDP trainer trains the neural heads on real shards.
+    "loss_decreases_neural_symmetric": (
+        "4m_training/configs/4m_smoke_things_loss_main.yaml",
+        [
+            "--data_config",
+            "4m_training/configs/4m_smoke_things_neural_symmetric_data.yaml",
+            "--find_unused_params",
+        ],
+    ),
     "prod_cc12m": ("4m_training/configs/4m_smoke_cc12m_main.yaml", []),
+    # In-loop validation: trains 1 epoch, then runs the full named-task suite on the
+    # live model and logs per-task loss (proves in-train validation works end-to-end).
+    "inloop_val": ("4m_training/configs/4m_smoke_inloop_val_main.yaml", []),
 }
 
 
@@ -107,6 +124,36 @@ def probe_volume() -> None:
     timeout=60 * 15,
     memory=32 * 1024,
 )
+def neural_heads_descend(steps: int = 80) -> str:
+    """PROOF: on GPU, every neural decoding head's loss descends during training.
+
+    Runs the one-batch overfit harness (overfit_smoke.py), where neural is symmetric so the
+    4 MEG RVQ heads + EEG + vision are ALL decoder targets. The harness asserts each
+    modality's loss drops below its init (~ln(vocab)); a non-descending head -> nonzero exit
+    -> this function fails. This is the end-to-end proof that the neural heads receive
+    gradient and learn. See notes/4m_neural_modality_design.md.
+    """
+    ensure_fourm()
+    cmd = [
+        sys.executable,
+        os.path.join(REPO, "4m_training/overfit_smoke.py"),
+        "--steps", str(steps),
+        "--device", "cuda",
+    ]
+    env = {**training_env(), "CUDA_VISIBLE_DEVICES": "0"}
+    print("running:", " ".join(cmd), flush=True)
+    t0 = time.time()
+    subprocess.run(cmd, check=True, cwd=REPO, env=env)
+    return f"OK neural_heads_descend ({steps} steps, GPU) in {time.time() - t0:.1f}s"
+
+
+@app.function(
+    image=train_image,
+    volumes={PROJECT: project_volume},
+    gpu="T4",
+    timeout=60 * 15,
+    memory=32 * 1024,
+)
 def smoke_one(case: str) -> str:
     if case not in SMOKE_CASES:
         raise ValueError(f"unknown case {case!r}; choose from {list(SMOKE_CASES)}")
@@ -122,6 +169,9 @@ def smoke_one(case: str) -> str:
 def main(case: str = "all") -> None:
     if case == "probe":
         probe_volume.remote()
+        return
+    if case == "neural_heads_descend":
+        print(neural_heads_descend.remote())
         return
     if case == "all":
         print("\n".join(smoke_one.remote(name) for name in SMOKE_CASES))

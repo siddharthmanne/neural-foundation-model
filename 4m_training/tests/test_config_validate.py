@@ -31,6 +31,7 @@ MAIN_DATA_PAIRS = [
 DATA_ONLY = [
     "4m_smoke_things_neural_in_data.yaml",
     "4m_smoke_things_neural_out_data.yaml",
+    "4m_smoke_things_neural_symmetric_data.yaml",
     "4m_things_data.yaml",
     "4m_smoke_things_data.yaml",
     "4m_smoke_cc12m_data.yaml",
@@ -91,13 +92,67 @@ def test_neural_in_smoke_validates() -> None:
     assert validate_data_config(cfg, _REPO) == []
 
 
-def test_neural_modality_in_out_domains_rejected() -> None:
+def test_neural_folder_name_rejected_as_domain() -> None:
     cfg = load_yaml(CONFIG_DIR / "4m_smoke_things_data.yaml")
     ds = cfg["train"]["datasets"]["things"]
-    ds["out_domains"] = "tok_rgb-tok_meg"  # tok_meg is input-only
+    ds["out_domains"] = "tok_rgb-tok_meg"  # tok_meg is a folder, not a modality
     ds["target_alphas"] = "1.0-1.0"
     errors = validate_data_config(cfg, _REPO)
-    assert any("tok_meg" in e and "input-only" in e for e in errors)
+    assert any("tok_meg" in e and "folder" in e for e in errors)
+
+
+def test_neural_symmetric_in_and_out_domains_allowed() -> None:
+    """The new contract: neural modalities may be BOTH input and target."""
+    cfg = load_yaml(CONFIG_DIR / "4m_smoke_things_data.yaml")
+    ds = cfg["train"]["datasets"]["things"]
+    neural = "tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg"
+    ds["in_domains"] = f"tok_rgb-tok_depth-{neural}"
+    ds["out_domains"] = f"tok_rgb-tok_depth-{neural}"
+    ds["input_alphas"] = "1.0"
+    ds["target_alphas"] = "1.0"
+    assert validate_data_config(cfg, _REPO) == []
+
+
+def test_main_config_lr_schedule_knobs_validate() -> None:
+    """The documented LR/schedule knobs in the main config pass validation."""
+    from config_validate import validate_main_config
+
+    cfg = load_yaml(CONFIG_DIR / "4m_things_main.yaml")
+    cfg.update({"scheduler": "cosine", "warmup_epochs": 0, "min_blr": 0.0,
+                "blr": 0.0016, "weight_decay_end": 0.05})
+    assert validate_main_config(cfg, _REPO) == []
+
+
+def test_main_config_inverse_sqrt_scheduler_allowed() -> None:
+    from config_validate import validate_main_config
+
+    cfg = load_yaml(CONFIG_DIR / "4m_things_main.yaml")
+    cfg["scheduler"] = "inverse_sqrt-10000"
+    assert validate_main_config(cfg, _REPO) == []
+
+
+def test_unknown_scheduler_rejected() -> None:
+    from config_validate import validate_main_config
+
+    cfg = load_yaml(CONFIG_DIR / "4m_things_main.yaml")
+    cfg["scheduler"] = "linear"
+    assert any("scheduler must be" in e for e in validate_main_config(cfg, _REPO))
+
+
+def test_all_negative_warmup_rejected() -> None:
+    from config_validate import validate_main_config
+
+    cfg = load_yaml(CONFIG_DIR / "4m_things_main.yaml")
+    cfg.update({"warmup_epochs": -1, "warmup_steps": -1, "warmup_tokens": -1})
+    assert any("warmup" in e for e in validate_main_config(cfg, _REPO))
+
+
+def test_all_negative_cooldown_rejected() -> None:
+    from config_validate import validate_main_config
+
+    cfg = load_yaml(CONFIG_DIR / "4m_things_main.yaml")
+    cfg.update({"cooldown_epochs": -1, "cooldown_steps": -1})
+    assert any("cooldown" in e for e in validate_main_config(cfg, _REPO))
 
 
 def test_cc12m_smoke_alphas_match_in_out_domain_counts() -> None:
@@ -109,8 +164,10 @@ def test_cc12m_smoke_alphas_match_in_out_domain_counts() -> None:
     assert len(ds["target_alphas"].split("-")) == n_out
 
 
-def test_tok_rgb_registered_after_neural_import() -> None:
+def test_neural_modalities_registered_after_import() -> None:
     from fourm.data.modality_info import MODALITY_INFO
 
-    for dom in ("tok_rgb", "tok_depth", "tok_meg", "tok_eeg"):
+    for dom in ("tok_rgb", "tok_depth", "tok_meg_rvq0", "tok_meg_rvq3", "tok_eeg"):
         assert dom in MODALITY_INFO, dom
+    # "tok_meg" is a folder name, never a registered modality.
+    assert "tok_meg" not in MODALITY_INFO

@@ -1,0 +1,24 @@
+# Smoke data variant: NEURAL SYMMETRIC (the production design, on one shard).
+#
+# Neural modalities (tok_meg_rvq0..3 + tok_eeg) appear in BOTH in_domains and out_domains,
+# exactly like configs/4m_things_data.yaml — so brain signals are encoder context AND
+# reconstruction targets at once. 4M's masked prediction splits each neural modality's cells
+# into input vs target (disjoint), so this is leak-free. Run with --find_unused_params.
+# See notes/4m_neural_modality_design.md.
+train:
+  datasets:
+    things:
+      type: multimodal
+      use_wds: true
+      data_path: /project/data/train/things/[tok_rgb,tok_depth,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{000..000}.tar
+      in_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg
+      out_domains: tok_rgb-tok_depth-tok_meg_rvq0-tok_meg_rvq1-tok_meg_rvq2-tok_meg_rvq3-tok_eeg
+      main_augment_domain: tok_rgb
+      tok_train_aug: false
+      input_alphas: "1.0"   # uniform across all 7 domains
+      target_alphas: "1.0"  # uniform across all 7 targets
+      aligned_captions: false
+      wds_n_repeats: 1
+      wds_shuffle_buffer_tar: 50
+      wds_shuffle_buffer_repeat: 50
+  weights: [1.0]

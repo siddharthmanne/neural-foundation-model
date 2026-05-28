@@ -25,9 +25,12 @@ from repo_paths import TEXT_TOKENIZER  # noqa: E402
 
 import fourm_neural_modalities  # noqa: F401,E402 — register modalities + transforms
 from fourm_dataloader import patch_pretrain_utils  # noqa: E402
+from neural_trial_transform import NeuralTargetSplitter  # noqa: E402
 from neural_constants import (  # noqa: E402
+    EEG_MODALITY,
     EEG_TRIAL_SHAPE,
     EEG_VOCAB_SIZE,
+    MEG_RVQ_MODALITIES,
     MEG_TRIAL_SHAPE,
     MEG_VOCAB_SIZE,
     THINGS_IMAGE_SIZE,
@@ -38,23 +41,36 @@ from neural_constants import (  # noqa: E402
 
 patch_pretrain_utils()
 
-# Neural mods are input-only: encoded but never predicted. Vision tokens are the
-# targets whose loss must descend. See notes/4m_neural_modality_design.md.
-_IN_DOMAINS = ["tok_rgb", "tok_depth", "tok_meg", "tok_eeg"]
-_OUT_DOMAINS = ["tok_rgb", "tok_depth"]
+# Neural modalities are SYMMETRIC (encoder input AND decoder target), so every modality
+# here is also predicted — its loss must descend. This is the local proof that the neural
+# decoding heads are wired and learning. See notes/4m_neural_modality_design.md.
+_IN_DOMAINS = ["tok_rgb", "tok_depth", *MEG_RVQ_MODALITIES, EEG_MODALITY]
+_OUT_DOMAINS = ["tok_rgb", "tok_depth", *MEG_RVQ_MODALITIES, EEG_MODALITY]
+
+# One trial pick per sample, sliced into the 4 MEG RVQ modalities + EEG (production path).
+_SPLITTER = NeuralTargetSplitter(training=True, seed=0)
 
 
 def _decoded_sample(rng: np.random.Generator) -> dict:
-    """One image with every modality present (mask=1) and in-vocab tokens."""
-    return {
+    """One image with every modality present (mask=1) and in-vocab tokens.
+
+    The 4 MEG RVQ modalities alias one ``(n_trials, 16, 8, 4)`` array; the splitter picks
+    one trial and slices the per-layer ``(128,)`` arrays (so they stay coherent), exactly as
+    the dataloader rename seam does in production.
+    """
+    meg = rng.integers(0, MEG_VOCAB_SIZE, (2, *MEG_TRIAL_SHAPE)).astype(np.int64)
+    eeg = rng.integers(0, EEG_VOCAB_SIZE, (2, *EEG_TRIAL_SHAPE)).astype(np.int64)
+    sample = {
         "tok_rgb": rng.integers(0, TOK_RGB_VOCAB_SIZE, (TOK_RGB_TOKENS_PER_IMAGE,)).astype(np.int64),
         "tok_depth": rng.integers(0, TOK_DEPTH_VOCAB_SIZE, (TOK_RGB_TOKENS_PER_IMAGE,)).astype(np.int64),
-        "tok_meg": rng.integers(0, MEG_VOCAB_SIZE, (2, *MEG_TRIAL_SHAPE)).astype(np.int64),
-        "tok_eeg": rng.integers(0, EEG_VOCAB_SIZE, (2, *EEG_TRIAL_SHAPE)).astype(np.int64),
         "meg_mask": np.array([1], dtype=np.int64),
         "eeg_mask": np.array([1], dtype=np.int64),
         "__key__": "overfit",
     }
+    for mod in MEG_RVQ_MODALITIES:
+        sample[mod] = meg
+    sample[EEG_MODALITY] = eeg
+    return _SPLITTER(sample)
 
 
 def _build_model(modality_info: dict, model_name: str):
@@ -125,8 +141,8 @@ def _fixed_batch(batch_size: int, input_tokens: int, target_tokens: int, seed: i
 def run_overfit(
     steps: int = 150,
     batch_size: int = 2,
-    input_tokens: int = 48,
-    target_tokens: int = 48,
+    input_tokens: int = 128,
+    target_tokens: int = 128,
     lr: float = 2e-3,
     model_name: str = "fm_tiny_6e_6d_swiglu_nobias",
     seed: int = 0,
@@ -140,6 +156,10 @@ def run_overfit(
     the run is deterministic (the only per-step variation, 4M's modality shuffle, is
     loss-invariant); we still optimize all parameters.
     """
+    # Idempotent re-assert: a prior unpatch_pretrain_utils() (e.g. from another test in the
+    # session) would have removed the _SeqSafeRandom proxy that 4M's decoder forward needs on
+    # Python 3.11+, so re-install before running a forward pass. No-op if already patched.
+    patch_pretrain_utils()
     device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
     batch, model_info, _, targets = _fixed_batch(batch_size, input_tokens, target_tokens, seed)
     print(f"fixed batch target tokens per modality: {targets}", flush=True)
@@ -155,8 +175,8 @@ def run_overfit(
     encode_cap = total_targets + input_tokens
     decode_cap = total_targets + target_tokens
 
-    # Targets (vision) are what the loss is computed on; MEG/EEG flow through the
-    # encoder only. mod_loss is keyed by out-domains.
+    # Every modality (vision + the 4 MEG RVQ heads + EEG) is a target here, so mod_loss is
+    # keyed by all of them and each must descend.
     history: dict[str, list[float]] = {m: [] for m in _OUT_DOMAINS}
     history["total"] = []
     for step in range(steps):
@@ -196,4 +216,4 @@ if __name__ == "__main__":
     args = p.parse_args()
     hist = run_overfit(steps=args.steps, lr=args.lr, device=args.device)
     assert_decreasing(hist)
-    print("\nOVERFIT OK — vision targets descended; MEG/EEG flowed through the encoder.")
+    print("\nOVERFIT OK — every modality (vision + MEG RVQ heads + EEG) descended.")
