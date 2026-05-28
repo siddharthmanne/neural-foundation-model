@@ -61,7 +61,8 @@ def training_env() -> dict[str, str]:
     """Env for single-GPU runs (4M trainer always wraps DDP; needs torchrun-style vars)."""
     return {
         **os.environ,
-        "PYTHONPATH": f"{REPO}/4m_training:{REPO}/ml-4m",
+        "PYTHONPATH": f"{REPO}/4m_training/lib:{REPO}/4m_training:{REPO}/ml-4m",
+        "FOURM_ML4M_DIR": f"{REPO}/ml-4m",
         "RANK": "0",
         "WORLD_SIZE": "1",
         "LOCAL_RANK": "0",

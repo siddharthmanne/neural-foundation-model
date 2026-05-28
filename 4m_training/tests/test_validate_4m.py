@@ -26,7 +26,7 @@ from neural_constants import (
     TOK_RGB_TOKENS_PER_IMAGE,
     TOK_RGB_VOCAB_SIZE,
 )
-from validate_4m import run_validation
+from validate_4m import _resolve_checkpoint, run_validation
 
 
 def _npy(arr: np.ndarray) -> bytes:
@@ -113,3 +113,22 @@ def test_unknown_task_raises(tasks_cfg):
     with pytest.raises(SystemExit):
         run_validation(_MAIN, tasks_cfg, select=["nope"], checkpoint=None,
                        device="cpu", batch_size=2, n_batches=1)
+
+
+# --- checkpoint resolution: main YAML `val_checkpoint`, overridable by CLI ---
+
+def test_checkpoint_read_from_main_yaml():
+    cfg = {"val_checkpoint": "/project/runs/exp/checkpoint-last.pth"}
+    assert _resolve_checkpoint(None, cfg) == Path(cfg["val_checkpoint"])
+
+
+def test_cli_checkpoint_overrides_yaml():
+    cfg = {"val_checkpoint": "/project/runs/exp/checkpoint-last.pth"}
+    cli = Path("/tmp/override.pth")
+    assert _resolve_checkpoint(cli, cfg) == cli
+
+
+def test_no_checkpoint_anywhere_is_smoke():
+    # Neither CLI nor YAML -> None -> random-weight pipeline smoke (unchanged behavior).
+    assert _resolve_checkpoint(None, {}) is None
+    assert _resolve_checkpoint(None, {"val_checkpoint": None}) is None

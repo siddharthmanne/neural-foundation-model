@@ -86,11 +86,13 @@ Checkpoints and logs land in `output_dir` (on the volume).
 ## Step 6 — Validate
 
 Validation tasks are named masking schemes in
-[`configs/4m_things_val_tasks.yaml`](configs/4m_things_val_tasks.yaml). Run all, or pick some:
+[`configs/4m_things_val_tasks.yaml`](configs/4m_things_val_tasks.yaml). The checkpoint to
+score is the `val_checkpoint:` field in the **main** YAML, so a plain `--validate` needs no
+path. Run all, or pick some:
 ```bash
-modal run 4m_training/modal/modal_train.py --validate \
-    --checkpoint /project/runs/4m_things_neural/checkpoint-last.pth        # all tasks
+modal run 4m_training/modal/modal_train.py --validate                                   # all tasks, checkpoint from YAML
 modal run 4m_training/modal/modal_train.py --validate --select rgb2depth,anyany_neural  # subset
+modal run 4m_training/modal/modal_train.py --validate --checkpoint /project/runs/other/checkpoint-best.pth  # one-off override
 ```
 Shipped tasks: `anyany_neural`, `anyany_noneural` (masked ~50% vision prediction, with/without
 brain signals) and `rgb2depth`, `depth2rgb` (cross-modal). Each prints its own loss. Add a task

@@ -67,7 +67,7 @@ def _run_train(config: str, dryrun: bool, n_batches: int) -> None:
     # This is the actual command that runs inside the container.
     cmd = [
         sys.executable,
-        os.path.join(REPO, "4m_training/train_4m.py"),
+        os.path.join(REPO, "4m_training/lib/train_4m.py"),
         "dryrun" if dryrun else "train",
         "--config",
         cfg,

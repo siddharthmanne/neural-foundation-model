@@ -14,16 +14,27 @@ import torch
 from fourm.data.masking import UnifiedMasking
 from fourm.data.modality_transforms import get_transform_key
 
-# Maps token modality -> presence-flag key loaded from shard tars.
+from neural_constants import (
+    EEG_OUT_MODALITY,
+    MEG_RVQ_OUT_MODALITIES,
+    NEURAL_GRID_TYPE,
+)
+
+# Maps token modality -> presence-flag key loaded from shard tars. Input-only
+# tok_meg/tok_eeg and the output heads derived from the same folder all gate on the
+# same flag (many token modalities -> one mask).
 PRESENCE_FLAGS: dict[str, str] = {
     "tok_meg": "meg_mask",
     "tok_eeg": "eeg_mask",
+    **{mod: "meg_mask" for mod in MEG_RVQ_OUT_MODALITIES},
+    EEG_OUT_MODALITY: "eeg_mask",
 }
 
-# Flat pretokenized sequences (MEG_TOKENS_PER_TRIAL / EEG_TOKENS_PER_TRIAL RVQ codes).
-# Stock ``sequence_token_mask``
-# injects text-tokenizer sentinel ids and breaks small-vocab ``seq_token`` embeddings.
-_NEURAL_FLAT_TOKEN_MODS = frozenset(PRESENCE_FLAGS.keys())
+# The INPUT-side neural modalities that are still ``seq_token`` but must be masked as a
+# flat grid: stock ``sequence_token_mask`` would inject text-tokenizer sentinel ids and
+# break their small-vocab embeddings. (Output heads use the ``neural_grid`` type instead
+# and are routed separately, so they are NOT in this set.)
+_NEURAL_FLAT_TOKEN_MODS = frozenset({"tok_meg", "tok_eeg"})
 
 
 def _read_presence_flag(value: Any) -> bool:
@@ -36,13 +47,18 @@ def _read_presence_flag(value: Any) -> bool:
 
 
 def extract_presence_flags(mod_dict: dict) -> dict[str, bool]:
-    """Pop ``meg_mask`` / ``eeg_mask`` from ``mod_dict`` and return presence map."""
+    """Pop ``meg_mask`` / ``eeg_mask`` from ``mod_dict`` and return presence map.
+
+    Several token modalities may share one flag (e.g. the four ``tok_meg_rvq*`` heads
+    all gate on ``meg_mask``), so read every flag before removing the unique flag keys.
+    """
     presence: dict[str, bool] = {}
     for tok_mod, flag_mod in PRESENCE_FLAGS.items():
-        if flag_mod not in mod_dict:
-            presence[tok_mod] = True
-            continue
-        presence[tok_mod] = _read_presence_flag(mod_dict.pop(flag_mod))
+        presence[tok_mod] = (
+            _read_presence_flag(mod_dict[flag_mod]) if flag_mod in mod_dict else True
+        )
+    for flag_mod in set(PRESENCE_FLAGS.values()):
+        mod_dict.pop(flag_mod, None)
     return presence
 
 
@@ -126,6 +142,16 @@ class PresenceAwareUnifiedMasking(UnifiedMasking):
                     input_budget,
                     target_budget,
                     keep_scheme,
+                )
+            elif mod_type == NEURAL_GRID_TYPE:
+                # Output neural heads: parallel grid masking (scatter), like img. The
+                # decoder branch in fm.cat_decoder_tensors treats any non-seq type as
+                # parallel, so these produce per-cell targets, not AR-shifted ones.
+                masked_mod_dict[mod_name] = self.image_mask(
+                    mod_dict[mod_name_load],
+                    mod_info["max_tokens"],
+                    input_budget,
+                    target_budget,
                 )
             elif mod_type == "seq_token" and mod_name in _NEURAL_FLAT_TOKEN_MODS:
                 masked_mod_dict[mod_name] = self.image_mask(

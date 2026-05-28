@@ -277,6 +277,71 @@ class TestLoaderIntegration:
                 f"sentinel={sentinel}, mask={mask}"
             )
 
+    def test_neural_output_heads_materialized_and_coherent(self, shard_root: Path):
+        """Real pipeline: rename fan-out + splitter produce coherent per-head targets.
+
+        Each MEG trial is a distinct constant, so we can assert all four RVQ heads land
+        on the *same* trial (coherence) and have the right flat shapes/dtypes.
+        """
+        import fourm_neural_modalities  # noqa: F401  (registers output modalities)
+        from fourm.data import unified_datasets as ud
+        from fourm_dataloader import (
+            _extend_modality_paths,
+            patch_pretrain_utils,
+            unpatch_pretrain_utils,
+        )
+        from neural_constants import (
+            EEG_OUT_MODALITY,
+            EEG_TOKENS_PER_TRIAL,
+            EEG_TRIAL_SHAPE,
+            MEG_POSITIONS_PER_TRIAL,
+            MEG_RVQ_OUT_MODALITIES,
+        )
+        from train_4m import _build_modality_info
+
+        root = shard_root
+        ids = ["000000001", "000000002"]
+        n_trials = 5
+        for mod_dir, entries in (
+            ("tok_rgb", [(i, _npy_bytes(np.full((TOK_RGB_TOKENS_PER_IMAGE,), 1, np.int16))) for i in ids]),
+            # MEG trial t is the constant (t+1) everywhere -> identifies the picked trial.
+            ("tok_meg", [(i, _npy_bytes(np.stack([np.full(MEG_TRIAL_SHAPE, t + 1, np.int16) for t in range(n_trials)]))) for i in ids]),
+            ("tok_eeg", [(i, _npy_bytes(np.stack([np.full(EEG_TRIAL_SHAPE, t + 1, np.int16) for t in range(n_trials)]))) for i in ids]),
+            ("meg_mask", [(i, _npy_bytes(np.array([1], np.uint8))) for i in ids]),
+            ("eeg_mask", [(i, _npy_bytes(np.array([1], np.uint8))) for i in ids]),
+        ):
+            _make_tar(root / f"{mod_dir}/shard_000.tar", [(k, "npy", b) for k, b in entries])
+
+        out_domains = ["tok_rgb", *MEG_RVQ_OUT_MODALITIES, EEG_OUT_MODALITY]
+        mod_info = _build_modality_info(out_domains)
+        paths = _extend_modality_paths(mod_info)
+
+        patch_pretrain_utils()  # installs _rename_modalities + train-mode splitter
+        try:
+            pipeline = wds.DataPipeline(
+                wds.SimpleShardList(
+                    f"{root}/[tok_rgb,tok_meg,tok_eeg,meg_mask,eeg_mask]/shard_{{000..000}}.tar"
+                ),
+                partial(multi_tarfile_samples, handler=_fail_handler),
+                wds.decode(wds_decoder),
+                wds.map(remove_extensions),
+                keyless_map(filter_metadata),
+                keyless_map(tok_to_int64),
+                keyless_map(partial(ud.rename_modalities, modality_paths=paths)),
+            )
+            n = 0
+            for sample in pipeline:
+                n += 1
+                for mod in MEG_RVQ_OUT_MODALITIES:
+                    assert sample[mod].shape == (MEG_POSITIONS_PER_TRIAL,), mod
+                assert sample[EEG_OUT_MODALITY].shape == (EEG_TOKENS_PER_TRIAL,)
+                # All four MEG heads must come from one trial -> one shared constant.
+                picked = {int(np.unique(sample[mod])[0]) for mod in MEG_RVQ_OUT_MODALITIES}
+                assert len(picked) == 1, f"RVQ heads decohered across trials: {picked}"
+        finally:
+            unpatch_pretrain_utils()
+        assert n == 2
+
     def test_meg_trial_transform_runs_on_pipeline_output(
         self, shard_root: Path
     ):

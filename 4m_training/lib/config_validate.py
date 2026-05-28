@@ -12,8 +12,10 @@ import yaml
 from repo_paths import REPO_ROOT as _REPO_ROOT
 
 _PRESENCE_FLAGS = frozenset({"meg_mask", "eeg_mask"})
-# Neural modalities are encoder-only here (no decoder embedding); see
-# notes/4m_neural_modality_design.md. Listing them as targets would crash model build.
+# These neural modalities have no decoder embedding (encoder-only). The summed MEG grid
+# (tok_meg) and the EEG input sequence (tok_eeg) can only be inputs; to predict neural as
+# a target, use the output heads tok_meg_rvq0..3 / tok_eeg_out instead. See
+# notes/4m_neural_modality_design.md §6. Listing tok_meg/tok_eeg as targets crashes build.
 _INPUT_ONLY = frozenset({"tok_meg", "tok_eeg"})
 _TRAIN_TYPES = frozenset({"multimodal"})
 _LOSS_TYPES = frozenset({"mod", "token"})
@@ -110,10 +112,17 @@ def validate_dataset_config(
     bracket_mods = _modalities_in_bracket(data_path)
     train_domains = set(in_domains) | set(out_domains)
     for dom in train_domains:
-        if dom not in bracket_mods and dom not in _PRESENCE_FLAGS:
+        if dom in _PRESENCE_FLAGS:
+            continue
+        # A domain is satisfied if the bracket lists either its own name (stock case,
+        # e.g. rgb@224) or its source ``path`` (output heads tok_meg_rvq*/tok_eeg_out
+        # read the tok_meg / tok_eeg folder).
+        folder = modality_info.get(dom, {}).get("path", dom) if dom in modality_info else dom
+        if dom not in bracket_mods and folder not in bracket_mods:
+            suffix = f" (reads folder {folder!r})" if folder != dom else ""
             errors.append(
-                f"{name}: {dom} in in/out_domains but not in data_path "
-                f"bracket list {bracket_mods}"
+                f"{name}: {dom}{suffix} in in/out_domains but its folder is not in "
+                f"data_path bracket list {bracket_mods}"
             )
 
     main_aug = cfg.get("main_augment_domain")
