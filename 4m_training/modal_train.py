@@ -106,6 +106,7 @@ def main(
     # NB: the bool flag `dryrun` must not share a name with a Modal function, or
     # `<flag>.remote(...)` resolves to the bool. Function is `dryrun_job`.
     if dryrun:
+        print("dryrun")
         dryrun_job.remote(config=config, n_batches=n_batches)
     else:
         train.remote(config=config)

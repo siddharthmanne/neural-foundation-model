@@ -63,6 +63,7 @@ def training_env() -> dict[str, str]:
         **os.environ,
         "PYTHONPATH": f"{REPO}/4m_training/lib:{REPO}/4m_training:{REPO}/ml-4m",
         "FOURM_ML4M_DIR": f"{REPO}/ml-4m",
+        "PYTHONUNBUFFERED": "1",
         "RANK": "0",
         "WORLD_SIZE": "1",
         "LOCAL_RANK": "0",
