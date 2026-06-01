@@ -75,7 +75,11 @@ def _cap_split_indices(
     volumes={PROJECT_MOUNT: project_volume},
     gpu="L40S",
     cpu=8.0,
-    memory=32 * 1024,
+    # 64 GB: accommodates the cross-subject averaging path which holds the
+    # raw single-trial tensor (~27 GB) AND the f64 sums tensor (~13 GB)
+    # concurrently, then frees both after the averaged tensor (~7 GB)
+    # is built. 32 GB was enough for non-averaged training but not this.
+    memory=64 * 1024,
     timeout=6 * 60 * 60,
 )
 def finetune_remote(
@@ -90,6 +94,9 @@ def finetune_remote(
     finetune_mode: str = "adapt",
     grad_clip: float = 1.0,
     codebook_size: int = 0,
+    patience: int = 2,
+    min_epochs: int = 3,
+    averaging: str = "none",
 ) -> dict:
     """Finetune BrainTokenizer on THINGS-MEG train split."""
     import os
@@ -114,7 +121,11 @@ def finetune_remote(
         build_optimizer_groups,
         compute_braintokenizer_loss,
     )
-    from neural_tokenizers.meg.data import list_subjects, load_trials_pooled
+    from neural_tokenizers.meg.data import (
+        average_trials_by_image,
+        list_subjects,
+        load_trials_pooled,
+    )
     from neural_tokenizers.meg.splits import split_by_image
 
     ft_cfg = FinetuneConfig(
@@ -124,6 +135,8 @@ def finetune_remote(
         batch_size=batch_size,
         epochs=epochs,
         grad_clip=grad_clip,
+        patience=patience,
+        min_epochs=min_epochs,
     )
     tok_cfg = (
         replace(BRAINOMNI_DEFAULT, codebook_size=codebook_size)
@@ -150,8 +163,28 @@ def finetune_remote(
     train_per_subj = _cap_split_indices(train_per_subj, max_train_trials, seed)
     val_per_subj = _cap_split_indices(val_per_subj, max_val_trials, seed + 1)
 
-    X_train, _, _ = load_trials_pooled(subjects, train_per_subj)
-    X_val, _, _ = load_trials_pooled(subjects, val_per_subj)
+    # Single-trial vs cross-subject-averaged data loading. The split is the
+    # same image_id partition either way — averaging collapses all trials
+    # of a given image_id (across subjects and reps) into one signal, so
+    # the cross-image split structure is preserved.
+    if averaging == "none":
+        X_train, _, _ = load_trials_pooled(subjects, train_per_subj)
+        X_val, _, _ = load_trials_pooled(subjects, val_per_subj)
+    elif averaging == "cross_subject":
+        X_train_raw, train_iids, _ = load_trials_pooled(subjects, train_per_subj)
+        X_val_raw, val_iids, _ = load_trials_pooled(subjects, val_per_subj)
+        X_train, _ = average_trials_by_image(X_train_raw, train_iids)
+        X_val, _ = average_trials_by_image(X_val_raw, val_iids)
+        del X_train_raw, X_val_raw
+        print(
+            f"[finetune] cross-subject averaging: "
+            f"{len(train_iids)} train trials → {X_train.shape[0]} averaged | "
+            f"{len(val_iids)} val trials → {X_val.shape[0]} averaged"
+        )
+    else:
+        raise ValueError(
+            f"averaging must be 'none' or 'cross_subject'; got {averaging!r}"
+        )
     print(f"[finetune] train={tuple(X_train.shape)} val={tuple(X_val.shape)}")
 
     ckpt_dir = resolve_ckpt_dir(None, BRAINOMNI_REPO)
@@ -211,7 +244,9 @@ def finetune_remote(
     (out_dir / "model_cfg.json").write_text(json.dumps(saved_model_cfg, indent=2))
 
     best_val = float("inf")
+    epochs_since_best = 0
     history: list[dict[str, float]] = []
+    early_stopped_at: int | None = None
     for epoch in range(epochs):
         perm = torch.randperm(X_train.shape[0], generator=torch.Generator().manual_seed(seed + epoch))
         train_sum = 0.0
@@ -233,10 +268,26 @@ def finetune_remote(
         print(f"[finetune] epoch {epoch+1}/{epochs} train={train_avg:.4f} val={val_avg:.4f}")
         if val_avg < best_val:
             best_val = val_avg
+            epochs_since_best = 0
             torch.save(model.state_dict(), out_dir / "BrainTokenizer.pt")
             print(f"[finetune] saved best checkpoint val={best_val:.4f}")
+        else:
+            epochs_since_best += 1
         (out_dir / "history.json").write_text(json.dumps(history, indent=2))
         project_volume.commit()
+
+        # Early stopping: break out of the schedule once val has stopped
+        # improving. Best checkpoint is already on disk (saved each time
+        # val_avg < best_val), so the on-disk weights at end == best-val.
+        # patience<=0 disables. min_epochs absorbs cold-start volatility.
+        if patience > 0 and (epoch + 1) >= min_epochs and epochs_since_best >= patience:
+            best_epoch = epoch - epochs_since_best + 1  # 0-indexed epoch of best_val
+            print(
+                f"[finetune] EARLY STOP — val hasn't improved in {patience} "
+                f"consecutive epochs (best={best_val:.4f} at epoch {best_epoch + 1})"
+            )
+            early_stopped_at = epoch + 1
+            break
 
     result = {
         "slug": slug,
@@ -255,6 +306,10 @@ def finetune_remote(
         "best_val_loss": best_val,
         "param_counts": param_counts,
         "history": history,
+        "early_stopped_at": early_stopped_at,
+        "patience": patience,
+        "min_epochs": min_epochs,
+        "averaging": averaging,
         "config": {k: getattr(tok_cfg, k) for k in tok_cfg.__dataclass_fields__},
     }
     (out_dir / "config.json").write_text(json.dumps(result, indent=2))
@@ -277,15 +332,21 @@ def finetune(
     finetune_mode: str = "adapt",
     grad_clip: float = 1.0,
     codebook_size: int = 0,
+    patience: int = 2,
+    min_epochs: int = 3,
+    averaging: str = "none",
 ):
     """Launch BrainTokenizer finetune on Modal.
 
     Default ``finetune_mode=adapt`` freezes SEANet convs, trains sensor/cross-attn/RVQ.
+    ``--averaging cross_subject`` collapses all trials of an image_id into one
+    averaged signal before training (Experiment 2). Recommend `--patience 2`
+    early-stopping for the averaged regime — fewer samples → real overfit risk.
     """
     lrs = [3e-6, 1e-5, 3e-5] if lr_sweep else [lr]
     best: dict | None = None
     for trial_lr in lrs:
-        print(f"[finetune] mode={finetune_mode} lr={trial_lr}")
+        print(f"[finetune] mode={finetune_mode} lr={trial_lr} avg={averaging}")
         result = finetune_remote.remote(
             lr=trial_lr,
             codebook_lr=codebook_lr,
@@ -298,6 +359,9 @@ def finetune(
             finetune_mode=finetune_mode,
             grad_clip=grad_clip,
             codebook_size=codebook_size,
+            patience=patience,
+            min_epochs=min_epochs,
+            averaging=averaging,
         )
         if best is None or result["best_val_loss"] < best["best_val_loss"]:
             best = result
@@ -325,6 +389,9 @@ def finetune_detached(
     finetune_mode: str = "adapt",
     grad_clip: float = 1.0,
     codebook_size: int = 0,
+    patience: int = 2,
+    min_epochs: int = 3,
+    averaging: str = "none",
 ):
     """Spawn finetune on Modal — survives laptop sleep/close.
 
@@ -344,7 +411,7 @@ def finetune_detached(
     slug = run_slug(cfg=tok_cfg, stage=stage)
     remote_ckpt = f"{CKPT_ROOT}/{slug}"
 
-    print(f"[finetune] spawning mode={finetune_mode} lr={lr} epochs={epochs}")
+    print(f"[finetune] spawning mode={finetune_mode} lr={lr} epochs={epochs} avg={averaging}")
     fc = finetune_remote.spawn(
         lr=lr,
         codebook_lr=codebook_lr,
@@ -357,6 +424,9 @@ def finetune_detached(
         finetune_mode=finetune_mode,
         grad_clip=grad_clip,
         codebook_size=codebook_size,
+        patience=patience,
+        min_epochs=min_epochs,
+        averaging=averaging,
     )
     print(f"[finetune] spawned function call: {fc.object_id}")
     print(f"[finetune] checkpoint dir: {remote_ckpt}/")

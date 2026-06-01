@@ -129,6 +129,9 @@ def evaluate_remote(
     n_test: int = 3000,
     seed: int = 0,
     use_mu_split: bool = True,
+    probe_classifier: str = "linear",
+    probe_label_space: str = "category27",
+    averaging: str = "none",
 ) -> dict[str, Any]:
     """Run the §5 four-axis harness against the named tokenizer.
 
@@ -158,7 +161,10 @@ def evaluate_remote(
         SplitDefaults,
     )
     from neural_tokenizers.meg.data import (
+        AnimacyMapping,
         ConceptMapping,
+        SuperordinateMapping,
+        average_trials_by_image,
         list_subjects,
         load_trials_pooled,
     )
@@ -201,36 +207,85 @@ def evaluate_remote(
         total_test = sum(len(v) for v in test_per_subj.values())
         print(f"[eval] capped to {total_test} test trials")
 
-    X, image_ids, _ = load_trials_pooled(subjects, test_per_subj)
+    X, image_ids, subject_ids = load_trials_pooled(subjects, test_per_subj)
     print(f"[eval] materialized X={tuple(X.shape)} dtype={X.dtype}")
+
+    # Cross-subject + cross-rep averaging: collapse all trials of an image_id
+    # into one signal. Matches the training-time data distribution for a
+    # checkpoint trained with `--averaging cross_subject`. Eliminates the
+    # subject variable by construction — `probe_label_space="subject"` is
+    # rejected upstream when averaging is in effect.
+    if averaging == "cross_subject":
+        if probe_label_space == "subject":
+            raise ValueError(
+                "probe_label_space='subject' is incompatible with "
+                "averaging='cross_subject' — averaging eliminates the "
+                "subject variable by construction."
+            )
+        X, image_ids = average_trials_by_image(X, image_ids)
+        # subject_ids no longer apply per row; emit a -1 placeholder array of
+        # matching length so the rest of the script doesn't have to special-case.
+        subject_ids = np.full(X.shape[0], -1, dtype=np.int64)
+        print(
+            f"[eval] cross-subject averaging applied → "
+            f"X={tuple(X.shape)} ({len(image_ids)} unique image_ids)"
+        )
+    elif averaging != "none":
+        raise ValueError(
+            f"averaging must be 'none' or 'cross_subject'; got {averaging!r}"
+        )
 
     # Build the tokenizer inside the container.
     factory = _TOKENIZER_FACTORIES[tokenizer_name]
     tok = factory(tokenizer_payload)
 
-    # Labels for the §5.3 probe: THINGS concept IDs (1..1854) → dense
-    # [0..K-1] for cross-entropy. Two-step densification:
-    #   (a) image_id → THINGS concept_id (via ConceptMapping; full 1854 space)
-    #   (b) collapse to ONLY the concepts that appear in our 3000-trial eval
-    #       set. CRITICAL: skipping (b) gives the probe ~800 "phantom" output
-    #       columns (concepts in THINGS but absent here), which weight decay
-    #       pulls toward zero and distorts argmax. With (b), n_classes equals
-    #       the actual unique concept count in the eval set.
-    concept_map = ConceptMapping.load()
-    full_labels, valid = concept_map.encode(image_ids)
-    n_dropped = int((~valid).sum())
-    if n_dropped > 0:
-        print(f"[eval] dropping {n_dropped} trials with unmapped image_ids")
-        keep_idx = torch.from_numpy(np.nonzero(valid)[0].astype("int64"))
-        X = X[keep_idx]
-        full_labels = full_labels[valid]
-    # Step (b): re-densify to [0, K_observed).
-    _, dense_labels = np.unique(full_labels, return_inverse=True)
-    labels = torch.from_numpy(dense_labels.astype("int64"))
-    print(
-        f"[eval] probe labels: {len(np.unique(dense_labels))} concepts in eval set "
-        f"({X.shape[0]} trials, out of {concept_map.n_concepts} THINGS total)"
-    )
+    # Labels for the §5.3 probe. Three label spaces, dispatched by name:
+    #   "category27" : image_id → concept_id → superordinate ∈ [0, 27)
+    #   "animacy"    : image_id → concept_id → superordinate → {0, 1}
+    #   "subject"    : trial → subject index ∈ [0, n_subjects) — pipeline
+    #                  sanity check; subject is trivially decodable from MEG
+    #                  (head position, sensor sensitivities), so an MLP that
+    #                  cannot decode this is broken upstream of any category
+    #                  question. Steals the trick from Dixen et al. 2024.
+    if probe_label_space == "subject":
+        labels = torch.from_numpy(subject_ids.astype("int64"))
+        n_classes_used = int(np.unique(subject_ids).size)
+        n_classes_total = len(subjects)
+        print(
+            f"[eval] probe labels (subject): "
+            f"{n_classes_used}/{n_classes_total} subjects present in "
+            f"{X.shape[0]} eval trials"
+        )
+    else:
+        concept_map = ConceptMapping.load()
+        super_map = SuperordinateMapping.load()
+        if probe_label_space == "category27":
+            label_encoder = super_map
+        elif probe_label_space == "animacy":
+            label_encoder = AnimacyMapping.from_super_map(super_map)
+        else:
+            raise ValueError(
+                f"probe_label_space must be 'category27', 'animacy', or "
+                f"'subject'; got {probe_label_space!r}"
+            )
+        encoded_labels, valid = label_encoder.encode_image_ids(image_ids, concept_map)
+        n_dropped = int((~valid).sum())
+        if n_dropped > 0:
+            print(
+                f"[eval] dropping {n_dropped} trials with no valid "
+                f"{probe_label_space} label"
+            )
+            keep_idx = torch.from_numpy(np.nonzero(valid)[0].astype("int64"))
+            X = X[keep_idx]
+            encoded_labels = encoded_labels[valid]
+        labels = torch.from_numpy(encoded_labels.astype("int64"))
+        n_classes_used = int(np.unique(encoded_labels).size)
+        n_classes_total = label_encoder.n_categories
+        print(
+            f"[eval] probe labels ({probe_label_space}): "
+            f"{n_classes_used}/{n_classes_total} classes present in "
+            f"{X.shape[0]} eval trials"
+        )
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     X = X.to(device)
@@ -246,26 +301,49 @@ def evaluate_remote(
         probe_epochs=eval_defaults.probe_epochs,
         probe_top_k=eval_defaults.probe_top_k,
         probe_test_frac=eval_defaults.probe_test_frac,
+        probe_n_folds=eval_defaults.probe_n_folds,
+        probe_rvq_layers=eval_defaults.probe_rvq_layers,
+        probe_class_weighted=eval_defaults.probe_class_weighted,
+        probe_classifier=probe_classifier,
+        probe_mlp_hidden=eval_defaults.probe_mlp_hidden,
+        probe_mlp_dropout=eval_defaults.probe_mlp_dropout,
+        probe_cnn_hidden=eval_defaults.probe_cnn_hidden,
     )
     report = evaluate(tok, X, labels, cfg)
     print(report)
 
     return {
         m.name: dict(m.values)
-        for m in (report.reconstruction, report.codebook, report.sequence, report.probe)
+        for m in (
+            report.reconstruction,
+            report.codebook,
+            report.sequence,
+            report.probe,
+            report.retrieval,
+        )
         if m is not None
     }
 
 
-def _eval_slug(n_test: int, seed: int) -> str:
+def _eval_slug(
+    n_test: int,
+    seed: int,
+    probe_classifier: str = "linear",
+    probe_label_space: str = "category27",
+    averaging: str = "none",
+) -> str:
     """Filename suffix that distinguishes eval invocations against one calibration.
 
-    Two eval runs with the same (n_test, seed) are deterministic and identical,
-    so overwriting is fine. Different (n_test, seed) get different files so
-    they don't clobber each other.
+    Default config (linear + category27 + no averaging) keeps the legacy slug
+    so we don't churn paths. Diagnostic variants append `_<classifier>`,
+    `_<label_space>`, and/or `_<averaging>` so they live alongside the
+    canonical §5.3 JSON.
     """
     n_part = "full" if n_test <= 0 else f"n{n_test}"
-    return f"ntest={n_part}_s{seed}"
+    clf_part = "" if probe_classifier == "linear" else f"_{probe_classifier}"
+    label_part = "" if probe_label_space == "category27" else f"_{probe_label_space}"
+    avg_part = "" if averaging == "none" else f"_avg{averaging}"
+    return f"ntest={n_part}_s{seed}{clf_part}{label_part}{avg_part}"
 
 
 @app.local_entrypoint()
@@ -275,6 +353,9 @@ def run(
     n_test: int = 3000,
     seed: int = 0,
     output: str = "",
+    probe_classifier: str = "linear",
+    probe_label_space: str = "category27",
+    averaging: str = "none",
 ):
     """Run the §5 harness remotely; report lands next to the calibration in
     `<calibration_dir>/evals/eval_<eval_slug>.json`.
@@ -306,6 +387,9 @@ def run(
         n_test=n_test,
         seed=seed,
         use_mu_split=use_mu_split,
+        probe_classifier=probe_classifier,
+        probe_label_space=probe_label_space,
+        averaging=averaging,
     )
     print("\n[eval] report (local view):")
     for axis, values in report.items():
@@ -318,7 +402,7 @@ def run(
     else:
         evals_dir = calib_path.parent / "evals"
         evals_dir.mkdir(parents=True, exist_ok=True)
-        out_path = evals_dir / f"eval_{_eval_slug(n_test, seed)}.json"
+        out_path = evals_dir / f"eval_{_eval_slug(n_test, seed, probe_classifier, probe_label_space, averaging)}.json"
     out_path.write_text(json.dumps(report, indent=2))
     print(f"[eval] wrote report to {out_path}")
 

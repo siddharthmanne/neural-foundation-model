@@ -90,14 +90,19 @@ _MAIN = {"model": "fm_tiny_6e_6d_swiglu_nobias", "input_size": 224, "loss_type":
 
 
 def test_cross_modal_tasks_only_score_their_target(tasks_cfg):
+    # Select both so the model carries rgb AND depth decoder heads — the case where a
+    # task's non-target head would otherwise emit a spurious 0 and dilute the average.
     res = run_validation(_MAIN, tasks_cfg, select=["rgb2depth", "depth2rgb"],
                          checkpoint=None, device="cpu", batch_size=2, n_batches=1)
-    # rgb2depth predicts depth only — RGB is input, must not contribute loss.
+    # rgb2depth predicts depth only: report depth, NOT a 0.0 for rgb (an input), and the
+    # task `loss` must equal the depth loss — not (depth + 0)/2.
     assert res["rgb2depth"]["tok_depth_loss"] > 0
-    assert res["rgb2depth"].get("tok_rgb_loss", 0.0) == 0.0
+    assert "tok_rgb_loss" not in res["rgb2depth"]
+    assert res["rgb2depth"]["loss"] == res["rgb2depth"]["tok_depth_loss"]
     # depth2rgb is the mirror image.
     assert res["depth2rgb"]["tok_rgb_loss"] > 0
-    assert res["depth2rgb"].get("tok_depth_loss", 0.0) == 0.0
+    assert "tok_depth_loss" not in res["depth2rgb"]
+    assert res["depth2rgb"]["loss"] == res["depth2rgb"]["tok_rgb_loss"]
 
 
 def test_anyany_scores_both_vision_modalities(tasks_cfg):
@@ -105,6 +110,8 @@ def test_anyany_scores_both_vision_modalities(tasks_cfg):
                          checkpoint=None, device="cpu", batch_size=2, n_batches=1)
     stats = res["anyany_neural"]
     assert stats["tok_rgb_loss"] > 0 and stats["tok_depth_loss"] > 0
+    # Two real targets here, so the task `loss` is the mean of the two (not diluted).
+    assert stats["loss"] == pytest.approx((stats["tok_rgb_loss"] + stats["tok_depth_loss"]) / 2)
     # This val task uses neural as encoder context only (out_domains = vision), so no
     # neural modality appears as a predicted-modality loss.
     assert not any(k.startswith("tok_meg_rvq") for k in stats)

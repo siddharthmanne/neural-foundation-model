@@ -132,13 +132,21 @@ def _build_task_loader(task_cfg: dict, input_size: int, in_range, out_range,
         target_tokens_range=out_range, num_workers=num_workers, batch_size=batch_size,
         sampling_weights=sampling_weights,
     )
-    return loader, all_d
+    return loader, all_d, out_d
 
 
 @torch.no_grad()
-def evaluate_task(model, loader, device, all_domains, n_in, n_out, loss_type, dtype, n_batches):
-    """Average loss + per-modality loss over up to n_batches val batches."""
+def evaluate_task(model, loader, device, all_domains, out_domains, n_in, n_out, loss_type, dtype, n_batches):
+    """Average per-target loss over up to n_batches val batches.
+
+    Loss is reported ONLY on the task's ``out_domains`` (its prediction targets).
+    The model may carry extra decoder heads — e.g. ``tok_rgb`` when only depth is
+    this task's target — whose loss is 0 and would otherwise dilute the average
+    (the bug: rgb2depth showing (depth + 0)/2). The task ``loss`` is the mean over
+    ``out_domains`` alone, so a single-target task reports exactly that target.
+    """
     model.eval()
+    out_set = set(out_domains)
     totals: dict[str, float] = {}
     count = 0
     for i, x in enumerate(loader):
@@ -151,11 +159,13 @@ def evaluate_task(model, loader, device, all_domains, n_in, n_out, loss_type, dt
         }
         autocast = torch.autocast(device_type=device.type, dtype=dtype, enabled=dtype != torch.float32)
         with autocast:
-            loss, mod_loss = model(mod_dict, num_encoder_tokens=n_in,
-                                   num_decoder_tokens=n_out, loss_type=loss_type)
-        totals["loss"] = totals.get("loss", 0.0) + float(loss)
-        for mod, l in mod_loss.items():
-            totals[f"{mod}_loss"] = totals.get(f"{mod}_loss", 0.0) + float(l.mean())
+            _, mod_loss = model(mod_dict, num_encoder_tokens=n_in,
+                                num_decoder_tokens=n_out, loss_type=loss_type)
+        target_losses = {mod: float(l.mean()) for mod, l in mod_loss.items() if mod in out_set}
+        for mod, value in target_losses.items():
+            totals[f"{mod}_loss"] = totals.get(f"{mod}_loss", 0.0) + value
+        if target_losses:
+            totals["loss"] = totals.get("loss", 0.0) + sum(target_losses.values()) / len(target_losses)
         count += 1
     if count == 0:
         return {"loss": float("nan"), "n_batches": 0}
@@ -228,9 +238,9 @@ class ValidationSuite:
             self._runnable = self._resolve_runnable(model)
         results: dict[str, dict[str, Any]] = {}
         for name in self._runnable:
-            loader, all_d = self._loader_for(name)
+            loader, all_d, out_d = self._loader_for(name)
             results[name] = evaluate_task(
-                model, loader, device, all_d, self.n_in, self.n_out,
+                model, loader, device, all_d, out_d, self.n_in, self.n_out,
                 self.loss_type, dtype, self.n_batches,
             )
         return results

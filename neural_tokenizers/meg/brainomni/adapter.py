@@ -14,14 +14,31 @@ from .preprocess import PreprocessState, inverse_preprocess, preprocess_for_brai
 from .sensor_metadata import SensorMetadata, load_things_meg_sensor_metadata
 
 
-def _decode_rvq_indices(rvq, indices: torch.Tensor, dim: int) -> torch.Tensor:
-    """Map RVQ indices ``(..., Q)`` → ``(..., dim)`` by summing layer decodes."""
+def _decode_rvq_indices(
+    rvq,
+    indices: torch.Tensor,
+    dim: int,
+    layers: tuple[int, ...] | None = None,
+) -> torch.Tensor:
+    """Map RVQ indices ``(..., Q)`` → ``(..., dim)`` by summing layer decodes.
+
+    Args:
+        rvq: the RVQ stack (must expose ``.layers``).
+        indices: ``(..., Q)`` long token IDs.
+        dim: per-layer embedding dimension.
+        layers: which RVQ layer indices to sum. ``None`` (default) sums every
+            available layer — required for faithful decode/reconstruction.
+            A tuple selects a subset (e.g. ``(0,)`` for RVQ0 only), used by
+            the linear probe to ask whether one specific layer carries the
+            task signal.
+    """
     *leading, q = indices.shape
     flat = indices.reshape(-1, q)
     out = torch.zeros(flat.shape[0], dim, device=indices.device, dtype=torch.float32)
-    for qi, vq_layer in enumerate(rvq.layers):
+    chosen = layers if layers is not None else tuple(range(len(rvq.layers)))
+    for qi in chosen:
         layer_idx = flat[:, qi].long()
-        out = out + vq_layer.decode(layer_idx)
+        out = out + rvq.layers[qi].decode(layer_idx)
     return out.reshape(*leading, dim)
 
 
@@ -125,10 +142,19 @@ class BrainOmniTokenizer:
         return x_hat
 
     @torch.no_grad()
-    def tokens_to_embedding(self, tokens: torch.Tensor) -> torch.Tensor:
-        """RVQ codebook embeddings for the linear probe. Shape (B, L, D)."""
+    def tokens_to_embedding(
+        self, tokens: torch.Tensor, layers: tuple[int, ...] | None = None
+    ) -> torch.Tensor:
+        """RVQ codebook embeddings for the linear probe. Shape (B, L, D).
+
+        ``layers`` selects which RVQ codebooks to sum. ``None`` (default)
+        sums all 4 layers — equivalent to the original behavior and what
+        ``decode_tokens`` uses for reconstruction. Passing e.g. ``(0,)``
+        returns the RVQ0-only embedding, which the §5.3 probe uses to ask
+        whether the coarsest layer alone carries object-level information.
+        """
         dim = self.model.n_dim
-        emb = _decode_rvq_indices(self.model.quantizer.rvq, tokens, dim)
+        emb = _decode_rvq_indices(self.model.quantizer.rvq, tokens, dim, layers=layers)
         return emb.reshape(tokens.shape[0], -1, dim)
 
     @torch.no_grad()

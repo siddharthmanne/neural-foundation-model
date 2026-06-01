@@ -16,6 +16,7 @@ from .codebook import (
     tokenize_all,
 )
 from .probe import compute_probe_metrics
+from .retrieval import compute_retrieval_metrics
 from .protocol import (
     DEFAULT_BANDS,
     EvalConfig,
@@ -38,6 +39,7 @@ __all__ = [
     "compute_codebook_metrics_from_tokens",
     "compute_probe_metrics",
     "compute_reconstruction_metrics",
+    "compute_retrieval_metrics",
     "compute_sequence_metrics",
     "evaluate",
     "has_token_embeddings",
@@ -83,5 +85,10 @@ def evaluate(
 
     if config.run_probe and labels is not None and tokens is not None:
         report.probe = compute_probe_metrics(tokenizer, signal, labels, config, tokens=tokens)
+
+    if config.run_retrieval and labels is not None and tokens is not None:
+        report.retrieval = compute_retrieval_metrics(
+            tokenizer, signal, labels, config, tokens=tokens
+        )
 
     return report

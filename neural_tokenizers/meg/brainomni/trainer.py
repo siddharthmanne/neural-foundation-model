@@ -34,6 +34,15 @@ class FinetuneConfig:
     grad_clip: float = 1.0
     batch_size: int = 32
     epochs: int = 10
+    # Early stopping: break out of the epoch loop if `val_loss` hasn't beaten
+    # the running best in `patience` consecutive epochs. `min_epochs` bounds
+    # how early we can stop — at least this many epochs run regardless, to
+    # absorb cold-start volatility. Used by Experiment 2 (averaged-MEG
+    # finetune) where 18k samples × 959k params gives lower
+    # samples-per-param and overfitting is a real risk. Set patience<=0 to
+    # disable.
+    patience: int = 2
+    min_epochs: int = 3
 
 
 FINETUNE_DEFAULT = FinetuneConfig()
