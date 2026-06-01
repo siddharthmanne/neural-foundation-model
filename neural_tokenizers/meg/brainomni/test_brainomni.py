@@ -74,3 +74,36 @@ def test_braintokenizer_roundtrip():
     x_hat = tok.decode_tokens(tokens)
     assert x_hat.shape == x.shape
     assert torch.isfinite(x_hat).all()
+
+
+def test_decode_rvq_indices_layer_selection():
+    """The probe relies on `layers=` selecting a subset of RVQ codebooks.
+
+    Verifies the decode primitive directly so the test runs without the
+    BrainOmni checkpoint: a stub RVQ with two single-vector layers where
+    `sum_all = layer0 + layer1` while `layers=(0,) = layer0` alone.
+    """
+    from meg.brainomni.adapter import _decode_rvq_indices
+
+    class StubLayer:
+        def __init__(self, vec: torch.Tensor):
+            self._vec = vec
+
+        def decode(self, idx: torch.Tensor) -> torch.Tensor:
+            return self._vec.expand(idx.shape[0], -1)
+
+    class StubRvq:
+        def __init__(self):
+            self.layers = [
+                StubLayer(torch.tensor([[1.0, 0.0, 0.0, 0.0]])),
+                StubLayer(torch.tensor([[0.0, 1.0, 0.0, 0.0]])),
+            ]
+
+    rvq = StubRvq()
+    indices = torch.zeros(3, 1, 2, dtype=torch.long)  # (B=3, L=1, Q=2)
+    all_layers = _decode_rvq_indices(rvq, indices, dim=4, layers=None)
+    rvq0_only = _decode_rvq_indices(rvq, indices, dim=4, layers=(0,))
+    rvq1_only = _decode_rvq_indices(rvq, indices, dim=4, layers=(1,))
+    assert torch.allclose(all_layers, rvq0_only + rvq1_only)
+    assert torch.allclose(rvq0_only, torch.tensor([[1.0, 0.0, 0.0, 0.0]]).expand(3, 1, 4))
+    assert torch.allclose(rvq1_only, torch.tensor([[0.0, 1.0, 0.0, 0.0]]).expand(3, 1, 4))
