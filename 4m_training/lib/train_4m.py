@@ -23,6 +23,16 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
+
+# PyTorch 2.6 changed weights_only default to True. 4M checkpoints contain
+# argparse.Namespace, numpy scalars, and other types blocked by the new default.
+# Checkpoints are local/trusted, so patch torch.load to keep the old behaviour.
+_orig_torch_load = torch.load
+def _torch_load_unsafe(f, *args, **kwargs):
+    kwargs.setdefault("weights_only", False)
+    return _orig_torch_load(f, *args, **kwargs)
+torch.load = _torch_load_unsafe
 
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
@@ -358,7 +368,78 @@ def _load_trainer_module(trainer_path: Path):
     return trainer
 
 
-def _drive_trainer_main(trainer) -> None:
+def _install_neural_shuffler(trainer) -> None:
+    """Wrap train_one_epoch to register a forward-pre-hook that shuffles neural tokens.
+
+    The hook fires only on training forwards. It shuffles tok_meg_* / tok_eeg_* tensor
+    values ONLY within samples that have real neural data (identified by having at least
+    one unmasked input or target token). CC12M placeholder samples have all tokens masked
+    out (budget=0), so they are excluded from the permutation — without this restriction,
+    THINGS samples would receive zero-valued placeholder tokens as targets, making
+    prediction trivial and invalidating the ablation.
+
+    All rvq levels use the same permutation so cross-codebook coherence within a single
+    recording is preserved (just assigned to the wrong image). Masks are untouched:
+    the masking direction (pixel→neural vs neural→pixel) stays tied to the original sample.
+
+    This is the null ablation: if training loss still decreases, the model is learning
+    statistical regularities in the token distribution, not image-neural correspondence.
+    """
+    _NEURAL_PREFIXES = ("tok_meg", "tok_eeg")
+
+    def _shuffle_hook(module, inputs):
+        if not getattr(module, "training", False):
+            return
+        if not inputs:
+            return
+        mod_dict = inputs[0]
+        if not isinstance(mod_dict, dict):
+            return
+        neural_keys = [k for k in mod_dict if k.startswith(_NEURAL_PREFIXES)]
+        if not neural_keys:
+            return
+
+        # Identify samples with real neural data: placeholder samples have all
+        # tokens masked out (input_budget=0), so (~mask).any(dim=1) is False.
+        first_entry = mod_dict[neural_keys[0]]
+        input_mask  = first_entry.get("input_mask")
+        target_mask = first_entry.get("target_mask")
+        has_input  = (~input_mask).any(dim=1)  if input_mask  is not None else None
+        has_target = (~target_mask).any(dim=1) if target_mask is not None else None
+        if has_input is not None and has_target is not None:
+            has_neural = has_input | has_target
+        elif has_input is not None:
+            has_neural = has_input
+        elif has_target is not None:
+            has_neural = has_target
+        else:
+            return
+        neural_idx = has_neural.nonzero(as_tuple=True)[0]
+        if len(neural_idx) <= 1:
+            return
+
+        # One permutation shared across all rvq levels.
+        perm = torch.randperm(len(neural_idx), device=neural_idx.device)
+        src  = neural_idx[perm]
+        for key in neural_keys:
+            t = mod_dict[key]["tensor"].clone()
+            t[neural_idx] = mod_dict[key]["tensor"][src]
+            mod_dict[key]["tensor"] = t
+
+    state = {"registered": False}
+    orig = trainer.train_one_epoch
+
+    def _wrapped(*args, **kwargs):
+        model = kwargs.get("model")
+        if model is not None and not state["registered"]:
+            model.register_forward_pre_hook(_shuffle_hook)
+            state["registered"] = True
+        return orig(*args, **kwargs)
+
+    trainer.train_one_epoch = _wrapped
+
+
+def _drive_trainer_main(trainer, *, shuffle_neural_tokens: bool = False) -> None:
     """Replicate the stock ``__main__`` block (run_training_4m.py:835-847), with an
     opt-in hook to also validate the named-task suite on the live weights."""
     import os
@@ -401,6 +482,13 @@ def _drive_trainer_main(trainer) -> None:
         print(f"[tokens] resuming token count from {resume_path}: {resume_totals}\n")
     install_token_accounting(trainer, resume_totals=resume_totals)
 
+    # Opt-in: shuffle neural tokens across the batch on every training forward.
+    # Activated by passing --shuffle_neural_tokens to run_train; stripped from
+    # sys.argv before the stock parser runs so it never sees the unknown flag.
+    if shuffle_neural_tokens:
+        print("[shuffle] Neural token shuffling ENABLED — null ablation mode\n")
+        _install_neural_shuffler(trainer)
+
     # Opt-in: score the named-task suite on the live model every eval_freq epochs
     # (see lib/in_loop_val.py). Absent the `in_loop_val_tasks` YAML field, the
     # launch path is identical to the stock trainer.
@@ -422,6 +510,13 @@ def run_train(config_path: Path, extra_argv: list[str]) -> None:
     import os
 
     extra_argv = _clean_extra_argv(extra_argv)
+
+    # Intercept our custom flags before the stock trainer's argparser sees them.
+    # The stock parser rejects unknown arguments, so strip them here and handle
+    # them ourselves in _drive_trainer_main.
+    shuffle_neural_tokens = "--shuffle_neural_tokens" in extra_argv
+    if shuffle_neural_tokens:
+        extra_argv = [a for a in extra_argv if a != "--shuffle_neural_tokens"]
 
     # Stock run_training_4m.py always uses DDP; set single-process vars if missing.
     os.environ.setdefault("RANK", "0")
@@ -456,7 +551,7 @@ def run_train(config_path: Path, extra_argv: list[str]) -> None:
     print(f"handing off to 4M trainer: argv = {sys.argv}\n")
     try:
         trainer = _load_trainer_module(ml_4m_root / "run_training_4m.py")
-        _drive_trainer_main(trainer)
+        _drive_trainer_main(trainer, shuffle_neural_tokens=shuffle_neural_tokens)
     finally:
         # Stock trainer inits the process group but never tears it down; doing it
         # here avoids the "destroy_process_group() was not called" NCCL warning.

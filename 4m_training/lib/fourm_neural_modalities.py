@@ -37,7 +37,6 @@ from neural_constants import (
     MEG_CODE_MAX,
     MEG_N_SOURCES,
     MEG_N_TIME,
-    MEG_OUT_SOURCE_PATH,
     MEG_POSITIONS_PER_TRIAL,
     MEG_RVQ_MODALITIES,
     MEG_SOURCE_PATH,
@@ -150,12 +149,11 @@ def register(training: bool = True) -> None:
     _mi.MODALITY_TRANSFORMS.setdefault("meg_mask", MaskFlagTransform())
     _mi.MODALITY_TRANSFORMS.setdefault("eeg_mask", MaskFlagTransform())
 
-    # OUTPUT modalities: the trial pick + RVQ split already happened in the rename seam,
-    # so these transforms just clip to the head's vocab. (Training-mode trial sampling for
-    # the split is configured on NeuralTargetSplitter, not here.)
-    for meg_mod in MEG_RVQ_OUT_MODALITIES:
+    # Modalities are symmetric (same name for encoder input and decoder target), so the
+    # output-side transforms are the same registrations already done above.
+    for meg_mod in MEG_RVQ_MODALITIES:
         _mi.MODALITY_TRANSFORMS[meg_mod] = NeuralTargetTransform(code_max=MEG_CODE_MAX)
-    _mi.MODALITY_TRANSFORMS[EEG_OUT_MODALITY] = NeuralTargetTransform(code_max=EEG_CODE_MAX)
+    _mi.MODALITY_TRANSFORMS[EEG_MODALITY] = NeuralTargetTransform(code_max=EEG_CODE_MAX)
     _REGISTERED_TRAINING = training
 
 

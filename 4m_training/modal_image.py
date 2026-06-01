@@ -38,6 +38,8 @@ _deps_image = (
         "einops",
         "timm",
         "opencv-python-headless",
+        "matplotlib",
+        "chinchilla",
     )
 )
 
