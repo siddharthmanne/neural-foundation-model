@@ -34,6 +34,8 @@ from neural_constants import (
     EEG_MODALITY,
     EEG_TOKENS_PER_TRIAL,
     EEG_VOCAB_SIZE,
+    MEG_AVG_RVQ_MODALITIES,
+    MEG_AVG_SOURCE_PATH,
     MEG_CODE_MAX,
     MEG_N_SOURCES,
     MEG_N_TIME,
@@ -63,6 +65,11 @@ _NEURAL_MODALITY_INFO: dict[str, dict] = {
         "id": generate_uint15_hash("eeg_mask"),
         "path": "eeg_mask",
     },
+    "meg_avg_mask": {
+        "type": "meta",
+        "id": generate_uint15_hash("meg_avg_mask"),
+        "path": "meg_avg_mask",
+    },
 }
 
 # MEG: one symmetric modality per RVQ layer (layer-specific 512-vocab codebooks) over the
@@ -88,6 +95,30 @@ for _meg_mod in MEG_RVQ_MODALITIES:
         "type": NEURAL_GRID_TYPE,
         "id": generate_uint15_hash(_meg_mod),
         "path": MEG_SOURCE_PATH,  # all four read the tok_meg folder
+        "pretokenized": True,
+    }
+# MEG_AVG: trial-averaged MEG. Same geometry and vocab as MEG; reads tok_meg_avg folder.
+# On-disk shape (1, 16, 8, 4) — single averaged trial — handled by existing MegTrialSampleTransform.
+for _meg_avg_mod in MEG_AVG_RVQ_MODALITIES:
+    _NEURAL_MODALITY_INFO[_meg_avg_mod] = {
+        "vocab_size": MEG_VOCAB_SIZE,
+        "encoder_embedding": partial(
+            MegRVQEncoderEmbedding,
+            vocab_size=MEG_VOCAB_SIZE,
+            n_sources=MEG_N_SOURCES,
+            n_time=MEG_N_TIME,
+        ),
+        "decoder_embedding": partial(
+            MegRVQDecoderEmbedding,
+            vocab_size=MEG_VOCAB_SIZE,
+            n_sources=MEG_N_SOURCES,
+            n_time=MEG_N_TIME,
+        ),
+        "min_tokens": 0,
+        "max_tokens": MEG_POSITIONS_PER_TRIAL,  # 128 grid cells
+        "type": NEURAL_GRID_TYPE,
+        "id": generate_uint15_hash(_meg_avg_mod),
+        "path": MEG_AVG_SOURCE_PATH,
         "pretokenized": True,
     }
 # EEG: a single codebook -> one symmetric modality over the 17-token sequence. Its name
@@ -148,6 +179,9 @@ def register(training: bool = True) -> None:
     _mi.MODALITY_TRANSFORMS[EEG_MODALITY] = NeuralTargetTransform(code_max=EEG_CODE_MAX)
     _mi.MODALITY_TRANSFORMS.setdefault("meg_mask", MaskFlagTransform())
     _mi.MODALITY_TRANSFORMS.setdefault("eeg_mask", MaskFlagTransform())
+    _mi.MODALITY_TRANSFORMS.setdefault("meg_avg_mask", MaskFlagTransform())
+    for meg_avg_mod in MEG_AVG_RVQ_MODALITIES:
+        _mi.MODALITY_TRANSFORMS[meg_avg_mod] = NeuralTargetTransform(code_max=MEG_CODE_MAX)
 
     # Modalities are symmetric (same name for encoder input and decoder target), so the
     # output-side transforms are the same registrations already done above.

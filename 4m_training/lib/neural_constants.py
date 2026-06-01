@@ -41,6 +41,11 @@ NEURAL_GRID_TYPE: str = "neural_grid"
 # on-disk FOLDER, which all four RVQ modalities read via their ``path``.
 MEG_RVQ_MODALITIES: tuple[str, ...] = tuple(f"tok_meg_rvq{q}" for q in range(MEG_N_RVQ))
 MEG_SOURCE_PATH: str = "tok_meg"  # on-disk folder shared by the 4 RVQ modalities
+# MEG_AVG: trial-averaged MEG, same geometry as MEG but stored at tok_meg_avg with a
+# single averaged "trial" (shape (1, 16, 8, 4) on disk). Separate presence flag.
+MEG_AVG_N_RVQ: int = MEG_N_RVQ
+MEG_AVG_RVQ_MODALITIES: tuple[str, ...] = tuple(f"tok_meg_avg_rvq{q}" for q in range(MEG_AVG_N_RVQ))
+MEG_AVG_SOURCE_PATH: str = "tok_meg_avg"
 # EEG is a single codebook -> one modality over its 17-token sequence; its name doubles as
 # the on-disk folder (path defaults to the modality name).
 EEG_MODALITY: str = "tok_eeg"

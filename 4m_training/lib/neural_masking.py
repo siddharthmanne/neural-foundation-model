@@ -16,14 +16,16 @@ from fourm.data.modality_transforms import get_transform_key
 
 from neural_constants import (
     EEG_MODALITY,
+    MEG_AVG_RVQ_MODALITIES,
     MEG_RVQ_MODALITIES,
     NEURAL_GRID_TYPE,
 )
 
 # Maps token modality -> presence-flag key loaded from shard tars. The four MEG RVQ
-# modalities share ``meg_mask``; EEG gates on ``eeg_mask`` (many modalities -> one mask).
+# modalities share ``meg_mask``; averaged MEG uses ``meg_avg_mask``; EEG gates on ``eeg_mask``.
 PRESENCE_FLAGS: dict[str, str] = {
     **{mod: "meg_mask" for mod in MEG_RVQ_MODALITIES},
+    **{mod: "meg_avg_mask" for mod in MEG_AVG_RVQ_MODALITIES},
     EEG_MODALITY: "eeg_mask",
 }
 

@@ -19,6 +19,7 @@ from neural_constants import (
     EEG_MODALITY,
     EEG_TRIAL_SHAPE,
     EEG_TOKENS_PER_TRIAL,
+    MEG_AVG_RVQ_MODALITIES,
     MEG_GRID_SHAPE,
     MEG_RVQ_MODALITIES,
     MEG_TRIAL_SHAPE,
@@ -138,6 +139,13 @@ class NeuralTargetSplitter:
         if meg_mods:
             grid, _valid = self._meg(sample[meg_mods[0]])  # (128, n_rvq); one shared pick
             for q, mod in enumerate(MEG_RVQ_MODALITIES):
+                if mod in sample:
+                    sample[mod] = np.ascontiguousarray(grid[:, q])
+        # Averaged MEG has shape (1, 16, 8, 4); reuse _meg sampler (n_trials=1 → always idx 0).
+        meg_avg_mods = [m for m in MEG_AVG_RVQ_MODALITIES if m in sample]
+        if meg_avg_mods:
+            grid, _valid = self._meg(sample[meg_avg_mods[0]])
+            for q, mod in enumerate(MEG_AVG_RVQ_MODALITIES):
                 if mod in sample:
                     sample[mod] = np.ascontiguousarray(grid[:, q])
         if EEG_MODALITY in sample:
