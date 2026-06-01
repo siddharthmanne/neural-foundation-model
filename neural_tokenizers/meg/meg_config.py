@@ -126,6 +126,14 @@ class EvalDefaults:
     probe_epochs: int = 200
     probe_top_k: tuple[int, ...] = (1, 5)
     probe_test_frac: float = 0.2
+    # See evaluation/protocol.py::EvalConfig docstrings.
+    probe_n_folds: int = 5
+    probe_rvq_layers: tuple[tuple[int, ...] | None, ...] = (None, (0,))
+    probe_class_weighted: bool = True
+    probe_classifier: str = "linear"
+    probe_mlp_hidden: int = 256
+    probe_mlp_dropout: float = 0.5
+    probe_cnn_hidden: int = 64
 
 
 EVAL_DEFAULTS = EvalDefaults()

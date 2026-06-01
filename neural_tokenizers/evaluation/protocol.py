@@ -115,12 +115,43 @@ class EvalConfig:
     run_codebook: bool = True
     run_probe: bool = True
     run_sequence: bool = True
+    run_retrieval: bool = True
 
     probe_epochs: int = 100
     probe_lr: float = 1e-2
     probe_weight_decay: float = 1e-4
     probe_top_k: tuple[int, ...] = (1, 5)
     probe_test_frac: float = 0.2
+    # Class-balanced cross-entropy (per-fold weights = N / (n_classes * count_c)).
+    # On (real) imbalanced THINGS labels the unweighted optimum collapses to
+    # majority prediction even when features carry signal in minority classes
+    # — weighting equalizes gradient mass across classes so the head is given
+    # a fair shot at finding signal everywhere. Same data, lower-variance than
+    # subsampling-to-balance.
+    probe_class_weighted: bool = True
+    # Probe classifier head. "linear" (default) is the §5.3 gate that
+    # mirrors what 4M's input embedding can read off. "mlp" is a diagnostic
+    # escape hatch — if MLP succeeds where linear fails, the tokens carry
+    # *some* nonlinear information but 4M still can't use it cleanly.
+    probe_classifier: str = "linear"  # "linear" | "mlp" | "cnn"
+    probe_mlp_hidden: int = 256
+    probe_mlp_dropout: float = 0.5
+    # CNN head — temporal-spatial inductive bias for token / raw features.
+    # Dispatches to Conv1d (for 3D inputs (B, C, T)) or Conv2d (for 4D inputs
+    # (B, S1, S2, D=embedding_dim)) based on feature shape.
+    probe_cnn_hidden: int = 64
+    # K-fold CV for the probe. n_folds=1 falls back to a single random
+    # (1 - probe_test_frac, probe_test_frac) split — back-compat with the
+    # original single-split behavior. n_folds>=2 runs proper k-fold and the
+    # output keys gain `_mean` / `_std` suffixes.
+    probe_n_folds: int = 5
+    # Per-RVQ-layer probing for tokenizers that expose a layered
+    # `tokens_to_embedding(tokens, layers=...)`. Each element is either:
+    #   - None  → sum every available codebook layer (current default)
+    #   - a tuple of layer indices to sum, e.g. (0,) for RVQ0 alone
+    # Tokenizers without layered embeddings ignore this entirely and just
+    # emit a single "tokens" entry.
+    probe_rvq_layers: tuple[tuple[int, ...] | None, ...] = (None, (0,))
 
     psd_nperseg: int | None = None
 
@@ -141,15 +172,26 @@ class MetricResult:
 
 @dataclass
 class TokenizerReport:
-    """Aggregated four-axis report. Any axis may be None if disabled in config."""
+    """Aggregated multi-axis report. Any axis may be None if disabled in config."""
 
     reconstruction: MetricResult | None = None
     codebook: MetricResult | None = None
     probe: MetricResult | None = None
     sequence: MetricResult | None = None
+    retrieval: MetricResult | None = None
 
     def axes(self) -> list[MetricResult]:
-        return [m for m in (self.reconstruction, self.codebook, self.probe, self.sequence) if m is not None]
+        return [
+            m
+            for m in (
+                self.reconstruction,
+                self.codebook,
+                self.probe,
+                self.sequence,
+                self.retrieval,
+            )
+            if m is not None
+        ]
 
     def __str__(self) -> str:
         return "TokenizerReport\n" + "\n".join(str(m) for m in self.axes())

@@ -478,12 +478,20 @@ for each of the three MEG tokenizers before it is wired into 4M:
    ("token refactorization") so its effective `V*` can be reported
    alongside nominal `V`.
 3. Linear probe on THINGS labels. With 22,449 image-level codes / 1854
-   concepts / ~27 superordinate categories, use the THINGS
-   **superordinate** categories as the primary probe target, 1854-way
-   concept ID as a secondary, image ID never (too noisy at 27k trials per
-   subject). The `image_id → concept_id → superordinate` mapping comes
-   from THINGS metadata, not the .fif files — add it under
-   `meg/data.py`.
+   concepts / 27 superordinate categories, **the harness uses 27-way
+   superordinate as the sole probe target.** The 1854-way concept space
+   was tried first and sat at chance — at ~3k eval trials it gives
+   ~2.6 trials/class, too few for a linear head to fit. The
+   `image_id → concept_id` mapping comes from THINGS-MEG OpenNeuro
+   events.tsv (see `modal_download_things_labels.py`); the
+   `concept_id → superordinate_27` mapping comes from canonical THINGS
+   metadata (`category_mat_manual.tsv` in ViCCo-Group/THINGS-data) via
+   `modal_download_things_superordinate.py`. Both files are checked into
+   git under `meg/data/`. The probe uses **5-fold CV** and reports
+   `top{k}_<set>_mean` / `_std` across folds. For BrainOmni it
+   additionally reports an RVQ0-only feature set (`tokens_rvq0_*`) next
+   to the full-RVQ-sum (`tokens_all_*`) — see
+   `notes/linear_probe_design.md` for the rationale.
 4. Token-sequence statistics (unigram entropy, bigram conditional entropy,
    run-length). The μ-transform is at particular risk of degenerate run
    lengths on slow drifts — watch this.
@@ -554,17 +562,56 @@ redundancy; BrainOmni tokens look more i.i.d.
 
 ### Linear probe (§5.3) — **gate metric**
 
-| Metric | μ-transform | BrainOmni 3a | BrainOmni 3b | Random |
-|--------|-------------|--------------|--------------|--------|
-| top-1 tokens | 0.17% | 0.17% | **0.00%** | 0.17% |
-| top-5 tokens | 2.0% | **2.67%** | 2.17% | 2.17% |
-| top-1 raw | 0.33% | 0.33% | 0.33% | — |
+> **Label space change (2026-05):** the probe now uses the THINGS **27
+> high-level superordinate categories** (from `concepts-metadata_things.tsv`)
+> instead of the 1854-way concept space — the old setup gave ~2.6 trials/class
+> and sat at chance. Coverage drops to ~50% of trials (892 of 1854 concepts
+> have a clean single-category Bottom-up label per Hebart 2019), but the
+> remaining ~5,000 trials give ~185/class which the linear head can actually
+> fit. See `notes/linear_probe_design.md` and the §5.3 docstring in
+> `evaluation/probe.py` for the design rationale.
 
-**Neither tokenizer passes the probe gate** (~1152 concepts in this 3000-trial
-subset). Finetune improved reconstruction, not linear object decodability.
-Raw waveform probe is identical across runs (~0.33% top-1) — barely above
-chance. Full test split (~10k trials): μ-transform top-1 tokens 0.25% vs
-0.40% random — still essentially chance.
+**BrainOmni 3b vs raw, full ~10k test split (5032 trials with valid labels),
+5-fold CV, class-weighted, balanced accuracy (chance = 1/27 = 3.70%):**
+
+| Probe variant            | tokens_all       | tokens_rvq0      | raw              | random           |
+|--------------------------|------------------|------------------|------------------|------------------|
+| Linear, unweighted CE    | 3.76% ± 0.07     | 3.71% ± 0.01     | **6.14% ± 0.44** | 3.70% ± 0.00     |
+| Linear, class-weighted   | 3.35% ± 0.91     | 3.42% ± 0.38     | **5.16% ± 0.21** | 3.64% ± 0.73     |
+| 2-layer MLP, weighted    | 3.18% ± 0.97     | 2.94% ± 0.78     | **4.31% ± 0.49** | 3.09% ± 0.82     |
+
+**μ-transform (V=256, BoC features, linear class-weighted, same protocol):**
+
+| Metric                      | tokens           | raw              | random           |
+|-----------------------------|------------------|------------------|------------------|
+| bal_acc (linear, weighted)  | 3.57% ± 0.47     | **5.16% ± 0.21** | 4.22% ± 0.78     |
+
+μ-transform passes §5.3 by the same margin BrainOmni does — i.e. it
+doesn't. Tokens at chance, raw lifts to 5.16% (identical to BrainOmni's
+raw because the underlying signal and probe are identical — confirms the
+raw number is reproducible).
+
+Three diagnostic variants, one consistent verdict:
+
+- **Raw MEG carries signal**: ~5–7σ above chance in every config — there is
+  linearly-decodable category info in the preprocessed waveform.
+- **BrainOmni 3b tokens are at chance** in every config. Linear or MLP,
+  unweighted or class-weighted — the tokens have nothing the probe can find.
+  Slightly *below* chance under MLP indicates the head is fitting training
+  noise, which only happens when no signal is present to anchor it.
+- **`tokens_rvq0 ≈ tokens_all`** — the residual RVQ layers carry no extra
+  task signal; the coarse layer alone is just as uninformative.
+
+The MLP rules out "info is there but nonlinear" — a stronger classifier
+finds nothing either. The class-weighted runs rule out "training collapsed
+to majority class" — `top1_random` correctly drops from 12.40% (unweighted
+majority-floor) to 3.74% (uniform-random) when weights kick in, and tokens
+still don't move.
+
+**Verdict (2026-05): BrainOmni 3b passes §5.1 (reconstruction) and §5.2
+(codebook utilization) but FAILS §5.3. The finetune improved reconstruction
+fidelity without preserving task-relevant signal — exactly the failure mode
+§5.3 was designed to catch.**
 
 ### Verdict for 4M
 
@@ -576,13 +623,27 @@ chance. Full test split (~10k trials): μ-transform top-1 tokens 0.25% vs
 | Linear object info in tokens | None detected | None detected |
 | Trained on THINGS | Calibration only | **Yes (adapt finetune)** |
 
-**Recommendation:** ship **BrainOmni 3b** into 4M for token caching.
-Probe failure is expected under reconstruction-only training; semantic readout
-may require 4M's nonlinear/multimodal objective (cf. BrainOmni Stage 2 in
-the paper — not implemented here).
+**Updated recommendation (2026-05):** the previous decision to ship 3b
+*despite* probe failure rested on "probe noise at chance is uninformative."
+With the 27-way + 5-fold + class-weighted + MLP triangulation, the probe is
+no longer noise: it concretely shows raw MEG has decodable info that 3b's
+tokens do not. Reconstruction-only training is not enough on this data.
 
-**Pending:** full ~10k test eval (`--n-test 0`); token-cache export;
-ml-4m `modality_info.py` registration.
+Next candidates, in order of cost:
+
+1. **Cheap diagnostic — image-averaged probe.** Average the 88,992 existing
+   3b tokens by image_id (4× SNR for exp, 48× for test images) and re-run
+   the probe. If averaged tokens lift above chance, single-trial noise was
+   the bottleneck and step 2 is worth doing. If not, BrainOmni's training
+   objective is the bottleneck regardless of input quality → skip to step 3.
+2. **BrainOmni finetune on image-averaged signal.** Same `adapt` recipe but
+   trained on averaged trials (fewer samples, higher SNR per sample).
+3. **Move to Stage 2 (Cho2026 / EphysTokenizer).** The reconstruction
+   objective is the root cause; another reconstruction-only model
+   architecture is unlikely to rescue this.
+
+**Pending:** token-cache export; ml-4m `modality_info.py` registration —
+both held until §5.3 passes.
 
 ## 10. Open decisions
 

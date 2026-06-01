@@ -44,6 +44,12 @@ from .meg_config import MEG_DATA
 DEFAULT_CONCEPT_MAP_LOCAL = "neural_tokenizers/meg/data/image_id_to_concept.json"
 DEFAULT_CONCEPT_MAP_REMOTE = "/project/data/things-meg/labels/image_id_to_concept.json"
 
+# 27-superordinate mapping is produced by
+# `modal/modal_download_things_superordinate.py` from THINGS-data canonical
+# metadata (`category_mat_manual.tsv`). Modality-agnostic — shared with EEG.
+DEFAULT_SUPER_MAP_LOCAL = "neural_tokenizers/meg/data/concept_id_to_superordinate.json"
+DEFAULT_SUPER_MAP_REMOTE = "/project/data/things/labels/concept_id_to_superordinate.json"
+
 
 # ---------- types ---------------------------------------------------------
 
@@ -95,6 +101,62 @@ def list_subjects(data_dir: str = MEG_DATA.data_dir) -> list[SubjectIndex]:
             )
         )
     return out
+
+
+# ---------- cross-subject + cross-rep averaging ---------------------------
+
+def average_trials_by_image(
+    X: torch.Tensor | np.ndarray,
+    image_ids: np.ndarray,
+) -> tuple[torch.Tensor, np.ndarray]:
+    """Group trials by `image_id` and average within each group.
+
+    Produces one signal per unique image — the canonical "cross-subject +
+    cross-rep" averaging used by Experiment 2 (see
+    ``notes/meg_tokenization.md``). The averaging axis collapses both
+    subject and within-subject repetitions, so the output has no subject
+    label per row.
+
+    Args:
+        X: ``(N, C, T)`` torch or numpy array of single-trial signals.
+        image_ids: ``(N,)`` int array, trial-aligned image codes.
+
+    Returns:
+        X_avg:     ``(M, C, T)`` torch.float32 tensor (M = unique image
+                   count).
+        image_ids_unique: ``(M,)`` int64 numpy array, sorted ascending.
+
+    Memory-frugal: accumulates in float64 element-wise inside `np.add.at`
+    but **never materializes a float64 copy of the input**. The 88k-trial
+    training tensor (~27 GB float32) is the largest object in this
+    pipeline; doubling it with an f64 cast would push the container OOM.
+    """
+    if isinstance(X, torch.Tensor):
+        X_np = X.detach().cpu().numpy()  # no dtype cast — preserve source f32
+    else:
+        X_np = np.asarray(X)
+
+    image_ids = np.asarray(image_ids, dtype=np.int64)
+    if X_np.shape[0] != image_ids.shape[0]:
+        raise ValueError(
+            f"X.shape[0]={X_np.shape[0]} must match image_ids length "
+            f"{image_ids.shape[0]}"
+        )
+
+    unique_ids, inverse = np.unique(image_ids, return_inverse=True)
+    n_groups = len(unique_ids)
+    C, T = X_np.shape[1], X_np.shape[2]
+
+    # Sums stay in f64 for accumulator precision when a single group has
+    # 40+ contributors (test images × 4 subjects × 12 reps); numpy promotes
+    # f32 source elements element-wise inside np.add.at — no global cast.
+    sums = np.zeros((n_groups, C, T), dtype=np.float64)
+    counts = np.zeros(n_groups, dtype=np.int64)
+    np.add.at(sums, inverse, X_np)
+    np.add.at(counts, inverse, 1)
+
+    X_avg_np = sums / counts.reshape(n_groups, 1, 1)
+    return torch.from_numpy(X_avg_np.astype(np.float32)), unique_ids.astype(np.int64)
 
 
 # ---------- materializing trials ------------------------------------------
@@ -303,4 +365,169 @@ class ConceptMapping:
                 out[i] = -1
             else:
                 out[i] = self.dense_index[concept]
+        return out, valid
+
+
+# ---------- concept_id → 27 superordinate label (THINGS-wide) -------------
+
+@dataclass(frozen=True)
+class SuperordinateMapping:
+    """Lookup table from THINGS concept_id → 27-class superordinate index.
+
+    The §5.3 linear-probe target. Produced by
+    `modal/modal_download_things_superordinate.py` from canonical THINGS
+    metadata (`category_mat_manual.tsv` in the ViCCo-Group/THINGS-data
+    repo) — modality-independent, so the same file is used for MEG, EEG,
+    and future intracortical probes.
+
+    Single-category-only: concepts with multi-category membership are
+    excluded from the mapping (recorded in the source JSON for inspection
+    but `encode_image_ids` marks them invalid). This keeps the probe a
+    clean K-way classification rather than multi-label.
+
+    Attributes:
+        concept_id_to_super: {concept_id (1..1854): super_index (0..26)}
+        category_names:      ordered list of 27 high-level category labels
+                             (e.g. "animal", "food", "vehicle", ...)
+        n_categories:        27 (sanity-checked at load).
+    """
+
+    concept_id_to_super: dict[int, int]
+    category_names: tuple[str, ...]
+    n_categories: int
+
+    @classmethod
+    def from_json(cls, payload: dict) -> "SuperordinateMapping":
+        raw = payload["concept_id_to_superordinate_index"]
+        m = {int(k): int(v) for k, v in raw.items()}
+        names = tuple(payload["category_names"])
+        n = int(payload["n_categories"])
+        if n != len(names) or n != 27:
+            raise ValueError(
+                f"superordinate mapping must have 27 categories with matching "
+                f"name list; got n_categories={n}, len(names)={len(names)}"
+            )
+        return cls(concept_id_to_super=m, category_names=names, n_categories=n)
+
+    @classmethod
+    def load(cls, path: str | os.PathLike | None = None) -> "SuperordinateMapping":
+        """Read the mapping. Tries the checked-in local copy, then the
+        Volume; raises with a clear hint to the producer script if missing.
+        """
+        if path is not None:
+            return cls.from_json(json.loads(open(path).read()))
+        for candidate in (DEFAULT_SUPER_MAP_LOCAL, DEFAULT_SUPER_MAP_REMOTE):
+            if os.path.exists(candidate):
+                return cls.from_json(json.loads(open(candidate).read()))
+        raise FileNotFoundError(
+            f"concept_id_to_superordinate.json not found at "
+            f"({DEFAULT_SUPER_MAP_LOCAL!r}, {DEFAULT_SUPER_MAP_REMOTE!r}). "
+            f"Run `modal run neural_tokenizers/meg/modal/"
+            f"modal_download_things_superordinate.py::download`."
+        )
+
+    def encode_image_ids(
+        self, image_ids: np.ndarray, concept_map: "ConceptMapping"
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Translate trial-level (N,) image_ids → (N,) superordinate labels.
+
+        Composes two lookups: image_id → concept_id (via `concept_map`) →
+        superordinate_index. A trial is dropped (valid=False) if either
+        step fails — i.e. the image is unmapped OR its concept has
+        multi-category membership and was excluded from the canonical
+        mapping.
+
+        Returns:
+            super_labels: (N,) int64 in [0, 27) (or -1 where invalid).
+            valid_mask:   (N,) bool — True where both lookups succeeded.
+        """
+        out = np.full(len(image_ids), -1, dtype=np.int64)
+        valid = np.zeros(len(image_ids), dtype=bool)
+        for i, code in enumerate(image_ids):
+            iid = int(code)
+            concept = concept_map.image_id_to_concept_id.get(iid)
+            if concept is None:
+                continue
+            super_idx = self.concept_id_to_super.get(concept)
+            if super_idx is None:
+                continue
+            out[i] = super_idx
+            valid[i] = True
+        return out, valid
+
+
+# ---------- animacy: 2-class probe target (derived from superordinate) ----
+
+# Strict animate set — derived from the 27-category THINGS scheme. The
+# canonical THINGS animacy ratings (Hebart 2019, ratings_animacy.csv on
+# OSF) are continuous per-concept scores; we don't pull them here because
+# the category-derived heuristic is sharper (THINGS' "bird" / "insect" /
+# "animal" are unambiguously animate regardless of any rater score) and
+# avoids a second download/version-pinning step. If we later want the
+# continuous animacy variable for regression-style probing, fetching
+# ratings_animacy.csv is a small additional script.
+#
+# Body part is excluded: a "leg" or "ear" is anatomically animal-derived
+# but the THINGS-MEG stimuli are isolated images of body parts, perceived
+# as objects, not as living things. Plant is excluded: not animal-like
+# behaviorally, and not typically considered "animate" in object-decoding
+# papers.
+ANIMATE_SUPER_NAMES: frozenset[str] = frozenset({"animal", "bird", "insect"})
+
+
+@dataclass(frozen=True)
+class AnimacyMapping:
+    """Derived 2-class animate/inanimate target.
+
+    Maps a concept_id → 0 (inanimate) or 1 (animate) by checking whether
+    the concept's superordinate falls in `ANIMATE_SUPER_NAMES`. A concept
+    is marked invalid only if its superordinate is itself unknown — i.e.
+    when `SuperordinateMapping` would have dropped it.
+
+    The 27-class superordinate target gives ~5,000 trials but only
+    ~5% balanced accuracy on raw (a hard linear-decoding problem).
+    Animacy is a much easier task with substantial published evidence
+    of MEG decoding (Cichy et al., Hebart et al.), so it serves as a
+    sanity check that the probe protocol *can* detect MEG signal when
+    the task is appropriately difficult.
+
+    Strong class imbalance is expected: only `animal/bird/insect` of the
+    27 categories are animate → ~13% of concepts. Balanced accuracy + the
+    class-weighted CE pipeline handle this.
+    """
+
+    super_map: "SuperordinateMapping"
+    animate_super_indices: frozenset[int]
+    n_categories: int = 2
+
+    @classmethod
+    def from_super_map(
+        cls,
+        super_map: "SuperordinateMapping",
+        animate_super_names: frozenset[str] = ANIMATE_SUPER_NAMES,
+    ) -> "AnimacyMapping":
+        unknown = animate_super_names - set(super_map.category_names)
+        if unknown:
+            raise ValueError(
+                f"Animate-set names not found in superordinate categories: "
+                f"{sorted(unknown)}. Known: {sorted(super_map.category_names)}"
+            )
+        animate_idx = frozenset(
+            super_map.category_names.index(n) for n in animate_super_names
+        )
+        return cls(super_map=super_map, animate_super_indices=animate_idx)
+
+    @property
+    def category_names(self) -> tuple[str, str]:
+        return ("inanimate", "animate")
+
+    def encode_image_ids(
+        self, image_ids: np.ndarray, concept_map: "ConceptMapping"
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """(N,) image_ids → (N,) {0=inanimate, 1=animate}, with valid mask."""
+        super_labels, valid = self.super_map.encode_image_ids(image_ids, concept_map)
+        out = np.zeros(len(image_ids), dtype=np.int64)
+        for i, (s, ok) in enumerate(zip(super_labels, valid)):
+            if ok:
+                out[i] = 1 if int(s) in self.animate_super_indices else 0
         return out, valid

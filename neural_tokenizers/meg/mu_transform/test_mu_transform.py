@@ -205,6 +205,22 @@ def test_tokenizer_runs_on_gpu_if_available(synthetic_meg, calib):
 # ----------------------------- harness e2e --------------------------------
 
 
+def test_tokens_to_embedding_preserves_position_as_bin_centers(calib):
+    """Token IDs round-trip to bin centers in [-1, 1] in the (B, 1, C*T)
+    shape the §5 probe expects. Crucial for near-lossless codecs — bag-of-codes
+    would discard the spatial-temporal structure μ-transform faithfully preserves.
+    """
+    tok = MuTransformTokenizer(calib)
+    B, C, T = 4, MEG_DATA.n_channels, MEG_DATA.n_timepoints
+    tokens = torch.randint(0, tok.codebook_size, (B, C, T), dtype=torch.long)
+    emb = tok.tokens_to_embedding(tokens)
+    assert emb.shape == (B, 1, C * T)
+    assert emb.dtype == torch.float32
+    assert emb.min() >= -1.0 and emb.max() < 1.0
+    V = tok.codebook_size
+    assert abs(emb.max().item() - (1.0 - 1.0 / V)) < 1e-5
+
+
 def test_mu_passes_eval_harness_smoke(synthetic_meg, calib):
     """End-to-end smoke: harness runs on MuTransformTokenizer and produces
     finite numbers for every axis. Doesn't assert quality (that's what the
