@@ -92,6 +92,76 @@ Train: 17,959 averaged trials. Best val 1.469. Subject task N/A by construction.
 
 ---
 
+## Experiment 3 — `3b_occ_avg` (occipital-only + cross-subject averaged finetune)
+
+Train: 17,959 averaged trials. Best val **1.269** (early-stopped epoch 7).
+Channels: **39 occipital** (CTF `MLO + MRO + MZO`). Channel restriction lives
+at the data layer; BrainOmni's cross-attention from sensors → 16 fixed
+latents is channel-count agnostic, so no model surgery was needed. Tokens
+still shape `(B, 16, 8, 4)` — same as Exp 1/2 — so only the `raw` feature
+changes dim (`(B, 39, 281)` vs `(B, 271, 281)`); `random` and `tokens_*` are
+unaffected.
+
+### 3a — Category27 (chance 3.70%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | 2.80 ± 0.86 | 3.32 ± 1.39 | 3.76 ± 1.47 | 4.23 ± 1.83 |
+| **CNN, weighted (bal_acc)** | 4.30 ± 1.48 | 3.74 ± 1.29 | 4.30 ± 2.14 | 3.83 ± 1.03 |
+
+**All four tied at chance under either probe.** Under linear, tokens_all
+sits *below* random (2.80 < 4.23) — small-sample noise, not signal.
+`raw_occipital` lost the Exp 2 lift in both probes (linear: 6.01 → 3.76;
+CNN: 4.78 → 4.30).
+
+### 3c — Animacy (chance 50%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | **54.75 ± 5.70** | 52.41 ± 2.45 | 55.54 ± 5.83 | 50.80 ± 3.48 |
+| **CNN, weighted (bal_acc)** | 48.93 ± 3.00 | 49.82 ± 4.33 | 51.41 ± 4.19 | 50.09 ± 1.52 |
+
+**Linear surfaces a token lift the CNN doesn't.** `tokens_all` 54.75 vs
+random 50.80 (~+4pp) — and notably *up* from Exp 2's linear 48.5 (+6pp
+gain from restricting to occipital). Raw lift collapsed under both probes
+(Exp 2 → Exp 3: linear 61.1 → 55.5, CNN 58.9 → 51.4) — the full-head raw
+animacy signal was distributed across the scalp.
+
+### 3d — Retrieval
+
+| Task | tokens cos @1/@5 | tokens Jacc @1/@5 | raw @1/@5 | random @1/@5 |
+|---|---|---|---|---|
+| Cat27 | 4.00 / 3.22 | 3.69 / 3.54 | 3.21 / 3.71 | 3.95 / 3.78 |
+| Animacy | 50.97 / 50.20 | **56.18** / 51.87 | 54.03 / 52.13 | 49.46 / 49.66 |
+
+**Cat27 all at chance.** **Animacy tokens Jaccard@1 = 56.2 lifts ~+6pp above
+random** — the only above-chance occipital-token number. Suggests a weak
+layer-mixed signal that cosine pooling misses but bag-of-codes overlap catches.
+
+### Verdict
+
+- **Cat27 unchanged: occipital restriction is not the missing ingredient.**
+  Tokens at chance both with and without restriction; restriction also
+  cratered the raw cat27 baseline (linear −2.3pp, CNN −0.5pp), arguing the
+  linear cat27 signal in full-head MEG is **distributed across the head**,
+  not concentrated in occipital sensors.
+- **Animacy: a partial token lift surfaces under the linear probe.**
+  `tokens_all` linear bal_acc 54.75 vs random 50.80 (~+4pp) — and *up* from
+  Exp 2's 48.5 (+6pp gain from restricting to occipital). CNN doesn't see
+  it. The animacy bag-of-codes retrieval also lifted ~+6pp (Jacc@1 56.18
+  vs 49.46). Both signals point to **layer-mixed / bag-of-codes-friendly
+  geometry** that the CNN's spatial convolutions over the (16, 8) latent
+  grid don't exploit.
+- **Raw animacy collapsed** (linear 61.1 → 55.5, CNN 58.9 → 51.4) — the
+  full-head raw lift was distributed across the scalp; occipital-only loses
+  most of it.
+- **Reconstruction-only training is still the cat27 bottleneck.** Best val
+  dropped 1.469 → 1.269 with fewer channels (less to reconstruct =
+  naturally lower loss); probe c27 didn't follow — consistent with the
+  cross-Exp-1/2 verdict below.
+
+---
+
 ## What the two experiments together say
 
 - **Reconstruction objective is the bottleneck**, not single-trial noise. Both averaged-input diagnostics and the averaged-trained Exp 2 fail to recover cat27.
