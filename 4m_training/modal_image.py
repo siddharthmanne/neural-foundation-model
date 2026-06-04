@@ -40,6 +40,7 @@ _deps_image = (
         "opencv-python-headless",
         "matplotlib",
         "chinchilla",
+        "boto3",
     )
 )
 
