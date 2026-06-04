@@ -62,7 +62,8 @@ _common = dict(
 def _run_inference(
     names, checkpoints, configs,
     things_root, shard_idx, n_samples, sample_key,
-    include_meg_for, meg_source, output_dir, tokenizer_cache,
+    include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    output_dir, tokenizer_cache,
     device_str,
 ):
     ensure_fourm()
@@ -92,7 +93,7 @@ def _run_inference(
         GenerationSampler, build_chained_generation_schedules,
         init_empty_target_modality, init_full_input_modality,
     )
-    from fourm.vq.vqvae import DiVAE
+    from fourm.vq.vqvae import DiVAE, VQVAE
 
     print("Loading run_things_inference helpers…", flush=True)
     import importlib.util
@@ -109,14 +110,19 @@ def _run_inference(
     tok_rgb_dec = DiVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_rgb_16k_224-448").to(device).eval()
     print("Loading depth tokenizer…", flush=True)
     tok_depth_dec = DiVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_depth_8k_224-448").to(device).eval()
+    tok_dinov2_dec = None
+    if include_dinov2_for:
+        print("Loading DINOv2 VQVAE tokenizer…", flush=True)
+        tok_dinov2_dec = VQVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_DINOv2-B14_8k_224-448").to(device).eval()
     print("Tokenizers ready.", flush=True)
 
     sample_keys_list = [k.strip() for k in sample_key.split(",")] if sample_key else None
-    meg_src = meg_source if include_meg_for else None
-    print(f"Loading THINGS samples from shard {shard_idx} (meg_src={meg_src})…", flush=True)
+    meg_src    = meg_source    if include_meg_for    else None
+    dino_src   = dinov2_source if include_dinov2_for else None
+    print(f"Loading THINGS samples from shard {shard_idx} (meg_src={meg_src}, dino_src={dino_src})…", flush=True)
     samples = infer.load_things_samples(
         Path(things_root), shard_idx, n_samples,
-        sample_keys=sample_keys_list, meg_source=meg_src,
+        sample_keys=sample_keys_list, meg_source=meg_src, dinov2_source=dino_src,
     )
     print(f"  Keys: {[s['key'] for s in samples]}", flush=True)
 
@@ -126,16 +132,29 @@ def _run_inference(
     for name, checkpoint, config in zip(names, checkpoints, configs):
         print(f"\n{'='*60}", flush=True)
         print(f"Model: {name}", flush=True)
-        use_meg = name in include_meg_for
+        use_meg    = name in include_meg_for
+        use_dinov2 = name in include_dinov2_for
 
         print(f"  Building model from {Path(config).name}…", flush=True)
         model, modality_info = infer.build_fm_model(Path(config), Path(checkpoint), device)
         sampler = GenerationSampler(model)
 
         n = len(samples)
-        input_label = f"RGB+MEG ({meg_source})" if use_meg else "RGB"
-        fig, axes = plt.subplots(n, 3, figsize=(10, 3.5 * n), squeeze=False)
-        col_titles = ["RGB (decoded)", "Depth GT", f"Depth pred\n({input_label} → depth)"]
+        cond_parts = ["RGB"]
+        if use_meg:
+            cond_parts.append(f"MEG ({meg_source})")
+        if use_dinov2:
+            cond_parts.append("DINOv2")
+        input_label = "+".join(cond_parts)
+
+        # Extra column when DINOv2 GT visualization is available
+        if use_dinov2:
+            fig, axes = plt.subplots(n, 4, figsize=(13, 3.5 * n), squeeze=False)
+            col_titles = ["RGB (decoded)", "DINOv2 GT (PCA)", "Depth GT",
+                          f"Depth pred\n({input_label} → depth)"]
+        else:
+            fig, axes = plt.subplots(n, 3, figsize=(10, 3.5 * n), squeeze=False)
+            col_titles = ["RGB (decoded)", "Depth GT", f"Depth pred\n({input_label} → depth)"]
 
         for row, sample in enumerate(samples):
             print(f"  Sample {row+1}/{n} key={sample['key']}…", flush=True)
@@ -151,12 +170,21 @@ def _run_inference(
                     mod_dict, sample["meg_rvq"], modality_info, device
                 )
 
+            dino_cond: list[str] = []
+            if use_dinov2 and "tok_dinov2" in sample:
+                tok_dinov2_t = torch.tensor(
+                    sample["tok_dinov2"].reshape(256), dtype=torch.int64
+                ).unsqueeze(0).to(device)  # (1, 256)
+                mod_dict["tok_dinov2@224"] = {"tensor": tok_dinov2_t}
+                mod_dict = init_full_input_modality(mod_dict, modality_info, "tok_dinov2@224", device)
+                dino_cond = ["tok_dinov2@224"]
+
             mod_dict = init_empty_target_modality(
                 mod_dict, modality_info, "tok_depth@224",
                 batch_size=1, num_tokens=196, device=device,
             )
             schedule = build_chained_generation_schedules(
-                cond_domains=["tok_rgb@224"] + meg_cond,
+                cond_domains=["tok_rgb@224"] + meg_cond + dino_cond,
                 target_domains=["tok_depth@224"],
                 tokens_per_target=[196],
                 autoregression_schemes=["roar"],
@@ -179,9 +207,19 @@ def _run_inference(
             gt_depth   = infer.decode_to_image(tok_depth_dec, tok_depth_t, is_rgb=False)
             pred_depth = infer.decode_to_image(tok_depth_dec, pred_tokens, is_rgb=False)
 
-            for col, (img, title) in enumerate(zip([rgb_img, gt_depth, pred_depth], col_titles)):
+            if use_dinov2:
+                dino_gt = infer.decode_dinov2(tok_dinov2_dec, tok_dinov2_t)
+                imgs = [rgb_img, dino_gt, gt_depth, pred_depth]
+            else:
+                imgs = [rgb_img, gt_depth, pred_depth]
+
+            for col, (img, title) in enumerate(zip(imgs, col_titles)):
                 ax = axes[row][col]
-                ax.imshow(img) if col == 0 else ax.imshow(img, cmap="plasma")
+                # RGB and DINOv2 PCA are already 3-channel; depth uses plasma colormap
+                if col == 0 or (use_dinov2 and col == 1):
+                    ax.imshow(img)
+                else:
+                    ax.imshow(img, cmap="plasma")
                 if row == 0:
                     ax.set_title(title, fontsize=10)
                 ax.axis("off")
@@ -208,11 +246,13 @@ def _run_inference(
 @app.function(**_common, gpu="T4")
 def inference_job_gpu(
     names, checkpoints, configs, things_root, shard_idx, n_samples,
-    sample_key, include_meg_for, meg_source, output_dir, tokenizer_cache,
+    sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    output_dir, tokenizer_cache,
 ):
     _run_inference(
         names, checkpoints, configs, things_root, shard_idx, n_samples,
-        sample_key, include_meg_for, meg_source, output_dir, tokenizer_cache,
+        sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+        output_dir, tokenizer_cache,
         device_str="cuda",
     )
 
@@ -220,11 +260,13 @@ def inference_job_gpu(
 @app.function(**_common)
 def inference_job_cpu(
     names, checkpoints, configs, things_root, shard_idx, n_samples,
-    sample_key, include_meg_for, meg_source, output_dir, tokenizer_cache,
+    sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    output_dir, tokenizer_cache,
 ):
     _run_inference(
         names, checkpoints, configs, things_root, shard_idx, n_samples,
-        sample_key, include_meg_for, meg_source, output_dir, tokenizer_cache,
+        sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+        output_dir, tokenizer_cache,
         device_str="cpu",
     )
 
@@ -240,19 +282,24 @@ def main(
     sample_key: str = "",
     include_meg_for: str = "",
     meg_source: str = "tok_meg_avg",
+    include_dinov2_for: str = "",
+    dinov2_source: str = "tok_dinov2@224",
     output_dir: str = f"{PROJECT}/output/inference",
     tokenizer_cache: str = f"{PROJECT}/hf_cache",
     cpu: bool = False,
 ) -> None:
     """
-    --names          Comma-separated labels for each model (used as output filenames)
-    --checkpoints    Comma-separated checkpoint .pth paths (same order as --names)
-    --configs        Comma-separated model YAML config paths (same order as --names)
-    --sample_key     Comma-separated shard keys to pin across all models (e.g. 000042,000117)
-    --include_meg_for Comma-separated subset of --names that should use RGB+MEG input
-    --meg_source     MEG shard folder: tok_meg_avg (default) or tok_meg
-    --output_dir     Directory in the project volume where PNGs are saved
-    --cpu            Run on CPU instead of T4 GPU (slower but cheaper; good for debugging)
+    --names              Comma-separated labels for each model (used as output filenames)
+    --checkpoints        Comma-separated checkpoint .pth paths (same order as --names)
+    --configs            Comma-separated model YAML config paths (same order as --names)
+    --sample_key         Comma-separated shard keys to pin across all models (e.g. 000042,000117)
+    --include_meg_for    Comma-separated subset of --names that should use RGB+MEG input
+    --meg_source         MEG shard folder: tok_meg_avg (default) or tok_meg
+    --include_dinov2_for Comma-separated subset of --names that should use RGB+DINOv2 input;
+                         also shows a DINOv2 GT (PCA) column in the output figure
+    --dinov2_source      DINOv2 shard folder (default: tok_dinov2@224)
+    --output_dir         Directory in the project volume where PNGs are saved
+    --cpu                Run on CPU instead of T4 GPU (slower but cheaper; good for debugging)
     """
     names_list       = [n.strip() for n in names.split(",")      if n.strip()]
     checkpoints_list = [c.strip() for c in checkpoints.split(",") if c.strip()]
@@ -265,10 +312,12 @@ def main(
     if len(configs_list) != len(names_list):
         raise SystemExit("--configs must have the same number of entries as --names")
 
-    meg_for_set = {n.strip() for n in include_meg_for.split(",") if n.strip()}
-    unknown = meg_for_set - set(names_list)
-    if unknown:
-        raise SystemExit(f"--include_meg_for references unknown names: {unknown}")
+    meg_for_set    = {n.strip() for n in include_meg_for.split(",")    if n.strip()}
+    dinov2_for_set = {n.strip() for n in include_dinov2_for.split(",") if n.strip()}
+    for label, s in [("--include_meg_for", meg_for_set), ("--include_dinov2_for", dinov2_for_set)]:
+        unknown = s - set(names_list)
+        if unknown:
+            raise SystemExit(f"{label} references unknown names: {unknown}")
 
     kwargs = dict(
         names=names_list,
@@ -280,6 +329,8 @@ def main(
         sample_key=sample_key,
         include_meg_for=meg_for_set,
         meg_source=meg_source,
+        include_dinov2_for=dinov2_for_set,
+        dinov2_source=dinov2_source,
         output_dir=output_dir,
         tokenizer_cache=tokenizer_cache,
     )

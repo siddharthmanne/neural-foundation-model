@@ -173,6 +173,141 @@ def plot_job(
     subprocess.run(cmd, check=True, cwd=REPO, env=env)
 
 
+@app.function(
+    image=train_image,
+    volumes={PROJECT: project_volume},
+    timeout=60 * 30,
+    memory=8 * 1024,
+)
+def download_dinov2_models() -> None:
+    """Download DINOv2-B/14 and 4M VQVAE tokenizer to the project volume cache (CPU only).
+
+    Run this once before tokenize_things_dinov2 so GPU containers start with models
+    already on disk — avoids paying GPU rates during a ~5 min download.
+    """
+    ensure_fourm()
+    import os as _os
+    import sys as _sys
+    import torch
+
+    _hf_cache = f"{PROJECT}/hf_cache"
+    _os.makedirs(_hf_cache, exist_ok=True)
+    _os.environ["HF_HOME"] = _hf_cache
+    _os.environ["TORCH_HOME"] = _hf_cache
+
+    _sys.path.insert(0, f"{REPO}/ml-4m")
+    from fourm.vq.vqvae import VQVAE
+
+    print("Downloading DINOv2-B/14…", flush=True)
+    torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14", trust_repo=True)
+    print("Downloading 4M DINOv2 VQVAE tokenizer…", flush=True)
+    VQVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_DINOv2-B14_8k_224-448")
+    project_volume.commit()
+    print("Done — models cached to project volume.", flush=True)
+
+
+@app.function(
+    image=train_image,
+    volumes={PROJECT: project_volume},
+    gpu="T4",
+    timeout=60 * 30,
+    memory=16 * 1024,
+)
+def tokenize_things_dinov2(split: str = "train") -> None:
+    """Tokenize THINGS images with DINOv2-B/14 + 4M VQVAE, writing tok_dinov2@224 shards.
+
+    Reads raw JPEG images from /project/data/{split}/things/rgb/shard_NNN.tar
+    and writes /project/data/{split}/things/tok_dinov2@224/shard_NNN.tar.
+    Each entry: {key}.npy with shape (1, 256) int16.
+    """
+    ensure_fourm()
+    import io
+    import os as _os
+    import sys as _sys
+    import tarfile
+
+    import numpy as np
+    import torch
+    import torchvision.transforms as T
+    import webdataset as wds
+    from pathlib import Path
+    from PIL import Image
+
+    # Cache both HuggingFace and torch.hub downloads to the project volume so they
+    # survive across Modal container restarts. No naming collisions: HF uses
+    # "models--owner--repo" prefixes, torch.hub uses "owner_repo_branch" and
+    # "checkpoints/" — all distinct within hub/.
+    _hf_cache = f"{PROJECT}/hf_cache"
+    _os.makedirs(_hf_cache, exist_ok=True)
+    _os.environ["HF_HOME"] = _hf_cache     # → /project/hf_cache/hub/models--...
+    _os.environ["TORCH_HOME"] = _hf_cache  # → /project/hf_cache/hub/facebookresearch_dinov2_main/
+
+    _sys.path.insert(0, f"{REPO}/ml-4m")
+    from fourm.vq.vqvae import VQVAE
+
+    device = torch.device("cuda")
+
+    print(f"Loading DINOv2-B/14…", flush=True)
+    dino = torch.hub.load("facebookresearch/dinov2", "dinov2_vitb14").to(device).eval()
+
+    print(f"Loading 4M DINOv2 VQVAE tokenizer…", flush=True)
+    vqvae = VQVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_DINOv2-B14_8k_224-448").to(device).eval()
+
+    preprocess = T.Compose([
+        T.Resize(224, interpolation=T.InterpolationMode.BICUBIC),
+        T.CenterCrop(224),
+        T.ToTensor(),
+        T.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+    ])
+
+    images_root = Path(PROJECT) / "data" / split / "things" / "rgb"
+    out_root = Path(PROJECT) / "data" / split / "things" / "tok_dinov2@224"
+    out_root.mkdir(parents=True, exist_ok=True)
+
+    shard_paths = sorted(images_root.glob("shard_*.tar"))
+    if not shard_paths:
+        raise FileNotFoundError(
+            f"No shard_*.tar files found in {images_root}. "
+            "Raw THINGS JPEG images must be in WDS tar format with {{key}}.jpg entries."
+        )
+
+    for shard_path in shard_paths:
+        out_path = out_root / shard_path.name
+        if out_path.exists():
+            print(f"  Skipping {shard_path.name} (already exists)", flush=True)
+            continue
+
+        print(f"  Processing {shard_path.name}…", flush=True)
+        writer = wds.TarWriter(str(out_path))
+        n = 0
+        with tarfile.open(shard_path) as tf:
+            for member in tf.getmembers():
+                if not member.name.endswith(".jpg"):
+                    continue
+                key = member.name.split(".")[0]
+                buf = tf.extractfile(member).read()
+                img = Image.open(io.BytesIO(buf)).convert("RGB")
+                img_t = preprocess(img).unsqueeze(0).to(device)  # (1, 3, 224, 224)
+
+                with torch.no_grad():
+                    feats = dino.forward_features(img_t)
+                    patch = feats["x_norm_patchtokens"]              # (1, 256, 768)
+                    patch = patch.reshape(1, 16, 16, 768).permute(0, 3, 1, 2)  # (1, 768, 16, 16)
+                    tok = vqvae.tokenize(patch)                      # (1, 16, 16)
+                    tok = tok.reshape(1, 256).cpu().numpy().astype(np.int16)    # (1, 256)
+
+                npy_buf = io.BytesIO()
+                np.save(npy_buf, tok)
+                writer.write({"__key__": key, "npy": npy_buf.getvalue()})
+                n += 1
+
+        writer.close()
+        print(f"    Wrote {n} samples → {out_path}", flush=True)
+
+    project_volume.commit()
+    print(f"Done. tok_dinov2@224 shards committed for {split} split.", flush=True)
+
+
 @app.local_entrypoint()
 def main(
     condition: str = "",
@@ -183,7 +318,7 @@ def main(
     treatment: str = "",
 ) -> None:
     """
-    mode: train | dryrun | collect | fit | plot
+    mode: train | dryrun | collect | fit | plot | tokenize_dinov2
 
     --condition defaults to "" which means all conditions for collect/fit/plot,
     and is required for train/dryrun.
@@ -192,7 +327,9 @@ def main(
 
     Examples:
       modal run 4m_training/modal_train.py --condition pixel_meg
+      modal run 4m_training/modal_train.py --condition pixel_dinov2
       modal run 4m_training/modal_train.py --condition rgb_only_pure_all2all
+      modal run 4m_training/modal_train.py --mode tokenize_dinov2
       modal run 4m_training/modal_train.py --mode collect
       modal run 4m_training/modal_train.py --mode collect --condition pixel_meg
       modal run 4m_training/modal_train.py --mode fit --loss_type depth
@@ -201,7 +338,13 @@ def main(
       modal run 4m_training/modal_train.py --mode plot --treatment pixel_meg
       modal run 4m_training/modal_train.py --large_gpu --condition pixel_meg
     """
-    if mode == "collect":
+    if mode == "tokenize_dinov2":
+        print("Downloading DINOv2 models to project volume (CPU)…")
+        download_dinov2_models.remote()
+        print("Tokenizing THINGS images with DINOv2 (train + val splits)…")
+        tokenize_things_dinov2.remote(split="train")
+        tokenize_things_dinov2.remote(split="val")
+    elif mode == "collect":
         collect_job.remote(condition=condition)
     elif mode == "fit":
         fit_job.remote(condition=condition, loss_type=loss_type)
