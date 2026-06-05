@@ -3,6 +3,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+# NOTE: the neural_tokenizers/CLAUDE.md §4 Stage-1 spec called for `memcodes`
+# from fourm.vq.quantizers.  This is a straight-through product-VQ instead.
+# The two behave similarly (nearest-neighbour lookup + commitment loss) but
+# memcodes uses EMA codebook updates while this uses gradient descent on the
+# embedding table.  The Stage-1 checkpoint was trained with this class, so
+# swapping quantizers would require a re-train.  Since Stage 1 is the expected-
+# to-fail baseline and LaBraM (Stage 2c) is the production tokenizer, leaving
+# this as-is is acceptable; flag as tech-debt if a Stage-1 retrain is ever done.
 class ProductVQQuantizer(nn.Module):
     def __init__(
         self,
