@@ -12,8 +12,8 @@ plus one or more token-derived feature sets:
         entry is emitted (codebook embeddings if available, else
         bag-of-codes).
   - raw    : flattened signal x (upper bound — all info is there)
-  - random : bag-of-codes of uniformly random tokens of the same shape
-             (lower bound — no info)
+  - random : same featurization as `tokens` but with uniformly random token IDs
+             (lower bound — no info; same dimensionality as tokens for a fair comparison)
 
 K-fold cross-validation:
   Set `EvalConfig.probe_n_folds >= 2` to run k-fold CV; the harness reports
@@ -53,6 +53,20 @@ def compute_probe_metrics(
     bearing scope is limited to _train_and_score_probe.
     """
     _assert_probe_inputs(signal, labels)
+
+    # Subsample before featurization to avoid O(B * V) bag-of-codes blowup.
+    n = signal.shape[0]
+    if config.probe_max_samples > 0 and n > config.probe_max_samples:
+        g = torch.Generator().manual_seed(config.seed)
+        pick = torch.randperm(n, generator=g)[: config.probe_max_samples]
+        signal = signal[pick]
+        labels = labels[pick]
+        if tokens is not None:
+            tokens = tokens[pick]
+        print(
+            f"[probe] subsampled {n} → {config.probe_max_samples} trials "
+            f"(probe_max_samples cap)"
+        )
 
     if tokens is None:
         with torch.no_grad():
@@ -130,7 +144,10 @@ def _build_feature_sets(
             feats["random"] = _bag_of_codes(random_tokens, tokenizer.codebook_size)
     else:
         feats["raw"] = signal.reshape(signal.shape[0], -1).to(torch.float32).cpu()
-        feats["random"] = _bag_of_codes(random_tokens, tokenizer.codebook_size)
+        if has_token_embeddings(tokenizer):
+            feats["random"] = _embed_and_mean(tokenizer, random_tokens, config, layers=None)
+        else:
+            feats["random"] = _bag_of_codes(random_tokens, tokenizer.codebook_size)
     return feats
 
 
