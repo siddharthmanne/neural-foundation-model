@@ -176,6 +176,59 @@ def plot_job(
 @app.function(
     image=train_image,
     volumes={PROJECT: project_volume},
+    timeout=60 * 60 * 2,   # probe + 5-fold CV can take ~1-2 h on CPU
+    memory=16 * 1024,
+)
+def eval_dinov2_job(
+    shard_indices: list[int] | None = None,
+    n_samples: int | None = None,
+    probe_classifier: str = "linear",
+    probe_n_folds: int = 5,
+    probe_epochs: int = 100,
+    seed: int = 0,
+    run_probe: bool = True,
+    run_retrieval: bool = True,
+) -> None:
+    """Run the DINOv2 tokenizer evaluation on THINGS val tokens."""
+    import sys as _sys
+    import importlib.util as _ilu
+    from pathlib import Path as _Path
+
+    # Load eval_dinov2.py by file path — avoids package/relative-import issues.
+    _eval_path = f"{REPO}/neural_tokenizers/evaluation/eval_dinov2.py"
+    _spec = _ilu.spec_from_file_location("eval_dinov2", _eval_path)
+    _mod = _ilu.module_from_spec(_spec)
+
+    # Make the evaluation sub-modules importable by their plain names before
+    # executing the module (its top-level try/except fallback uses sys.path).
+    _eval_dir = str(_Path(_eval_path).parent)
+    if _eval_dir not in _sys.path:
+        _sys.path.insert(0, _eval_dir)
+
+    _spec.loader.exec_module(_mod)
+
+    _mod.run_eval(
+        tokens_dir=_Path(f"{PROJECT}/data/val/things/tok_dinov2@224"),
+        image_id_to_concept_path=_Path(
+            f"{REPO}/neural_tokenizers/meg/data/image_id_to_concept.json"
+        ),
+        concept_to_superordinate_path=_Path(
+            f"{REPO}/neural_tokenizers/meg/data/concept_id_to_superordinate.json"
+        ),
+        shard_indices=shard_indices,
+        n_samples=n_samples,
+        probe_classifier=probe_classifier,
+        probe_n_folds=probe_n_folds,
+        probe_epochs=probe_epochs,
+        seed=seed,
+        run_probe=run_probe,
+        run_retrieval=run_retrieval,
+    )
+
+
+@app.function(
+    image=train_image,
+    volumes={PROJECT: project_volume},
     timeout=60 * 30,
     memory=8 * 1024,
 )
@@ -318,7 +371,7 @@ def main(
     treatment: str = "",
 ) -> None:
     """
-    mode: train | dryrun | collect | fit | plot | tokenize_dinov2
+    mode: train | dryrun | collect | fit | plot | tokenize_dinov2 | eval_dinov2
 
     --condition defaults to "" which means all conditions for collect/fit/plot,
     and is required for train/dryrun.
@@ -338,7 +391,9 @@ def main(
       modal run 4m_training/modal_train.py --mode plot --treatment pixel_meg
       modal run 4m_training/modal_train.py --large_gpu --condition pixel_meg
     """
-    if mode == "tokenize_dinov2":
+    if mode == "eval_dinov2":
+        eval_dinov2_job.remote()
+    elif mode == "tokenize_dinov2":
         print("Downloading DINOv2 models to project volume (CPU)…")
         download_dinov2_models.remote()
         print("Tokenizing THINGS images with DINOv2 (train + val splits)…")
