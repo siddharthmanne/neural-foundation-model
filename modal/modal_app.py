@@ -37,17 +37,21 @@ image = (
 )
 
 # One persistent Volume for everything we want to keep across runs:
-# datasets, pretrained weights, training outputs. Mounted at /data.
-data_volume = modal.Volume.from_name("neural-fm-data", create_if_missing=True)
+# datasets, pretrained weights, training outputs. Mounted at /project.
+# Paths INSIDE the volume look like:
+#   /project/data/raw/[dataset]/        — raw / pre-tokenization data
+#   /project/data/train/[dataset]/tok_[modality]/shard-XXXXX.tar
+#   /project/data/val/[dataset]/tok_[modality]/class_0/<stem>.npy
+data_volume = modal.Volume.from_name("project", create_if_missing=True)
 
-@app.function(image=image, volumes={"/data": data_volume})
+@app.function(image=image, volumes={"/project": data_volume})
 def hello():
     """Sanity check. Run: modal run modal_app.py::hello"""
     import sys
     import os
     print(f"Hello from Modal! Python {sys.version.split()[0]}")
-    files = os.listdir("/data") if os.path.exists("/data") else []
-    print(f"Files in /data on the shared Volume: {sorted(files)}")
+    files = os.listdir("/project") if os.path.exists("/project") else []
+    print(f"Files in /project on the shared Volume: {sorted(files)}")
 
 
 @app.local_entrypoint()

@@ -19,9 +19,9 @@ To make your own Modal training job:
 
 What this wrapper does:
   - Adds your training script to the container's image (`add_local_python_source`).
-  - Spins up a container with the right GPU and the shared /data Volume mounted.
+  - Spins up a container with the right GPU and the shared /project Volume mounted.
   - Runs your script inside the container via subprocess.
-  - Commits any /data writes back to the Volume so they persist.
+  - Commits any /project writes back to the Volume so they persist.
 """
 
 import subprocess
@@ -35,7 +35,7 @@ training_image = image.add_local_python_source("demo_train")
 
 @app.function(
     image=training_image,
-    volumes={"/data": data_volume},
+    volumes={"/project": data_volume},
     # If you need an API token (HF, W&B, etc.), create your own personal Modal
     # secret first — see modal_app.py docstring — and reference it here:
     #     import modal
@@ -50,7 +50,7 @@ def run_demo():
     The subprocess.run call below is equivalent to typing this on a
     command line:
 
-        python -u -m demo_train --output-dir /data/demo_output --steps 3
+        python -u -m demo_train --output-dir /project/demo_output --steps 3
 
     except it's happening inside the Modal container instead of on
     your laptop. Each list item is one space-separated argument.
@@ -61,12 +61,12 @@ def run_demo():
             "-u",                                # unbuffered output, so logs stream live
             "-m", "demo_train",                  # run the demo_train module
                                                  # (matches `add_local_python_source("demo_train")` above)
-            "--output-dir", "/data/demo_output", # passed to demo_train.py's argparse
+            "--output-dir", "/project/demo_output", # passed to demo_train.py's argparse
             "--steps", "3",                      # passed to demo_train.py's argparse
         ],
         check=True,  # raise an exception if the script returns a non-zero exit code
     )
-    # Flush /data writes back to the Volume so they persist after the container ends.
+    # Flush /project writes back to the Volume so they persist after the container ends.
     data_volume.commit()
 
 

@@ -65,6 +65,19 @@ def compute_retrieval_metrics(
         with torch.no_grad():
             tokens = tokenize_all(tokenizer, signal, config)
 
+    # Subsample before the O(B²) similarity matrix.
+    n = signal.shape[0]
+    if config.retrieval_max_samples > 0 and n > config.retrieval_max_samples:
+        g = torch.Generator().manual_seed(config.seed)
+        pick = torch.randperm(n, generator=g)[: config.retrieval_max_samples]
+        signal = signal[pick]
+        labels = labels[pick]
+        tokens = tokens[pick]
+        print(
+            f"[retrieval] subsampled {n} → {config.retrieval_max_samples} trials "
+            f"(retrieval_max_samples cap)"
+        )
+
     y = labels.to(torch.long).cpu()
     n_classes = int(y.max().item()) + 1
     Ks = tuple(int(k) for k in config.probe_top_k)
@@ -104,6 +117,7 @@ def _build_retrieval_features(
     apples-to-apples: any quality gap between classifier and retrieval is
     attributable to the classifier, not the features."""
     feats: dict[str, torch.Tensor] = {}
+    _rt = _random_tokens_like(tokens, tokenizer.codebook_size, config.seed)
     if has_token_embeddings(tokenizer):
         fn = getattr(tokenizer, "tokens_to_embedding")
         try:
@@ -111,13 +125,11 @@ def _build_retrieval_features(
         except (TypeError, ValueError):
             layered = False
         feats["tokens"] = _embed_and_mean(tokenizer, tokens, config, layered=layered)
+        feats["random"] = _embed_and_mean(tokenizer, _rt, config, layered=layered)
     else:
         feats["tokens"] = _bag_of_codes(tokens, tokenizer.codebook_size)
+        feats["random"] = _bag_of_codes(_rt, tokenizer.codebook_size)
     feats["raw"] = signal.reshape(signal.shape[0], -1).to(torch.float32).cpu()
-    feats["random"] = _bag_of_codes(
-        _random_tokens_like(tokens, tokenizer.codebook_size, config.seed),
-        tokenizer.codebook_size,
-    )
     return feats
 
 

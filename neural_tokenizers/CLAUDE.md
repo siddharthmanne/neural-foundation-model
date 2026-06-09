@@ -60,14 +60,18 @@ When in doubt, mirror the human_poses config rather than the image configs.
 
 ## 3. Data — working assumptions
 
+- **THINGS-EEG2** (Gifford et al. 2022): **verified** on the team `project`
+  Modal Volume. Published preprocessed version selects **17 channels**
+  (occipital + posterior only via regex `^O *|^P *` in
+  `gifale95/eeg_encoding_model/02_eeg_preprocessing/preprocessing_utils.py`),
+  100 Hz, MVNN-whitened, trial tensor shape `(17, 100)`. 10 subjects, 16,540
+  training images × 4 reps + 200 test images × 80 reps. Raw recording has 63
+  channels but Gifford drops the others before publishing.
 - **THINGS-MEG** (Hebart et al. 2023): **verified** on the team `project`
   Modal Volume — see [`meg/CLAUDE.md`](meg/CLAUDE.md) §3 for exact shapes
   (271 mag channels, 200 Hz, 281 timepoints, 27,048 trials/subject × 4
   subjects). Preprocessed `.fif` files live at
   `/project/data/things-meg/preprocessed/`.
-- **THINGS-EEG2** (Gifford et al. 2022): 63 channels, 100 Hz, ~1.1s epochs →
-  trial tensor shape roughly `(63, 100)`. ~10 subjects, ~16k training trials
-  each. Not yet verified in this repo.
 - Both: 2D `(channels, time)` per trial. Channels are *not* a spatial grid —
   treat as an unordered set or a sensor-topography graph, not as image rows.
 - Stimulus labels: THINGS has ~1,854 object concepts (use for downstream probes);

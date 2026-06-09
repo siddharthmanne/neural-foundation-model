@@ -155,6 +155,11 @@ class EvalConfig:
 
     psd_nperseg: int | None = None
 
+    # Cap probe and retrieval to avoid O(B) and O(B²) memory blowup.
+    # 0 = no cap. The codebook and sequence axes always use the full dataset.
+    probe_max_samples: int = 50000
+    retrieval_max_samples: int = 5000
+
 
 @dataclass
 class MetricResult:

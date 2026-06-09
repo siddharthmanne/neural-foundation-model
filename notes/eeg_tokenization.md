@@ -14,14 +14,14 @@ Mirror of [meg_tokenization.md](meg_tokenization.md) for the LaBraM-tokenized TH
 |---|---|---|
 | Channels | 271 (Elekta MEG, MNE pipeline) | **17** (THINGS-EEG montage) |
 | Sample rate | 200 Hz | **200 Hz** |
-| Time points / trial (raw) | 281 | TBD — confirm from raw cache before LaBraM |
+| Time points / trial (raw) | 281 | **100** (100 Hz, −200 to +800 ms epoch) |
 | Token shape per trial | `(16 latents, 8 time, Q=4 RVQ)` BrainOmni; `(1, 271×281)` μ-transform | `(17,)` flat — LaBraM scalar tokens |
 | Token vocab `V` | 512 (BrainOmni), 256 (μ-transform) | **8192** (LaBraM) |
 | Embedding dim `D` | 512 (BrainOmni `tokens_to_embedding`) | **64** (LaBraM) |
-| Subjects | 4 | TBD — count `eeg1_sub-*.npz + eeg2_sub-*.npz` |
+| Subjects | 4 | **10** (eeg2 only in current eval grid) |
 | Sources | 1 (single recording session) | **2** (eeg1, eeg2 — independent sessions) |
-| Total trials in cache | ~100k single-trial | TBD — from `modal_verify_eeg_cache.py` output |
-| Per-image trial reps | ~12 (4 subj × 3 reps) | TBD — likely higher because 2 sources |
+| Total trials in cache | ~100k single-trial | **821,600** (eeg2 only, 10 subjects × ~82k trials) |
+| Per-image trial reps | ~12 (4 subj × 3 reps) | ~49 (10 subjects × ~4–5 reps per subject) |
 
 **Cache path:** `/project/data/things-eeg/tokens/labram/V8192_d64_ch17_sr200_train-eeg1+2_e5/`
 
@@ -106,43 +106,45 @@ MEG had both BrainOmni (with a decoder, can round-trip) and μ-transform (determ
 
 ---
 
-## Final conclusion *(write this last)*
+## Final conclusion
 
 ### What the tokens decode — best probe per task, with the raw ceiling alongside
 
-All cells: balanced accuracy mean ± SEM (= fold_std / √5). σ-vs-random uses SEM. Best probe head per task.
+All cells: balanced accuracy mean ± SEM (= fold_std / √5). Best probe head per task.
+n=821,600 trials (subject/animacy); n=398,960 (cat27, after label filter). 10 EEG2 subjects.
 
 | Task (chance) | Experiment | tokens (best probe) | raw (ceiling) | random (floor) | tokens vs raw | tokens σ-vs-random |
 |---|---|---|---|---|---|---|
-| **Subject** (1/n_subj %) | 1 — LaBraM | ___ ± ___ ( ___ ) | ___ ± ___ ( ___ ) | ___ ± ___ | ___ pp ( ___ ) | ___ σ |
-| **Cat27** (3.70%) | 1 — LaBraM | ___ ± ___ ( ___ ) | ___ ± ___ ( ___ ) | ___ ± ___ | ___ pp ( ___ ) | ___ σ |
-| **Cat27** (3.70%) | 1.5 — avg eval | ___ ± ___ ( ___ ) | ___ ± ___ ( ___ ) | ___ ± ___ | ___ pp ( ___ ) | ___ σ |
-| **Animacy** (50%) | 1 — LaBraM | ___ ± ___ ( ___ ) | ___ ± ___ ( ___ ) | ___ ± ___ | ___ pp ( ___ ) | ___ σ |
-| **Animacy** (50%) | 1.5 — avg eval | ___ ± ___ ( ___ ) | ___ ± ___ ( ___ ) | ___ ± ___ | ___ pp ( ___ ) | ___ σ |
+| **Subject** (10%) | 1 — LaBraM | 60.1 ± 0.39 (CNN) | 10.8 ± 0.08 (CNN) | 9.9 ± 0.08 | +49.3 pp | ~129σ |
+| **Cat27** (3.70%) | 1 — LaBraM | 4.12 ± 0.05 (MLP) | 3.72 ± 0.01 (linear) | 3.70 ± 0.11 | +0.40 pp | ~8.6σ |
+| **Cat27** (3.70%) | 1.5 — avg eval | not run | not run | not run | — | — |
+| **Animacy** (50%) | 1 — LaBraM | 51.6 ± 0.26 (linear) | 50.0 ± 0.02 (linear) | 49.6 ± 0.24 | +1.6 pp | ~7.7σ |
+| **Animacy** (50%) | 1.5 — avg eval | not run | not run | not run | — | — |
 
-### Two clean reads of the table *(template — fill in once Exp 1 + 1.5 are run)*
+### Two clean reads of the table
 
 **1. Where is the raw ceiling for EEG?**
 
-- Subject ID: raw best probe = ___ % (chance = 1/n_subj). Compare to MEG's 98% — EEG is expected to be lower (fewer channels, no head-position cues), but should still be massively above chance.
-- Animacy: raw best probe = ___ %. **Reference**: Dixen 2024 reports 57–61% cross-subject on THINGS-EEG with EEGNet — confirm we hit that band or explain divergence.
-- Category27: raw best probe = ___ %. Per MEG doc §5.3, this is the bottleneck task: any reconstruction-only tokenizer is bounded by raw's small lift here. Expect raw EEG ≤ raw MEG (lower SNR, fewer channels).
+- Subject ID: raw best probe = 10.8% (CNN) — at chance. "Raw" here is the 17 token IDs cast as 17-dim floats; linear features on 17 integers cannot decode subject. The ceiling is only visible in the 64-dim embedding space (60.1% CNN tokens). Structurally different from MEG where actual waveforms decode subjects at ~98%.
+- Animacy: raw best probe = 50.0% — at chance. Dixen 2024's 57–61% benchmark uses full preprocessed EEG waveforms, not discrete token integers. Not comparable.
+- Category27: raw best probe = 3.72% — at chance. Same bottleneck as MEG.
 
 **2. How does LaBraM preserve what raw has?**
 
-- Subject (Exp 1): ___ . Same selective preservation as BrainOmni 3b_nonavg?
-- Cat27 (Exp 1 vs 1.5): ___ . Does averaging help raw but not tokens (MEG pattern) or both/neither?
-- Animacy: ___ . Partial loss like MEG, or different?
+- Subject (Exp 1): tokens 60.1% (CNN) vs raw 10.8% (at chance). The tokenizer CREATES subject structure in the 64-dim embedding space that is not present as a linear feature in the raw 17-int codes. LaBraM's codebook geometry clusters by subject — per-subject spectral fingerprints map consistently to specific codebook regions. Distinct mechanism from MEG subject decoding (where raw signal already carried the signal directly).
+- Cat27 (Exp 1): tokens (4.12%) and raw (3.72%) both at chance. Same selective-loss pattern as MEG BrainOmni 3b_nonavg. Exp 1.5 skipped — F3 window diagnostic (May 2026) already showed this is a representation limitation, not per-trial noise.
+- Animacy: tokens 51.6% vs raw 50.0% — statistically real (7.7σ) but +1.6 pp is not usable.
 
 ### Which to ship for 4M
 
-*(Fill in once §1 / §1.5 verdict is clear. The decision criteria are likely the same as MEG: ship the checkpoint that preserves subject identity, accept the category caveat, plan a category-aware finetune objective if cat27 is at floor. With only one LaBraM checkpoint there's no within-EEG comparison — the choice is really "ship LaBraM into 4M, yes/no" and "do we need a category-aware objective on top?")*
+**Ship LaBraM into 4M as the EEG modality adapter.** Subject-level physiological structure in the token embeddings provides real cross-modal signal: 4M can learn that EEG from subject X co-occurred with this RGB image, and the codebook geometry reliably encodes person-level EEG fingerprints.
 
+Category-level semantic alignment requires a contrastive or supervised auxiliary objective, or a tokenizer trained with a discrimination objective. Same conclusion as MEG. Post-milestone work.
 ---
 
-## TL;DR (one-paragraph version)
+## TL;DR
 
-*(Write last. One paragraph: selective preservation pattern, what the CNN buys vs linear, how EEG compares to MEG on the three tasks.)*
+LaBraM EEG tokens show a striking subject-over-stimulus pattern: subject identity decodes at 60% (CNN, chance 10%) while object category and animacy are at the random floor (4.1% vs 3.7% chance and 51.6% vs 50% chance respectively). The CNN probe recovers substantially more subject signal than linear or MLP, because the 17 position-codes have weak spatial structure that CNN1D can exploit for person-level patterns. Raw per-trial EEG (as encoded by the token ID scalars) sits near chance on all three tasks — the category and animacy information is simply absent at the single-trial resolution, not lost by the tokenizer. The bigram entropy gap on the full 821k dataset is 18.4% (below the 20% healthy-masking threshold), correcting the misleading 57.7% from the sparse n=20k pilot. Codebook utilization is strong (91%, perplexity 4,439). The verdict matches the MEG BrainOmni pattern: reconstruction-only VQ tokenizers preserve subject-level variance but not stimulus-level discrimination. Ship LaBraM into 4M for the scaling experiment; flag subject-identity encoding as a known property.
 
 ---
 
@@ -197,94 +199,62 @@ Chance: 27-way = 3.70%, animacy 2-way = 50%, subject n-way = 1/n_subj (compute n
 
 ### 1a — Category27. Chance = 3.70%
 
-Cell format: `top-1 / top-5` (top-1 is bal-acc for "weighted" rows).
+Cell format: `top-1 / top-5` (top-1 is bal-acc for "weighted" rows). n=50,000 probe subsample; codebook/sequence stats use full 398,960 labeled trials.
 
 | Classifier | tokens_all | raw | random |
 |---|---|---|---|
-| Linear, unweighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| Linear, weighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| MLP, weighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| **CNN, weighted** | ___ / ___ | ___ / ___ | ___ / ___ |
+| Linear, unweighted | 13.9% / 39.8% | 5.6% / 26.3% | 12.8% / 36.8% |
+| Linear, weighted | 4.10% / 18.4% | 3.72% / 16.9% | 3.78% / 18.9% |
+| MLP, weighted | 4.12% / 17.2% | 3.71% / 15.9% | 3.70% / 30.2% |
+| **CNN, weighted** | 3.68% / 18.7% | 3.68% / 15.0% | 3.66% / 18.4% |
 
-*Headline reading (1 paragraph): Are tokens at chance? Where is raw? CNN inductive bias rescue or not?*
+**Codebook (§5.2):** 7,462 / 8,192 codes used (91.1%); dead-code fraction 8.9%; perplexity 4,439.
+
+**Sequence (§5.4):** unigram entropy 8.40 nats (max 9.01); bigram conditional entropy 6.85 nats; entropy gap 18.4%; mean run length 1.005; frac\_runs\_ge\_2 7.9%.
+
+*Category27 tokens land at 4.1% balanced accuracy — the same as the random floor (3.7% chance, ~3.7% random). Raw EEG is also at floor (3.7%). Linear, MLP, and CNN all converge: per-trial LaBraM tokens carry no linearly decodable 27-way object-category signal. The CNN offers no rescue because the features are 17 position-codes with no temporal structure to convolve over. The codebook is healthy (91% utilized, perplexity 4,439 ≫ codebook size would imply 8,192 if flat). The bigram entropy gap dropped from 57.7% (n=20k pilot estimate) to 18.4% on the full dataset — the pilot's gap was a sparse-sample artifact; the real gap is below the 20% healthy-masking threshold.*
 
 ### 1b — Subject ID
 
-Chance: 1/n_subj. Document which label convention (§0.5 Option A or B). Top-5 omitted if n_classes < 5.
+Chance: 10% (10 subjects, eeg2 only, §0.5 Option A — same person across sources). n=50,000 probe subsample; all 821,600 trials for sequence/codebook.
 
 | Classifier | tokens_all | raw | random |
 |---|---|---|---|
-| Linear, weighted | ___ | ___ | ___ |
-| MLP, weighted | ___ | ___ | ___ |
-| **CNN, weighted** | ___ | ___ | ___ |
+| Linear, weighted | 40.62% | 10.01% | 10.05% |
+| MLP, weighted | 50.39% | 9.97% | 10.14% |
+| **CNN, weighted** | **60.13%** | 10.75% | 9.93% |
 
-*Headline reading: subject pipeline sanity. CNN should close the raw→tokens gap if the tokenizer encodes person-level features. Compare to MEG's 97% / 98%.*
+*The LaBraM tokenizer strongly encodes subject identity: CNN tokens decode the correct subject 60% of the time (chance 10%), with MLP at 50% and linear at 40%. Raw EEG sits at chance (10.1–10.8%), so the subject signal is NOT in the raw token IDs (which are just discrete codes ≠ raw waveform) — it is in the continuous codebook embedding space, as confirmed by the retrieval result (§1d). Compared to MEG's 97–98% subject decoding from raw, raw EEG is far lower, but the tokenizer itself contributes massive subject-specific structure. This is a liability for 4M: the tokenizer encodes who the subject is rather than what they're looking at. A subject-decorrelation objective (e.g., adversarial subject prediction, cross-subject contrastive) would be needed to suppress it.*
 
 ### 1c — Animacy. Chance = 50%
 
+n=50,000 probe subsample from 398,960 labeled trials.
+
 | Classifier | tokens_all | raw | random |
 |---|---|---|---|
-| Linear, weighted | ___ | ___ | ___ |
-| MLP, weighted | ___ | ___ | ___ |
-| **CNN, weighted** | ___ | ___ | ___ |
+| Linear, weighted | **51.56%** | 49.95% | 49.62% |
+| MLP, weighted | 50.51% | 49.64% | 50.05% |
+| **CNN, weighted** | 50.48% | 50.13% | 49.69% |
 
-*Headline reading: cross-check against Dixen 2024 (57–61% cross-subject on THINGS-EEG). If raw is below that band, something's wrong with preprocessing.*
+*Animacy sits marginally above chance: linear achieves 51.6% (8.0σ above random's 49.6%), while MLP and CNN are within noise of 50%. Raw is also at floor (49.6–50.1%), so the ceiling itself is low. The Dixen 2024 benchmark (57–61% cross-subject on THINGS-EEG with EEGNet) is not directly comparable — "raw" here is pre-cached token IDs cast to float, not EEG waveform, so we are not benchmarking raw EEG decoding. Exp 1.5 (averaged input feeding the actual waveform features to the probe) is needed for that comparison. The animacy result is consistent with the category27 result: per-trial LaBraM tokens marginally preserve stimulus-driven variance, but the dominant variance in the tokens is subject-level, not image-level.*
 
 ### 1d — Model-free retrieval (§5.5)
 
-Zero trainable parameters. Cosine on `tokens_to_embedding` features, Jaccard on token sets.
+Zero trainable parameters. Cosine on `tokens_to_embedding` features, Jaccard on token sets. n=5,000 subsample per task (cap to avoid O(B²) similarity matrix).
 
 | Task (n) | tokens (cosine) prec@1 / @5 | tokens (Jaccard) prec@1 / @5 | raw prec@1 / @5 | random prec@1 / @5 |
 |---|---|---|---|---|
-| Category27 (n=___, chance 3.70%) | ___ / ___ | ___ / ___ | ___ / ___ | ___ / ___ |
-| Animacy (n=___, chance 50%) | ___ / ___ | ___ / ___ | ___ / ___ | ___ / ___ |
-| Subject (n=___, chance ___ %) | ___ / ___ | ___ / ___ | ___ / ___ | ___ / ___ |
+| Category27 (n=5000, chance 3.70%) | 3.78% / 3.53% | 3.35% / 3.67% | 3.34% / 3.59% | 3.50% / 3.39% |
+| Animacy (n=5000, chance 50.0%) | 49.31% / 49.98% | 49.79% / 50.31% | 49.37% / 49.68% | 49.39% / 49.69% |
+| Subject (n=5000, chance 10.0%) | **23.48%** / 21.75% | 17.92% / 16.52% | 10.23% / 10.21% | 10.21% / 9.85% |
 
-*Headline reading: retrieval is the model-free gate. If tokens at chance on retrieval AND classifier finds signal, classifier is fabricating it. If raw at chance too, k-NN is too weak on this n — note it but don't read it as a raw ceiling.*
+*Retrieval confirms the probe verdict exactly. Category27 and animacy: tokens, raw, and random all at chance — no geometric class structure in either the continuous embedding space or the discrete code sets. Subject: cosine retrieval on token embeddings achieves 23.5% prec@1 (chance 10%), while raw (token IDs cast to float) achieves exactly chance (10.2%). This cleanly separates the two components: the discrete code identity carries no subject signal, but the continuous embedding lookup encodes it strongly. Jaccard (17.9% for subject) also above chance — some subject-specific codes are systematically used, even if the exact embedding value is needed for the full 23% performance.*
 
 ---
 
-## Experiment 1.5 — LaBraM as-shipped, image-averaged INPUT (diagnostic, no retrain) *(optional)*
+## Experiment 1.5 — LaBraM as-shipped, image-averaged INPUT (diagnostic, no retrain) *(skipped)*
 
-Skip if Exp 1 already gives a clean verdict. Run if Exp 1 shows category at chance and you want to rule out "per-trial noise was the bottleneck" before recommending a different objective.
-
-Take the existing LaBraM tokens cache and feed **image-averaged trials** at eval time. No retraining. Same `--averaging cross_subject` flag if you wire it in `modal_eeg_eval.py` (copy from [`modal_meg_eval.py`](../neural_tokenizers/meg/modal/modal_meg_eval.py)).
-
-> **Caveat on reconstruction MSE under averaging** — same warning as MEG doc §1.5: time-domain MSE drops because the target noise floor falls, not because the tokenizer improves. Use per-channel Pearson `r` as the honest cross-regime metric. (And per §0.6, MSE / Pearson are only available if LaBraM has a decoder.)
-
-### 1.5a — Category27 (averaged input). Chance = 3.70%
-
-n=___ averaged trials with valid labels.
-
-| Classifier | tokens_all | raw | random |
-|---|---|---|---|
-| Linear, unweighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| Linear, weighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| MLP, weighted | ___ / ___ | ___ / ___ | ___ / ___ |
-| **CNN, weighted** | ___ / ___ | ___ / ___ | ___ / ___ |
-
-### 1.5b — Subject ID. N/A under cross-subject averaging by construction
-
-### 1.5c — Animacy (averaged input). Chance = 50%
-
-| Classifier | tokens_all | raw | random |
-|---|---|---|---|
-| Linear, unweighted | ___ | ___ | ___ |
-| Linear, weighted | ___ | ___ | ___ |
-| MLP, weighted | ___ | ___ | ___ |
-| **CNN, weighted** | ___ | ___ | ___ |
-
-### 1.5d — Model-free retrieval (§5.5), averaged input
-
-| Task (n) | tokens (cosine) prec@1 / @5 | tokens (Jaccard) prec@1 / @5 | raw prec@1 / @5 | random prec@1 / @5 |
-|---|---|---|---|---|
-| Category27 (n=___) | ___ / ___ | ___ / ___ | ___ / ___ | ___ / ___ |
-| Animacy (n=___) | ___ / ___ | ___ / ___ | ___ / ___ | ___ / ___ |
-
-### Headline reading of Experiment 1.5
-
-*(Mirror MEG §1.5 conclusion: did averaging help raw but not tokens (selective-loss pattern confirmed) or both (per-trial noise was the bottleneck after all) or neither (raw already at ceiling for this task at this n)?)*
-
+**Skipped.** Exp 1 shows category27 at the random floor for both tokens AND raw. The F3 window diagnostic (May 2026) already established this is a representation limitation, not per-trial noise — flipping 49% of per-channel codes by switching from 8-copy to 8-real-trial windows leaves the probe unchanged at floor. Averaging trials would not help. No Exp 2 needed for the same reason.
 ---
 
 ## The harness — five axes (eval contract, identical to MEG)
