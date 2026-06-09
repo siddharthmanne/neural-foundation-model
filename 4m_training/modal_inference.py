@@ -3,8 +3,12 @@
 Loads THINGS samples and tokenizers once, then runs each model in sequence —
 avoiding repeated Modal startup and HuggingFace download overhead.
 
+Each generated image is saved independently so figures can be composed later.
+A separate CPU function (assemble_figure_cpu) reads the saved images and builds
+a grid figure without needing a GPU.
+
 Examples:
-  # Compare two model sizes, pin the same 4 samples
+  # Compare two model sizes, pin the same 4 samples, auto-assemble figure
   modal run 4m_training/modal_inference.py \\
     --names pixel_only_128,pixel_only_512 \\
     --checkpoints /project/output/pixel_only/2layer/dim128/checkpoints/checkpoint-latest.pth,/project/output/pixel_only/3layer/dim512/checkpoints/checkpoint-latest.pth \\
@@ -14,13 +18,17 @@ Examples:
   # CPU-only run (cheaper, slower — good for debugging)
   modal run 4m_training/modal_inference.py --cpu ...same args...
 
-  # Same samples, add MEG-conditioned run for one model
+  # MEG-conditioned run for one model
   modal run 4m_training/modal_inference.py \\
     --names meg_rgb_only,meg_rgb_plus_meg \\
-    --checkpoints /project/output/pixel_meg_rvq0/3layer/dim512/checkpoints/checkpoint-latest.pth,/project/output/pixel_meg_rvq0/3layer/dim512/checkpoints/checkpoint-latest.pth \\
-    --configs /opt/repo/ml-4m/cfgs/neural/4m/modal/model/4m-neural-3e-3d-scaling-meg-rvq0.yaml,/opt/repo/ml-4m/cfgs/neural/4m/modal/model/4m-neural-3e-3d-scaling-meg-rvq0.yaml \\
+    --checkpoints /project/output/.../checkpoint-latest.pth,/project/output/.../checkpoint-latest.pth \\
+    --configs ...meg-rvq0.yaml,...meg-rvq0.yaml \\
     --sample_key 000042,000117,000203,000389 \\
     --include_meg_for meg_rgb_plus_meg
+
+  # Re-assemble figure from already-saved PNGs (no GPU, very fast)
+  modal run 4m_training/modal_inference.py \\
+    --mode plot_only --names pixel_only_128,pixel_only_512
 """
 
 from __future__ import annotations
@@ -62,12 +70,15 @@ _common = dict(
 def _run_inference(
     names, checkpoints, configs,
     things_root, shard_idx, n_samples, sample_key,
-    include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    include_meg_for, meg_source,
+    include_dinov2_for, dinov2_source,
+    include_eeg_for, eeg_source,
     output_dir, tokenizer_cache,
     device_str,
 ):
     ensure_fourm()
 
+    import json
     import sys as _sys
     _sys.path.insert(0, f"{REPO}/ml-4m")
     _sys.path.insert(0, f"{REPO}/4m_training/lib")
@@ -79,13 +90,11 @@ def _run_inference(
 
     from pathlib import Path
     import sys as _sys2
-    _sys2.stdout.reconfigure(line_buffering=True)  # flush every line — Modal buffers by default
+    _sys2.stdout.reconfigure(line_buffering=True)
 
-    import matplotlib
-    matplotlib.use("Agg")  # headless backend — must be set before importing pyplot
-    import matplotlib.pyplot as plt
-
+    import numpy as np
     import torch
+    from PIL import Image as PILImage
 
     print("Importing fourm modules…", flush=True)
     import fourm_neural_modalities  # noqa: F401 — registers neural modalities
@@ -105,7 +114,7 @@ def _run_inference(
 
     device = torch.device(device_str)
 
-    # ---- Load shared resources (once for all models) ----
+    # ---- Load shared tokenizers (once for all models) ----
     print(f"Loading RGB tokenizer on {device_str}…", flush=True)
     tok_rgb_dec = DiVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_rgb_16k_224-448").to(device).eval()
     print("Loading depth tokenizer…", flush=True)
@@ -117,16 +126,30 @@ def _run_inference(
     print("Tokenizers ready.", flush=True)
 
     sample_keys_list = [k.strip() for k in sample_key.split(",")] if sample_key else None
-    meg_src    = meg_source    if include_meg_for    else None
-    dino_src   = dinov2_source if include_dinov2_for else None
-    print(f"Loading THINGS samples from shard {shard_idx} (meg_src={meg_src}, dino_src={dino_src})…", flush=True)
+    meg_src  = meg_source    if include_meg_for    else None
+    dino_src = dinov2_source if include_dinov2_for else None
+    eeg_src  = eeg_source    if include_eeg_for    else None
+    print(f"Loading THINGS samples from shard {shard_idx} "
+          f"(meg={meg_src}, dino={dino_src}, eeg={eeg_src})…", flush=True)
     samples = infer.load_things_samples(
         Path(things_root), shard_idx, n_samples,
-        sample_keys=sample_keys_list, meg_source=meg_src, dinov2_source=dino_src,
+        sample_keys=sample_keys_list,
+        meg_source=meg_src,
+        dinov2_source=dino_src,
+        eeg_source=eeg_src,
     )
     print(f"  Keys: {[s['key'] for s in samples]}", flush=True)
 
     _os.makedirs(output_dir, exist_ok=True)
+
+    def _save_img(arr: np.ndarray, path: Path, is_depth: bool) -> None:
+        """Save float [0,1] array as PNG. Depth saved as L (grayscale) for colormap flexibility."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if is_depth:
+            pil = PILImage.fromarray((arr * 255).astype(np.uint8), mode="L")
+        else:
+            pil = PILImage.fromarray((arr * 255).astype(np.uint8))
+        pil.save(path)
 
     # ---- Run each model in sequence ----
     for name, checkpoint, config in zip(names, checkpoints, configs):
@@ -134,30 +157,25 @@ def _run_inference(
         print(f"Model: {name}", flush=True)
         use_meg    = name in include_meg_for
         use_dinov2 = name in include_dinov2_for
+        use_eeg    = name in include_eeg_for
 
         print(f"  Building model from {Path(config).name}…", flush=True)
         model, modality_info = infer.build_fm_model(Path(config), Path(checkpoint), device)
         sampler = GenerationSampler(model)
 
-        n = len(samples)
-        cond_parts = ["RGB"]
-        if use_meg:
-            cond_parts.append(f"MEG ({meg_source})")
-        if use_dinov2:
-            cond_parts.append("DINOv2")
-        input_label = "+".join(cond_parts)
+        model_dir = Path(output_dir) / name
+        model_dir.mkdir(parents=True, exist_ok=True)
 
-        # Extra column when DINOv2 GT visualization is available
+        image_types = ["rgb", "depth_gt", "depth_pred"]
         if use_dinov2:
-            fig, axes = plt.subplots(n, 4, figsize=(13, 3.5 * n), squeeze=False)
-            col_titles = ["RGB (decoded)", "DINOv2 GT (PCA)", "Depth GT",
-                          f"Depth pred\n({input_label} → depth)"]
-        else:
-            fig, axes = plt.subplots(n, 3, figsize=(10, 3.5 * n), squeeze=False)
-            col_titles = ["RGB (decoded)", "Depth GT", f"Depth pred\n({input_label} → depth)"]
+            image_types = ["rgb", "dino_gt", "depth_gt", "depth_pred"]
+        colormaps = {t: ("plasma" if "depth" in t else "color") for t in image_types}
 
-        for row, sample in enumerate(samples):
-            print(f"  Sample {row+1}/{n} key={sample['key']}…", flush=True)
+        keys_processed = []
+        for sample in samples:
+            key = sample["key"]
+            print(f"  Sample key={key}…", flush=True)
+
             tok_rgb_t   = torch.tensor(sample["tok_rgb"],   dtype=torch.int64).unsqueeze(0).to(device)
             tok_depth_t = torch.tensor(sample["tok_depth"], dtype=torch.int64).unsqueeze(0).to(device)
 
@@ -170,11 +188,17 @@ def _run_inference(
                     mod_dict, sample["meg_rvq"], modality_info, device
                 )
 
+            eeg_cond: list[str] = []
+            if use_eeg and "eeg_tokens" in sample:
+                mod_dict, eeg_cond = infer.add_eeg_input(
+                    mod_dict, sample["eeg_tokens"], modality_info, device
+                )
+
             dino_cond: list[str] = []
             if use_dinov2 and "tok_dinov2" in sample:
                 tok_dinov2_t = torch.tensor(
                     sample["tok_dinov2"].reshape(256), dtype=torch.int64
-                ).unsqueeze(0).to(device)  # (1, 256)
+                ).unsqueeze(0).to(device)
                 mod_dict["tok_dinov2@224"] = {"tensor": tok_dinov2_t}
                 mod_dict = init_full_input_modality(mod_dict, modality_info, "tok_dinov2@224", device)
                 dino_cond = ["tok_dinov2@224"]
@@ -184,7 +208,7 @@ def _run_inference(
                 batch_size=1, num_tokens=196, device=device,
             )
             schedule = build_chained_generation_schedules(
-                cond_domains=["tok_rgb@224"] + meg_cond + dino_cond,
+                cond_domains=["tok_rgb@224"] + meg_cond + eeg_cond + dino_cond,
                 target_domains=["tok_depth@224"],
                 tokens_per_target=[196],
                 autoregression_schemes=["roar"],
@@ -197,61 +221,65 @@ def _run_inference(
                 cfg_grow_conditioning=False,
                 modality_info=modality_info,
             )
-            print(f"    Generating ({len(schedule)}-step schedule)…", flush=True)
+            print(f"    Generating…", flush=True)
             with torch.no_grad():
                 mod_dict = sampler.generate(mod_dict, schedule, seed=42, verbose=True)
 
-            print(f"    Decoding tokens…", flush=True)
+            print(f"    Decoding and saving…", flush=True)
             pred_tokens = mod_dict["tok_depth@224"]["tensor"]
+
             rgb_img    = infer.decode_to_image(tok_rgb_dec,   tok_rgb_t,   is_rgb=True)
             gt_depth   = infer.decode_to_image(tok_depth_dec, tok_depth_t, is_rgb=False)
             pred_depth = infer.decode_to_image(tok_depth_dec, pred_tokens, is_rgb=False)
 
+            _save_img(rgb_img,    model_dir / f"{key}_rgb.png",        is_depth=False)
+            _save_img(gt_depth,   model_dir / f"{key}_depth_gt.png",   is_depth=True)
+            _save_img(pred_depth, model_dir / f"{key}_depth_pred.png", is_depth=True)
+
             if use_dinov2:
                 dino_gt = infer.decode_dinov2(tok_dinov2_dec, tok_dinov2_t)
-                imgs = [rgb_img, dino_gt, gt_depth, pred_depth]
-            else:
-                imgs = [rgb_img, gt_depth, pred_depth]
+                _save_img(dino_gt, model_dir / f"{key}_dino_gt.png", is_depth=False)
 
-            for col, (img, title) in enumerate(zip(imgs, col_titles)):
-                ax = axes[row][col]
-                # RGB and DINOv2 PCA are already 3-channel; depth uses plasma colormap
-                if col == 0 or (use_dinov2 and col == 1):
-                    ax.imshow(img)
-                else:
-                    ax.imshow(img, cmap="plasma")
-                if row == 0:
-                    ax.set_title(title, fontsize=10)
-                ax.axis("off")
-            axes[row][0].set_ylabel(f"key {sample['key']}", fontsize=8,
-                                    rotation=0, labelpad=50, va="center")
-            print(f"    Row {row+1} done.", flush=True)
+            keys_processed.append(key)
 
-        print(f"  Saving figure…", flush=True)
-        fig.suptitle(name, fontsize=12, fontweight="bold")
-        plt.tight_layout()
-        out = Path(output_dir) / f"{name}.png"
-        plt.savefig(out, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        print(f"  Saved → {out}", flush=True)
+        # Metadata for assemble_figure_cpu
+        meta = {
+            "model_name":  name,
+            "checkpoint":  checkpoint,
+            "config":      config,
+            "keys":        keys_processed,
+            "image_types": image_types,
+            "colormaps":   colormaps,
+            "conditions": {
+                "meg":    meg_source    if use_meg    else None,
+                "dinov2": dinov2_source if use_dinov2 else None,
+                "eeg":    eeg_source    if use_eeg    else None,
+            },
+        }
+        (model_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+        print(f"  Wrote meta.json for {name}.", flush=True)
 
         del model, sampler
         if device_str == "cuda":
             torch.cuda.empty_cache()
 
     project_volume.commit()
-    print(f"\nAll outputs committed to volume at {output_dir}/")
+    print(f"\nAll images committed to volume at {output_dir}/")
 
 
 @app.function(**_common, gpu="T4")
 def inference_job_gpu(
     names, checkpoints, configs, things_root, shard_idx, n_samples,
-    sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    sample_key, include_meg_for, meg_source,
+    include_dinov2_for, dinov2_source,
+    include_eeg_for, eeg_source,
     output_dir, tokenizer_cache,
 ):
     _run_inference(
         names, checkpoints, configs, things_root, shard_idx, n_samples,
-        sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+        sample_key, include_meg_for, meg_source,
+        include_dinov2_for, dinov2_source,
+        include_eeg_for, eeg_source,
         output_dir, tokenizer_cache,
         device_str="cuda",
     )
@@ -260,15 +288,258 @@ def inference_job_gpu(
 @app.function(**_common)
 def inference_job_cpu(
     names, checkpoints, configs, things_root, shard_idx, n_samples,
-    sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+    sample_key, include_meg_for, meg_source,
+    include_dinov2_for, dinov2_source,
+    include_eeg_for, eeg_source,
     output_dir, tokenizer_cache,
 ):
     _run_inference(
         names, checkpoints, configs, things_root, shard_idx, n_samples,
-        sample_key, include_meg_for, meg_source, include_dinov2_for, dinov2_source,
+        sample_key, include_meg_for, meg_source,
+        include_dinov2_for, dinov2_source,
+        include_eeg_for, eeg_source,
         output_dir, tokenizer_cache,
         device_str="cpu",
     )
+
+
+@app.function(image=train_image, volumes={PROJECT: project_volume}, timeout=600, memory=4 * 1024)
+def assemble_figure_cpu(
+    output_dir: str,
+    model_names: list[str],
+    sample_keys: list[str] | None = None,
+    n_keys: int = 2,
+) -> None:
+    """Assemble a single comparison figure across all models.
+
+    Layout:
+      columns = selected sample keys  (default: first n_keys=2 from what was generated)
+      rows    = reference rows (rgb, depth_gt) followed by one depth_pred row per model
+
+    Depth images (grayscale L PNGs) are rendered with the plasma colormap.
+    Output: {output_dir}/comparison_figure.png
+    """
+    import json
+    from pathlib import Path
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from PIL import Image as PILImage
+
+    output_dir_path = Path(output_dir)
+
+    # ── Load per-model metadata ───────────────────────────────────────────
+    metas = {}
+    for model_name in model_names:
+        meta_path = output_dir_path / model_name / "meta.json"
+        if not meta_path.exists():
+            print(f"  Skipping {model_name}: meta.json not found", flush=True)
+            continue
+        metas[model_name] = json.loads(meta_path.read_text())
+
+    if not metas:
+        print("No valid model directories found — nothing to plot.", flush=True)
+        return
+
+    # Keys to display: explicit list, or first n_keys from the first model
+    first_meta = next(iter(metas.values()))
+    display_keys = sample_keys or first_meta["keys"][:n_keys]
+    print(f"  Displaying keys: {display_keys}", flush=True)
+
+    # Reference images (rgb, depth_gt) are identical across models — use first model
+    ref_dir = output_dir_path / next(iter(metas))
+    ref_rows = ["rgb", "depth_gt"]
+
+    model_row_names = list(metas.keys())
+    row_labels = ref_rows + model_row_names
+    n_rows = len(row_labels)
+    n_cols = len(display_keys)
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(3.5 * n_cols, 3.0 * n_rows),
+        squeeze=False,
+    )
+
+    def _show(ax, img_path: Path, itype: str) -> None:
+        if not img_path.exists():
+            ax.text(0.5, 0.5, "missing", ha="center", va="center", transform=ax.transAxes)
+            ax.axis("off")
+            return
+        arr = np.array(PILImage.open(img_path))
+        if "depth" in itype:
+            ax.imshow(arr, cmap="plasma", vmin=0, vmax=255)
+        else:
+            ax.imshow(arr)
+        ax.axis("off")
+
+    def _row_label(ax, text: str, bold: bool = False) -> None:
+        """Write a row label to the left of the first-column axis."""
+        ax.text(
+            -0.08, 0.5, text,
+            transform=ax.transAxes,
+            fontsize=18, fontweight="bold" if bold else "normal",
+            va="center", ha="right",
+            clip_on=False,
+        )
+
+    # ── Reference rows ────────────────────────────────────────────────────
+    ref_labels = {"rgb": "RGB", "depth_gt": "Depth GT"}
+    for row, itype in enumerate(ref_rows):
+        for col, key in enumerate(display_keys):
+            _show(axes[row][col], ref_dir / f"{key}_{itype}.png", itype)
+        _row_label(axes[row][0], ref_labels.get(itype, itype.replace("_", " ")), bold=True)
+
+    # ── Column headers (key labels on top row) ────────────────────────────
+    for col, key in enumerate(display_keys):
+        axes[0][col].set_title(f"key {key}", fontsize=13)
+
+    # ── One depth_pred row per model ──────────────────────────────────────
+    for m_idx, (model_name, meta) in enumerate(metas.items()):
+        row = len(ref_rows) + m_idx
+        for col, key in enumerate(display_keys):
+            _show(axes[row][col], output_dir_path / model_name / f"{key}_depth_pred.png", "depth")
+        cond = meta.get("conditions", {})
+        cond_str = " ".join(f"+{k}" for k, v in cond.items() if v)
+        label = model_name + (f"\n{cond_str}" if cond_str else "")
+        _row_label(axes[row][0], label)
+
+    plt.tight_layout()
+    out = output_dir_path / "comparison_figure.png"
+    plt.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved → {out}", flush=True)
+
+    project_volume.commit()
+    print("Figure assembly complete.")
+
+
+@app.function(image=train_image, volumes={PROJECT: project_volume}, gpu="T4", timeout=60 * 60 * 3, memory=16 * 1024)
+def average_depth_gt_gpu(
+    splits: list[str] | None = None,
+    things_base: str = f"{PROJECT}/data",
+    output_dir: str = f"{PROJECT}/output/inference",
+    batch_size: int = 8,
+    tokenizer_cache: str = f"{PROJECT}/hf_cache",
+) -> None:
+    """Decode every THINGS tok_depth shard and save the per-pixel mean as a plasma plot.
+
+    Iterates all tok_depth shards in {things_base}/{split}/things/tok_depth/ for each
+    requested split (default: train + val), decodes with DiVAE (25 steps), accumulates
+    a float64 running sum, then saves {output_dir}/average_depth_gt.png.
+
+    ~26k images at batch_size=8 takes roughly 30–60 min on a T4.
+    """
+    ensure_fourm()
+
+    import io
+    import os as _os
+    import sys as _sys
+    import tarfile
+    from pathlib import Path
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import torch
+    from PIL import Image as PILImage
+
+    _sys.path.insert(0, f"{REPO}/ml-4m")
+    if tokenizer_cache:
+        _os.makedirs(tokenizer_cache, exist_ok=True)
+        _os.environ["HF_HOME"] = tokenizer_cache
+
+    from fourm.vq.vqvae import DiVAE
+
+    device = torch.device("cuda")
+    print("Loading depth tokenizer…", flush=True)
+    tok_depth_dec = DiVAE.from_pretrained("EPFL-VILAB/4M_tokenizers_depth_8k_224-448").to(device).eval()
+
+    if splits is None:
+        splits = ["train", "val"]
+
+    running_sum   = None   # (H, W) float64 accumulator
+    running_count = 0
+
+    for split in splits:
+        depth_dir = Path(things_base) / split / "things" / "tok_depth"
+        shard_paths = sorted(depth_dir.glob("shard_*.tar"))
+        if not shard_paths:
+            print(f"  No shards found in {depth_dir} — skipping", flush=True)
+            continue
+        print(f"  {split}: {len(shard_paths)} shards", flush=True)
+
+        for shard_path in shard_paths:
+            token_batch: list[np.ndarray] = []
+
+            with tarfile.open(shard_path) as tf:
+                members = [m for m in tf.getmembers() if m.name.endswith(".npy")]
+                for member in members:
+                    buf = tf.extractfile(member).read()
+                    arr = np.load(io.BytesIO(buf)).astype(np.int64).reshape(196)
+                    token_batch.append(arr)
+
+                    if len(token_batch) == batch_size:
+                        tokens_t = torch.tensor(
+                            np.stack(token_batch), dtype=torch.long
+                        ).reshape(-1, 14, 14).to(device)
+                        with torch.no_grad():
+                            imgs = tok_depth_dec.decode_tokens(tokens_t, timesteps=25, image_size=224)
+                        imgs_np = imgs.squeeze(1).cpu().float().numpy()  # (B, 224, 224)
+                        for img in imgs_np:
+                            lo, hi = img.min(), img.max()
+                            if hi > lo:
+                                img = (img - lo) / (hi - lo)
+                            if running_sum is None:
+                                running_sum = img.astype(np.float64)
+                            else:
+                                running_sum += img.astype(np.float64)
+                            running_count += 1
+                        token_batch = []
+
+            # flush remaining partial batch
+            if token_batch:
+                tokens_t = torch.tensor(
+                    np.stack(token_batch), dtype=torch.long
+                ).reshape(-1, 14, 14).to(device)
+                with torch.no_grad():
+                    imgs = tok_depth_dec.decode_tokens(tokens_t, timesteps=25, image_size=224)
+                imgs_np = imgs.squeeze(1).cpu().float().numpy()
+                for img in imgs_np:
+                    lo, hi = img.min(), img.max()
+                    if hi > lo:
+                        img = (img - lo) / (hi - lo)
+                    if running_sum is None:
+                        running_sum = img.astype(np.float64)
+                    else:
+                        running_sum += img.astype(np.float64)
+                    running_count += 1
+
+            print(f"    {shard_path.name}: {running_count} total so far", flush=True)
+
+    if running_count == 0 or running_sum is None:
+        print("No depth maps decoded — nothing to save.", flush=True)
+        return
+
+    avg = (running_sum / running_count).astype(np.float32)  # [0, 1]
+    print(f"  Averaged {running_count} depth maps.", flush=True)
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    ax.imshow(avg, cmap="plasma", vmin=0, vmax=1)
+    ax.set_title(f"Average GT depth  (n={running_count:,})", fontsize=11)
+    ax.axis("off")
+    plt.tight_layout()
+
+    _os.makedirs(output_dir, exist_ok=True)
+    out = Path(output_dir) / "average_depth_gt.png"
+    plt.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved → {out}", flush=True)
+
+    project_volume.commit()
 
 
 @app.local_entrypoint()
@@ -284,26 +555,62 @@ def main(
     meg_source: str = "tok_meg_avg",
     include_dinov2_for: str = "",
     dinov2_source: str = "tok_dinov2@224",
+    include_eeg_for: str = "",
+    eeg_source: str = "tok_eeg",
     output_dir: str = f"{PROJECT}/output/inference",
     tokenizer_cache: str = f"{PROJECT}/hf_cache",
     cpu: bool = False,
+    no_plot: bool = False,
+    mode: str = "infer",
+    n_plot_keys: int = 2,
 ) -> None:
     """
     --names              Comma-separated labels for each model (used as output filenames)
     --checkpoints        Comma-separated checkpoint .pth paths (same order as --names)
     --configs            Comma-separated model YAML config paths (same order as --names)
-    --sample_key         Comma-separated shard keys to pin across all models (e.g. 000042,000117)
+    --sample_key         Comma-separated shard keys to pin across all models (e.g. 000042,000117);
+                         also selects which keys appear in the figure when used with plot_only
     --include_meg_for    Comma-separated subset of --names that should use RGB+MEG input
     --meg_source         MEG shard folder: tok_meg_avg (default) or tok_meg
-    --include_dinov2_for Comma-separated subset of --names that should use RGB+DINOv2 input;
-                         also shows a DINOv2 GT (PCA) column in the output figure
+    --include_dinov2_for Comma-separated subset of --names that should use RGB+DINOv2 input
     --dinov2_source      DINOv2 shard folder (default: tok_dinov2@224)
+    --include_eeg_for    Comma-separated subset of --names that should use RGB+EEG input
+    --eeg_source         EEG shard folder (default: tok_eeg)
     --output_dir         Directory in the project volume where PNGs are saved
-    --cpu                Run on CPU instead of T4 GPU (slower but cheaper; good for debugging)
+    --cpu                Run inference on CPU instead of T4 GPU (slower but cheaper)
+    --no_plot            Skip auto-assembling grid figures after inference
+    --n_plot_keys        Number of images (columns) to show in the figure (default: 2);
+                         ignored when --sample_key is given explicitly
+    --mode               infer (default) | plot_only | avg_depth
+                         avg_depth: decode all THINGS tok_depth shards and save average depth map
     """
-    names_list       = [n.strip() for n in names.split(",")      if n.strip()]
+    names_list       = [n.strip() for n in names.split(",")       if n.strip()]
     checkpoints_list = [c.strip() for c in checkpoints.split(",") if c.strip()]
-    configs_list     = [c.strip() for c in configs.split(",")    if c.strip()]
+    configs_list     = [c.strip() for c in configs.split(",")     if c.strip()]
+
+    if mode == "avg_depth":
+        print("Computing average THINGS ground truth depth (train + val)…")
+        # things_root is e.g. /project/data/val/things — derive the base from it
+        things_base = str(__import__("pathlib").Path(things_root).parents[1])
+        average_depth_gt_gpu.remote(
+            output_dir=output_dir,
+            things_base=things_base,
+            tokenizer_cache=tokenizer_cache,
+        )
+        return
+
+    if mode == "plot_only":
+        if not names_list:
+            raise SystemExit("--names is required for plot_only mode")
+        keys_list = [k.strip() for k in sample_key.split(",") if k.strip()] or None
+        print(f"Assembling comparison figure for: {names_list}")
+        assemble_figure_cpu.remote(
+            output_dir=output_dir,
+            model_names=names_list,
+            sample_keys=keys_list,
+            n_keys=n_plot_keys,
+        )
+        return
 
     if not names_list:
         raise SystemExit("--names is required (comma-separated model labels)")
@@ -314,7 +621,12 @@ def main(
 
     meg_for_set    = {n.strip() for n in include_meg_for.split(",")    if n.strip()}
     dinov2_for_set = {n.strip() for n in include_dinov2_for.split(",") if n.strip()}
-    for label, s in [("--include_meg_for", meg_for_set), ("--include_dinov2_for", dinov2_for_set)]:
+    eeg_for_set    = {n.strip() for n in include_eeg_for.split(",")    if n.strip()}
+    for label, s in [
+        ("--include_meg_for",    meg_for_set),
+        ("--include_dinov2_for", dinov2_for_set),
+        ("--include_eeg_for",    eeg_for_set),
+    ]:
         unknown = s - set(names_list)
         if unknown:
             raise SystemExit(f"{label} references unknown names: {unknown}")
@@ -331,6 +643,8 @@ def main(
         meg_source=meg_source,
         include_dinov2_for=dinov2_for_set,
         dinov2_source=dinov2_source,
+        include_eeg_for=eeg_for_set,
+        eeg_source=eeg_source,
         output_dir=output_dir,
         tokenizer_cache=tokenizer_cache,
     )
@@ -340,3 +654,13 @@ def main(
         inference_job_cpu.remote(**kwargs)
     else:
         inference_job_gpu.remote(**kwargs)
+
+    if not no_plot:
+        keys_list = [k.strip() for k in sample_key.split(",") if k.strip()] or None
+        print("Assembling comparison figure…")
+        assemble_figure_cpu.remote(
+            output_dir=output_dir,
+            model_names=names_list,
+            sample_keys=keys_list,
+            n_keys=n_plot_keys,
+        )
