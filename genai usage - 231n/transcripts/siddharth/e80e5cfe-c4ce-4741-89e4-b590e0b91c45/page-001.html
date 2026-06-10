@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 1</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 1/1</h1>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+        
+<div class="message user" id="msg-2026-05-23T05-31-20-307Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-23T05-31-20-307Z" class="timestamp-link"><time datetime="2026-05-23T05:31:20.307Z" data-timestamp="2026-05-23T05:31:20.307Z">2026-05-23T05:31:20.307Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/runs/V256_mu255_clip0.5-99.5_per_channel_s0/evals/eval_ntest=n3000_s0.json in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>https://github.com/OpenTSLab/BrainOmni. Let's directly go and implement this we're skipping stage two for now and let's directly go to this because I want to explore a token that involves attention iLet's directly go and implement this we're skipping stage two for now and let's directly go to this because I want to explore a token that involves attention in something more and  something more sophisticated. Add this as a sub module start exploring it figure out how it fits with our data and how we can train it via a mAdd this as a sub module start exploring it figure out how it fits with our data and how we can train it via modal and follow a similar approach to what you did with the and follow a similar approach to what you did with the mu transorm - creating, testing, etc. 
+Let's create a plan first this is a big job</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-35-472Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-35-472Z" class="timestamp-link"><time datetime="2026-05-23T05:31:35.472Z" data-timestamp="2026-05-23T05:31:35.472Z">2026-05-23T05:31:35.472Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-35-831Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-35-831Z" class="timestamp-link"><time datetime="2026-05-23T05:31:35.831Z" data-timestamp="2026-05-23T05:31:35.831Z">2026-05-23T05:31:35.831Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01XVqbDRiynGLpPQaaqNpyhQ">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List repo root</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-36-785Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-36-785Z" class="timestamp-link"><time datetime="2026-05-23T05:31:36.785Z" data-timestamp="2026-05-23T05:31:36.785Z">2026-05-23T05:31:36.785Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01L73i3EJDzXtxrdqeHsvia3"><div class="tool-header"><span class="tool-icon">⚙</span> ToolSearch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;query&#34;: &#34;select:WebFetch,TodoWrite,EnterPlanMode,ExitPlanMode&#34;,
+  &#34;max_results&#34;: 5
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-31-36-787Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-31-36-787Z" class="timestamp-link"><time datetime="2026-05-23T05:31:36.787Z" data-timestamp="2026-05-23T05:31:36.787Z">2026-05-23T05:31:36.787Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &quot;type&quot;: &quot;tool_reference&quot;,
+  &quot;tool_name&quot;: &quot;WebFetch&quot;
+}</pre><pre class="json">{
+  &quot;type&quot;: &quot;tool_reference&quot;,
+  &quot;tool_name&quot;: &quot;TodoWrite&quot;
+}</pre><pre class="json">{
+  &quot;type&quot;: &quot;tool_reference&quot;,
+  &quot;tool_name&quot;: &quot;EnterPlanMode&quot;
+}</pre><pre class="json">{
+  &quot;type&quot;: &quot;tool_reference&quot;,
+  &quot;tool_name&quot;: &quot;ExitPlanMode&quot;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-31-37-723Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-31-37-723Z" class="timestamp-link"><time datetime="2026-05-23T05:31:37.723Z" data-timestamp="2026-05-23T05:31:37.723Z">2026-05-23T05:31:37.723Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>neural-foundation-model</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-40-132Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-40-132Z" class="timestamp-link"><time datetime="2026-05-23T05:31:40.132Z" data-timestamp="2026-05-23T05:31:40.132Z">2026-05-23T05:31:40.132Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-41-322Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-41-322Z" class="timestamp-link"><time datetime="2026-05-23T05:31:41.322Z" data-timestamp="2026-05-23T05:31:41.322Z">2026-05-23T05:31:41.322Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_013gp3i9k4Aq6UptzPXBXkS1">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List inner project structure</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural-foundation-model/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-31-41-358Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-31-41-358Z" class="timestamp-link"><time datetime="2026-05-23T05:31:41.358Z" data-timestamp="2026-05-23T05:31:41.358Z">2026-05-23T05:31:41.358Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>__pycache__
+external
+modal
+modal_test.py
+neural_tokenizers</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-31-45-354Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-31-45-354Z" class="timestamp-link"><time datetime="2026-05-23T05:31:45.354Z" data-timestamp="2026-05-23T05:31:45.354Z">2026-05-23T05:31:45.354Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01BTNGYKciUYW7kNeV3NtQ7F"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;Extract a complete summary of the BrainOmni model architecture. Specifically:\n1. What is the tokenizer architecture? (especially Stage 1 - the neural tokenizer)\n2. What components does the tokenizer use - VQ-VAE? Attention? Transformers?\n3. What are the input modalities (EEG, MEG, fMRI?) and how is data preprocessed?\n4. What are the training stages? (we want stage 1 and stage 3, skipping stage 2)\n5. What is the codebase structure? (folders, key files)\n6. What are training configs, hyperparameters?\n7. Key dependencies?\nBe thorough - this is for an implementation plan.&#34;,
+  &#34;url&#34;: &#34;https://github.com/OpenTSLab/BrainOmni&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-10-608Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-10-608Z" class="timestamp-link"><time datetime="2026-05-23T05:33:10.608Z" data-timestamp="2026-05-23T05:33:10.608Z">2026-05-23T05:33:10.608Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># BrainOmni Model Architecture Summary
+
+Based on the GitHub repository, here&#x27;s what can be extracted:
+
+## 1. **Tokenizer Architecture (Stage 1)**
+The documentation mentions &quot;BrainTokenizer&quot; as Stage 1 training, but specific architectural details (VQ-VAE, attention mechanisms, transformer components) are **not explicitly described** in this README. The repo indicates source code exists in the `braintokenizer/` directory, but implementation details aren&#x27;t exposed in the page content.
+
+## 2. **Components**
+The summary states: *&quot;Overview of BrainOmni&quot;* with visual diagrams referenced, but component specifics aren&#x27;t detailed in the text provided. The actual architecture would require examining the source code files.
+
+## 3. **Input Modalities &amp; Preprocessing**
+- **Modalities**: EEG and MEG signals (unified processing)
+- **Preprocessing**: Data segmentation with configurable `time` (duration in seconds) and `stride` parameters
+- **Montages**: Custom montage files placed in `share/custom_montages/` with configuration in `factory/brain_constant.py`
+
+## 4. **Training Stages**
+- **Stage 1**: BrainTokenizer pretraining
+- **Stage 2**: BrainOmni pretraining (the foundation model)
+- **Stage 3**: Downstream finetuning on specific tasks
+
+## 5. **Codebase Structure**
+```
+Key directories:
+- braintokenizer/      → Stage 1 source code
+- brainomni/           → Stage 2 source code
+- downstream/          → Task-specific finetuning
+- factory/             → Data processing utilities
+- data/                → Pretrain/evaluate datasets
+- script/              → Shell scripts for training
+- share/custom_montages/ → EEG/MEG layout files
+```
+
+## 6. **Training Hyperparameters**
+BrainTokenizer example:
+- `codebook_size=512`
+- `codebook_dim=256`
+- `num_quantizers=4`
+- `epoch=16`
+- 8 GPUs via DeepSpeed
+- Downstream: learning rates tested (3e-6, 1e-5, 3e-5)
+- 5-fold cross-validation with seeds 42 and 3407
+
+## 7. **Key Dependencies**
+- Python 3.10.14
+- CUDA 12.4
+- DeepSpeed (distributed training)
+- MNE (EEG/MEG processing implied by montage references)
+- PyTorch (standard deep learning framework)
+- See `requirements.txt` for complete list
+
+**Note**: Detailed architectural specifications require examining the actual source code files, not just this README.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-13-876Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-13-876Z" class="timestamp-link"><time datetime="2026-05-23T05:33:13.876Z" data-timestamp="2026-05-23T05:33:13.876Z">2026-05-23T05:33:13.876Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_017un5gCMewuDKM4XuNV5JbF">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Explore submodule directories</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/ /Users/Siddharth/neural-foundation-model/neural-foundation-model/external/ /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/ 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-13-913Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-13-913Z" class="timestamp-link"><time datetime="2026-05-23T05:33:13.913Z" data-timestamp="2026-05-23T05:33:13.913Z">2026-05-23T05:33:13.913Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural-foundation-model/external/:
+Cho2026_Tokenizer
+ml-4m
+
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/:
+MODAL_GUIDE.md
+README.md
+__pycache__
+demo_train.py
+modal_app.py
+modal_demo.py
+modal_download_things_meg.py
+modal_inspect_things_meg.py
+requirements.txt
+
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/:
+CLAUDE.md
+__init__.py
+__pycache__
+evaluation
+meg
+stubs
+test_tokenizer.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-17-105Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-17-105Z" class="timestamp-link"><time datetime="2026-05-23T05:33:17.105Z" data-timestamp="2026-05-23T05:33:17.105Z">2026-05-23T05:33:17.105Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01SuxYgVGoEFvwjcZ3WWnRpc">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Explore tokenizer subdirs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/ /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/evaluation/ 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-17-139Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-17-139Z" class="timestamp-link"><time datetime="2026-05-23T05:33:17.139Z" data-timestamp="2026-05-23T05:33:17.139Z">2026-05-23T05:33:17.139Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/evaluation/:
+__init__.py
+__pycache__
+codebook.py
+probe.py
+protocol.py
+reconstruction.py
+sequence.py
+
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/:
+A Systematic Evaluation of Sample-Level Tokenization Strategies for MEG Foundation Models.html
+CLAUDE.md
+__init__.py
+__pycache__
+data
+data.py
+meg_config.py
+modal
+mu_transform
+splits.py
+test_splits.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-17-279Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-17-279Z" class="timestamp-link"><time datetime="2026-05-23T05:33:17.279Z" data-timestamp="2026-05-23T05:33:17.279Z">2026-05-23T05:33:17.279Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Tcu1KfEXvbndRpioXng3qR"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-17-337Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-17-337Z" class="timestamp-link"><time datetime="2026-05-23T05:33:17.337Z" data-timestamp="2026-05-23T05:33:17.337Z">2026-05-23T05:33:17.337Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# Neural Tokenizers — CLAUDE.md
+2	
+3	Scope: this file applies only to work in `neural_tokenizers/`. Read it before
+4	making changes in this subdir. Repo-wide engineering norms live in the user&#x27;s
+5	global `~/.claude/CLAUDE.md` and are not restated here.
+6	
+7	**Per-modality docs live in subfolders.** MEG-specific work goes in
+8	[`meg/CLAUDE.md`](meg/CLAUDE.md); EEG-specific work goes in an `eeg/`
+9	subfolder (to be created by the EEG owner). This file is the umbrella
+10	contract — the `Tokenizer` protocol, the four §5 evaluation axes, the
+11	file-layout norms — and it applies to every modality. Modality-specific
+12	plans (data spec, recalibration recipes, vendored model choices) live in
+13	the subfolder.
+14	
+15	## 1. Goal
+16	
+17	Build per-modality tokenizers for a mini-4M model. Each tokenizer maps raw
+18	neural signals into discrete token IDs that the 4M transformer can consume.
+19	
+20	Current target modalities, in priority order:
+21	- **EEG** (THINGS-EEG2)
+22	- **MEG** (THINGS-MEG)
+23	- **Intracortical** (TVSD) — future, same interface
+24	
+25	The output of this subdir is (a) trained tokenizer checkpoints and (b) a
+26	modality-agnostic evaluation harness (`test_tokenizer.py`) that any tokenizer
+27	must pass before it is wired into mini-4M.
+28	
+29	## 2. System-level framing — why VQ-VAE per modality
+30	
+31	4M&#x27;s transformer only sees integer token sequences. To add a modality you must
+32	jvide three things:
+33	
+34	- **Encoder** `x -&gt; z` : continuous signal → continuous latents `(L, D)`
+35	- **Quantizer** `z -&gt; t` : continuous latents → discrete token IDs in `[0, V)`
+36	- **Decoder** `t -&gt; x_hat` : tokens → reconstructed signal (used for eval and
+37	  detokenization at inference; not used during 4M training itself)
+38	
+39	Why this is the right abstraction:
+40	- A single masked-token objective works across every modality if every modality
+41	  speaks the same `(seq_len, vocab_size)` interface.
+42	- Tokens are pre-computed once and cached → 4M training does not pay the
+43	  tokenizer&#x27;s forward cost per step.
+44	- The tokenizer can be swapped without touching 4M, so we can A/B different
+45	  EEG tokenizers (scratch vs LABRAM, etc.) cleanly.
+46	
+47	The 4M repo lives at [`../external/ml-4m/`](../external/ml-4m/). The relevant
+48	entry points are:
+49	
+50	- [`external/ml-4m/fourm/vq/vqvae.py`](../external/ml-4m/fourm/vq/vqvae.py) — `VQVAE` class
+51	- [`external/ml-4m/fourm/vq/models/`](../external/ml-4m/fourm/vq/models/) — encoder/decoder architectures
+52	- [`external/ml-4m/fourm/vq/quantizers/`](../external/ml-4m/fourm/vq/quantizers/) — quantizer implementations (vanilla, `memcodes`, FSQ, …)
+53	- [`external/ml-4m/cfgs/default/tokenization/vqvae/human_poses/BMLP1024-BMLP1024_1k_224.yaml`](../external/ml-4m/cfgs/default/tokenization/vqvae/human_poses/BMLP1024-BMLP1024_1k_224.yaml) —
+54	  closest template to ours: structured non-image signal, MLP backbone,
+55	  `memcodes` quantizer, `codebook_size=1024`, `num_codebooks=8`,
+56	  `smooth_l1` loss.
+57	- [`external/ml-4m/run_training_vqvae.py`](../external/ml-4m/run_training_vqvae.py) — training entry point
+58	
+59	When in doubt, mirror the human_poses config rather than the image configs.
+60	
+61	## 3. Data — working assumptions
+62	
+63	Data is not yet downloaded locally. Numbers below are from the canonical
+64	public releases and **must be verified** on first contact.
+65	
+66	- **THINGS-EEG2** (Gifford et al. 2022): 63 channels, 100 Hz, ~1.1s epochs →
+67	  trial tensor shape roughly `(63, 100)`. ~10 subjects, ~16k training trials each.
+68	- **THINGS-MEG** (Hebart et al. 2023): 272 channels, sampling rate depends on
+69	  preprocessing pipeline (200 Hz or 1200 Hz), epoch length comparable.
+70	- Both: 2D `(channels, time)` per trial. Channels are *not* a spatial grid —
+71	  treat as an unordered set or a sensor-topography graph, not as image rows.
+72	- Stimulus labels: THINGS has ~1,854 object concepts (use for downstream probes).
+73	
+74	Open data questions to resolve before training:
+75	- exact preprocessed shape of each dataset
+76	- which preprocessing pipeline (raw vs. ICA-cleaned vs. baseline-corrected)
+77	- where the data lives at training time (Modal Volume path)
+78	
+79	## 4. Architecture — baseline vs target
+80	
+81	This subdir trains tokenizers in **two explicit stages**. Stage 1 is a
+82	deliberately simple baseline that we expect to be beaten; Stage 2 is the
+83	actual production tokenizer that ships into 4M. Do not skip Stage 1 — the §5
+84	harness only produces interpretable numbers if there is a baseline to
+85	compare against.
+86	
+87	### Stage 1 — Baseline (start here, all modalities)
+88	
+89	- Backbone: `BottleneckMLP/B_6-Wi_1024` (encoder and decoder), inputs flattened
+90	  to `(channels * time,)`. Simplest faithful backbone for a structured signal,
+91	  mirrors 4M&#x27;s existing non-image tokenizer (human poses).
+92	- Loss: `smooth_l1` reconstruction in the time domain only. Single-term, easy
+93	  to debug.
+94	- Quantizer: `memcodes`, `codebook_size=1024`, `num_codebooks=8`,
+95	  `latent_dim=1024`.
+96	
+97	This baseline is **expected to fail the spectral-MSE metric** in §5.1 — that
+98	failure is the motivation for Stage 2.  Get clean numbers across all four §5
+99	axes for this baseline before touching anything.
+100	
+101	### Stage 2 — Target (what actually ships into 4M)
+102	
+103	Whatever the final tokenizer is, two upgrades over the baseline are
+104	non-negotiable:
+105	
+106	- **A stronger temporal-structure backbone than a flat MLP.** Neural responses
+107	  are locally autocorrelated; an MLP on flattened `(C·T,)` ignores that prior.
+108	  Either a 1-D CNN over the time axis or a temporal-patch transformer is the
+109	  right shape, and either generalizes naturally to MEG / TVSD where `T` varies.
+110	- **A spectral / band-power loss term**, added to `smooth_l1`. EEG/MEG task
+111	  signal lives in frequency bands (θ/α/β/γ). Pure time-domain L1 can drive
+112	  MSE down while still scrambling band power. Likely forms:
+113	  - PSD MSE: `||PSD(x) - PSD(x_hat)||²` (Welch estimator)
+114	  - Band-power MSE: integrate PSD over named bands and match per band
+115	  - Multi-resolution STFT loss (borrowed from audio neural codecs)
+116	  - Composite: `L = L1_time + λ_spec · L_spec + λ_band · L_band`, with `λ`
+117	    chosen so each term contributes comparable gradient magnitude at init.
+118	
+119	These two requirements are about *what the tokenizer must learn*, not about
+120	which codebase produces it. Two independent decisions then determine the
+121	actual Stage 2 we ship — architecture (whose design) and weights (whose data):
+122	
+123	|                            | **Our own scratch design**       | **LABRAM&#x27;s architecture**            |
+124	|----------------------------|----------------------------------|--------------------------------------|
+125	| **Trained from scratch**   | (2a) Generic, modality-agnostic  | (2b) Borrow design, not data         |
+126	| **Pretrained + finetuned** | —                                | (2c) Borrow design AND data          |
+127	
+128	- **(2a) Scratch design, scratch weights.** We design the upgraded backbone
+129	  (e.g. 1-D ResNet/U-Net over time + spectral loss) ourselves. Same recipe
+130	  works for EEG, MEG, and TVSD. Full control; no external dependency. Risk:
+131	  we may rediscover what LABRAM already figured out about EEG.
+132	- **(2b) LABRAM architecture, scratch weights.** Adopt LABRAM&#x27;s
+133	  temporal-patch transformer + channel embeddings + multi-objective loss
+134	  *as a design template*, but train weights from scratch on THINGS data.
+135	  We get the structural priors (patch-wise tokenization, channel-aware
+136	  attention, frequency-domain loss already in the recipe) without inheriting
+137	  any potential distribution mismatch from LABRAM&#x27;s pretraining corpus
+138	  (mostly resting-state EEG; THINGS is event-related). Cost: more complex
+139	  than 2a, and we still have only ~160k trials — the data-efficiency argument
+140	  for LABRAM disappears here.
+141	- **(2c) LABRAM architecture, LABRAM weights, finetuned.** Full transfer:
+142	  load LABRAM&#x27;s pretrained tokenizer and finetune on THINGS-EEG. This is
+143	  the only path that exploits the 2,500+ hrs of EEG LABRAM saw in
+144	  pretraining. EEG-only — MEG and TVSD still need 2a or 2b.
+145	
+146	Stage 2 selection is the open decision in §6. The §5 harness numbers — not
+147	authorial preference — decide which one wins.
+148	
+149	- Per modality: train one tokenizer at a time. Do *not* try to share encoders
+150	  across EEG and MEG until both single-modality baselines are working.
+151	
+152	## 5. Evaluation contract — what `test_tokenizer.py` must enforce
+153	
+154	A tokenizer is a lossy compressor. `test_tokenizer.py` is the gate that any
+155	tokenizer (scratch VQ-VAE, finetuned LABRAM, future TVSD tokenizer) must pass.
+156	
+157	The harness consumes any object implementing this interface:
+158	
+159	```python
+160	class Tokenizer(Protocol):
+161	    def encode(self, x: Tensor) -&gt; LongTensor: ...   # (B, C, T) -&gt; (B, L)
+162	    def decode(self, t: LongTensor) -&gt; Tensor:  ...  # (B, L)    -&gt; (B, C, T)
+163	    @property
+164	    def codebook_size(self) -&gt; int: ...
+165	```
+166	
+167	Four required evaluation axes — implement one module per axis so they can be
+168	run independently:
+169	
+170	1. **Reconstruction fidelity** — encode → decode round trip.
+171	   - Per-sample MSE and per-channel Pearson r between `x` and `x_hat`.
+172	   - **Spectral MSE**: PSD of `x` vs `x_hat` (Welch). Neural data lives in
+173	     bands; if alpha/beta power is wrong the tokenizer is broken even when
+174	     time-domain MSE looks fine. This is the most diagnostic single metric.
+175	2. **Codebook utilization**.
+176	   - Perplexity `exp(H(p))` where `p` is the empirical token distribution.
+177	     For `codebook_size=V`, perplexity ≪ V means dead codes.
+178	   - Dead-code fraction (codes never selected on the eval set).
+179	3. **Downstream linear probe** — does the token sequence still carry the
+180	   information we actually care about?
+181	   - *The failure mode this catches:* a tokenizer can have low reconstruction
+182	     MSE (passes §5.1) and good codebook utilization (passes §5.2) while
+183	     having silently thrown away the task-relevant signal. Example: the
+184	     tokenizer faithfully reconstructs slow baseline drift (high-variance,
+185	     drives MSE down) but loses the small evoked response that actually
+186	     distinguishes one stimulus from another. Reconstruction looks great;
+187	     the tokens are useless to 4M.
+188	   - *The test:* freeze the trained tokenizer. Encode every THINGS trial to
+189	     tokens. Train a **logistic regression** (linear probe) on those tokens
+190	     to predict the trial&#x27;s stimulus concept (THINGS has ~1,854 labels — use
+191	     a coarser grouping or top-K if 1,854-way is too noisy). Report
+192	     top-1 / top-5 accuracy on a held-out split.
+193	   - *Why a linear probe and not a strong classifier:* if a linear model can
+194	     read the stimulus off the tokens, the information is **linearly
+195	     decodable** — which is what 4M&#x27;s transformer needs from its input
+196	     embeddings. A strong nonlinear classifier could rescue tokens that are
+197	     entangled in ways 4M can&#x27;t undo cheaply, so it would overstate
+198	     tokenizer quality.
+199	   - *Token representation for the probe:* either one-hot pool-then-flatten
+200	     (count of each code per trial; bag-of-tokens), or embed each token via
+201	     the VQ-VAE&#x27;s codebook lookup and mean-pool over the sequence. Try
+202	     both — they measure subtly different things (presence vs. average
+203	     content).
+204	   - *Reference points to bracket the score:* run the same probe on
+205	     **(upper)** the raw flattened signal `x` itself (ceiling — all info is
+206	     there) and on **(lower)** uniformly random tokens of the same shape
+207	     (floor — no info). A good tokenizer should land closer to the upper
+208	     bound than to the lower; if it sits near the floor, the tokens are not
+209	     informative no matter how pretty the reconstruction looks.
+210	
+211	4. **Token-sequence statistics** — is the token *sequence* learnable by a
+212	   transformer, or did the tokenizer collapse to a degenerate code?
+213	   - *The failure mode this catches:* a tokenizer can pass §5.1, §5.2, and
+214	     §5.3 while emitting sequences so predictable that 4M&#x27;s masked-token
+215	     objective learns nothing. Example: suppose the tokenizer outputs an
+216	     8-token sequence per trial, but for any given trial it emits *the same
+217	     code 8 times* (e.g. `[42, 42, 42, ..., 42]`), with the specific code
+218	     varying by stimulus class. The decoder can still reconstruct (mapping
+219	     code → trial), the codebook is fully used (§5.2 sees 1,024 distinct
+220	     trial-level codes), and the probe works perfectly (one code = one
+221	     stimulus). But 4M is trained to predict masked tokens given context —
+222	     if `t₂` is always equal to `t₁`, the prediction task is trivial and the
+223	     model learns nothing transferable.
+224	   - *What to compute:*
+225	     - **Unigram entropy** `H(t) = -Σ p(t) log p(t)` — the entropy of the
+226	       marginal token distribution. Already implied by perplexity in §5.2,
+227	       but report it explicitly per-position too (some positions may collapse
+228	       while others don&#x27;t).
+229	     - **Bigram conditional entropy** `H(tᵢ | tᵢ₋₁)`. This is the key number.
+230	       If a transformer&#x27;s next-token prediction has nothing left to learn
+231	       after seeing one neighbor, this collapses toward 0. **Healthy
+232	       tokenizers have `H(tᵢ | tᵢ₋₁) ≈ H(t)` — i.e. transitions are nearly
+233	       independent of the previous token.** A large gap `H(t) - H(tᵢ | tᵢ₋₁)`
+234	       means the sequence is highly redundant.
+235	     - **Run-length distribution** — how long are runs of the same code?
+236	       Long runs are the most visually obvious form of collapse. Report mean
+237	       run length and the fraction of trials with run length ≥ 2.
+238	   - *Pass criterion:* bigram-vs-unigram entropy gap small (say &lt;20%), no
+239	     position with degenerate marginal, mean run length near 1. If any of
+240	     these fail, the tokenizer will technically train 4M to convergence but
+241	     the resulting model will not generalize — fix the tokenizer first.
+242	
+243	The harness should report all four for each tokenizer in a single table so we
+244	can compare tokenizers side by side. Treat this as the source of truth for
+245	&quot;is tokenizer X better than tokenizer Y&quot; — not training-loss curves.
+246	
+247	## 6. Open architectural decisions
+248	
+249	These are intentionally not resolved here. Record the rationale in the PR
+250	when you pick one.
+251	
+252	- **Stage 2 selection — which of 2a / 2b / 2c (see §4) wins for EEG?**
+253	  - 2a (scratch design + scratch weights): uniform recipe across EEG / MEG /
+254	    TVSD, drops into 4M with zero glue code, but THINGS-EEG has only ~16k
+255	    trials per subject — small for a deep encoder we&#x27;re designing from
+256	    scratch.
+257	  - 2b (LABRAM architecture + scratch weights): inherits LABRAM&#x27;s structural
+258	    priors for EEG (temporal-patch tokenization, channel embeddings,
+259	    multi-objective loss) without inheriting any pretraining-distribution
+260	    mismatch. Same architecture is reusable for MEG/TVSD if the channel
+261	    embedding is generalized.
+262	  - 2c (LABRAM architecture + pretrained weights, finetuned): only path that
+263	    exploits LABRAM&#x27;s 2,500+ hrs of EEG pretraining. EEG-only — MEG/TVSD
+264	    still need 2a or 2b, so picking 2c means maintaining two codepaths
+265	    long-term.
+266	  - Decision blocker: we need Stage 1 baseline numbers on the §5 harness
+267	    before we can rank the three Stage 2 options. Likely we run 2a and 2c
+268	    against each other first (cleanest &quot;design-only&quot; vs &quot;design + data&quot;
+269	    contrast) and only fall back to 2b if 2c shows distribution-mismatch
+270	    symptoms (e.g. high reconstruction MSE despite the pretrained weights).
+271	- **Codebook size / num_codebooks**: defaults from human_poses; sweep once the
+272	  baseline runs.
+273	- **Per-subject vs subject-pooled training**: pooled is simpler; per-subject
+274	  may help if subject variance dominates.
+275	
+276	## 7. Engineering norms specific to this subdir
+277	
+278	- Three files per tokenizer: `&lt;modality&gt;_encoder.py`, `&lt;modality&gt;_quantizer.py`
+279	  (usually a thin wrapper around a 4M quantizer), `&lt;modality&gt;_decoder.py`.
+280	  Compose them in a `&lt;modality&gt;_tokenizer.py` that satisfies the `Tokenizer`
+281	  protocol in §5. Mirrors 4M&#x27;s own module layout.
+282	- `test_tokenizer.py` is **tokenizer-agnostic** — it takes any object
+283	  satisfying the protocol. Do not special-case EEG vs MEG inside it; put
+284	  modality-specific quirks (PSD frequency ranges, label spaces) behind a
+285	  small `EvalConfig` dataclass passed in.
+286	- Write failing tests in `test_tokenizer.py` first, on a tiny random-weights
+287	  tokenizer, before training anything. The harness needs to be trustworthy
+288	  before its numbers mean anything.
+289	- All training runs go through the Modal scaffold in [`../modal/`](../modal/),
+290	  not local laptop. Checkpoints land on the shared Volume.
+291	- No magic constants — codebook size, channel counts, sampling rates all
+292	  named and centralized.
+293	
+294	## 8. Notes on automation / `.claude` layering
+295	
+296	This subdir is a candidate for a scoped `.claude/` later:
+297	- A `train-tokenizer` skill or slash command that wraps the Modal launch + log
+298	  tailing, once the recipe stabilizes.
+299	- A pre-commit hook that runs the §5 harness on whatever checkpoint a PR
+300	  touches, so we never merge a tokenizer regression.
+301	- Neither is worth building until the scratch-baseline numbers exist —
+302	  premature automation locks in the wrong recipe.
+303	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-19-871Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-19-871Z" class="timestamp-link"><time datetime="2026-05-23T05:33:19.871Z" data-timestamp="2026-05-23T05:33:19.871Z">2026-05-23T05:33:19.871Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-22-020Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-22-020Z" class="timestamp-link"><time datetime="2026-05-23T05:33:22.020Z" data-timestamp="2026-05-23T05:33:22.020Z">2026-05-23T05:33:22.020Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_016eq2wzNGAJGsBnNioBsVib">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List mu_transform and meg modal</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/ /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/modal/ 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-22-057Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-22-057Z" class="timestamp-link"><time datetime="2026-05-23T05:33:22.057Z" data-timestamp="2026-05-23T05:33:22.057Z">2026-05-23T05:33:22.057Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/modal/:
+__init__.py
+__pycache__
+modal_download_things_labels.py
+modal_meg_calibrate_mu.py
+modal_meg_eval.py
+modal_meg_inspect_labels.py
+
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/:
+__init__.py
+__pycache__
+calibration.py
+decoder.py
+encoder.py
+quantizer.py
+runs
+test_mu_transform.py
+tokenizer.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-22-458Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-22-458Z" class="timestamp-link"><time datetime="2026-05-23T05:33:22.458Z" data-timestamp="2026-05-23T05:33:22.458Z">2026-05-23T05:33:22.458Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01VaCgKexs3pxvNbL2FGgTJz"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-22-472Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-22-472Z" class="timestamp-link"><time datetime="2026-05-23T05:33:22.472Z" data-timestamp="2026-05-23T05:33:22.472Z">2026-05-23T05:33:22.472Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG Tokenizers — CLAUDE.md
+2	
+3	Scope: this file applies only to work in `neural_tokenizers/meg/`. Read it
+4	before making MEG-tokenizer changes. The parent doc
+5	[`../CLAUDE.md`](../CLAUDE.md) defines the cross-modality contract (the
+6	`Tokenizer` protocol, the four §5 evaluation axes, Modal training, file-layout
+7	norms). This doc only adds what is MEG-specific. EEG-specific work will live
+8	in a sibling `eeg/` folder maintained by someone else — do not touch it from
+9	here.
+10	
+11	## 1. Goal
+12	
+13	Ship one MEG tokenizer that passes the §5 harness in
+14	[`../CLAUDE.md`](../CLAUDE.md) on THINGS-MEG and is registered as a 4M
+15	modality. We will get there in three phases, each producing an independent
+16	tokenizer that satisfies the same `Tokenizer` protocol so the harness
+17	compares them apples-to-apples.
+18	
+19	## 2. What 4M expects from a new modality — the binding constraint
+20	
+21	Before designing anything, the codebook size we ship has to fit 4M&#x27;s modality
+22	registration model. Read [`../../external/ml-4m/fourm/data/modality_info.py`](../../external/ml-4m/fourm/data/modality_info.py)
+23	— that file is the source of truth.
+24	
+25	Concrete facts that drive the design:
+26	
+27	- **No fixed vocab across modalities.** Each modality declares its own
+28	  `vocab_size` in `MODALITY_INFO`. Image-token modalities range from 4096
+29	  (semseg) to 16384 (RGB); text/sequence is 30_000; `human_poses` &quot;borrows&quot;
+30	  the 30k text vocab via `shared_vocab: [&#x27;caption&#x27;]`. We are free to pick.
+31	- **But vocab IS fixed at registration time.** 4M allocates a learnable
+32	  embedding `[vocab_size, d_model]` for the modality. Adding tokens
+33	  mid-training breaks that table. **Pick V before computing the token cache
+34	  that 4M trains on; commit to it.**
+35	- **`type: &#x27;seq&#x27;` is the right modality type for MEG**, not image-grid.
+36	  Mirror `human_poses` (`modality_info.py:172`) more than `tok_rgb`. The
+37	  per-channel-per-timestep token stream is a sequence, not a 2D grid.
+38	  Pose-tokenizer registration template:
+39	  `vocab_size`, `encoder_embedding = SequenceEncoderEmbedding(...)`,
+40	  `decoder_embedding = SequenceDecoderEmbedding(...)`,
+41	  `max_length`, `num_channels`, `type: &#x27;seq&#x27;`,
+42	  `id: generate_uint15_hash(&#x27;meg_tokens&#x27;)`.
+43	- **Multi-codebook (`num_codebooks &gt; 1`) is supported by the `memcodes`
+44	  quantizer** (used by `human_poses`, 1024 × 8). Cho 2026&#x27;s tokenizers use
+45	  a single codebook per channel. Stick with **`num_codebooks = 1`** for MEG
+46	  — there is no reason to fight the upstream tokenizer&#x27;s design.
+47	- **Whether to share vocab with another modality is a 4M-side decision.**
+48	  Human_poses reuses the text vocab because pose tokens are mapped into the
+49	  WordPiece range; this lets a 4M decoder generate poses with the same head
+50	  as captions. We do **not** want that for MEG — it couples MEG to text
+51	  training. **Register a dedicated `meg_tokens` modality with its own
+52	  vocab.**
+53	
+54	So the headline constraint: pick `V` and `max_length` (= per-trial token
+55	sequence length) when you write the tokenizer, because the modality
+56	registration that goes into 4M has to declare both.
+57	
+58	Sensible starting points, derived from Cho 2026 + the verified THINGS-MEG
+59	data spec in §3 + 4M conventions:
+60	
+61	| Tokenizer            | V                              | num_codebooks | per-channel max_length |
+62	|----------------------|--------------------------------|---------------|------------------------|
+63	| Phase 1 (μ-transform)| 256 (paper default)            | 1             | 281 (= trial timepoints) |
+64	| Phase 2 (Cho2026 learned) | 128 (paper) → V* after refactor | 1        | 281                    |
+65	| Phase 3 (BrainOmni)  | TBD                            | TBD           | TBD                    |
+66	
+67	Registration shape (per-channel sequence, **not** flattened):
+68	`num_channels = 271`, `max_length = 281`. The alternative — flatten to one
+69	giant sequence of 271 × 281 = 76,151 tokens per trial — blows past every
+70	sensible context length and discards the channel/time factorization 4M can
+71	exploit. Mirror `human_poses`, which keeps `num_channels = 207` separate
+72	from `max_length = 263`. Document the final choice in
+73	`meg/modality_registration.py` when phase 1 lands.
+74	
+75	## 3. Data — verified, not assumed
+76	
+77	Preprocessed THINGS-MEG already lives on the team&#x27;s `project` Modal Volume.
+78	This section is grounded in actual file metadata pulled from the volume on
+79	2026-05-22 — re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+80	to refresh after any preprocessing pipeline change.
+81	
+82	### Where it lives
+83	
+84	- **Volume**: `project` (NOT the `neural-fm-data` shared volume — see the
+85	  rationale at the top of [`../../modal/modal_download_things_meg.py`](../../modal/modal_download_things_meg.py)).
+86	- **Path inside container**: `/project/data/things-meg/preprocessed/`.
+87	- **File layout**: 4 subjects (P1–P4), each split across 4 MNE `.fif` files
+88	  (`preprocessed_P{1..4}-epo.fif` + auto-continuations `-epo-1.fif`,
+89	  `-epo-2.fif`, `-epo-3.fif` — MNE splits whenever a file exceeds 2 GB).
+90	  Total ~33 GB on disk. Load with `mne.read_epochs(primary_path)` — MNE
+91	  follows the `-N.fif` chain automatically.
+92	
+93	### What each file actually contains (verified)
+94	
+95	| Field            | Value                                  | Notes |
+96	|------------------|----------------------------------------|-------|
+97	| `sfreq`          | **200 Hz**                             | Already downsampled from native 1200 Hz |
+98	| `n_channels`     | **271, all `mag`**                     | Originally CTF 275 → 271 after dropping ref/bad channels |
+99	| `n_epochs/subj`  | **27,048**                             | Identical across all 4 subjects |
+100	| `tmin, tmax`     | **−0.100 s, +1.300 s**                 | 100 ms pre-stim baseline + 1.3 s post-stim |
+101	| `timepoints`     | **281** (= 1.4 s × 200 Hz + 1 inclusive) | Per-trial sequence length |
+102	| `unique labels`  | **22,449** (per-image codes)           | Image-level IDs, NOT concept IDs |
+103	| Per-trial shape  | `(271, 281)`                           | Channels × time |
+104	
+105	Three non-obvious things the verification surfaced:
+106	
+107	1. **All channels are `mag` after preprocessing.** The parent doc&#x27;s worry
+108	   about planar-grad vs. magnetometer unit heterogeneity does not apply
+109	   here — there is exactly one channel type. The CTF axial-gradiometer
+110	   sensors are labeled `mag` by MNE. Per-channel normalization is still
+111	   wise for inter-channel amplitude variance, but the magnitude-scale
+112	   disparity problem doesn&#x27;t apply.
+113	2. **Labels are image-level (22,449 codes), not concept-level (1854).**
+114	   The THINGS object database has 1854 concepts × ~12 images per concept ≈
+115	   22k unique images, and that is what the trigger codes index. The linear
+116	   probe in §5.3 will need a `image_id → concept_id` mapping (lives in
+117	   THINGS metadata, not in the .fif files). Coarsen further to
+118	   superordinate categories for the primary probe target. Without that
+119	   mapping the probe is a 22k-way classification on 27k trials per
+120	   subject — too noisy to interpret.
+121	3. **27,048 trials/subject is much more than the parent doc estimated
+122	   (~16k).** Tokenizer training has more data than expected. This shifts
+123	   the calculus on Stage 2 — even from-scratch (option 2c in §4) is more
+124	   plausible than the parent doc assumed.
+125	
+126	### What&#x27;s NOT yet on the volume
+127	
+128	- `/project/data/things-meg/splits/` — train/val/test split manifests.
+129	  None exist yet. Splits will be by held-out image ID (cf.
+130	  `modal_download_things_meg.py` docstring), not by trial index.
+131	- `/project/data/things-meg/source/` — source-reconstructed parcels.
+132	  Not yet computed. Only needed if phase 2 ends up requiring it (see §4).
+133	
+134	### Subject identity
+135	
+136	Trial counts are identical across P1–P4, but trigger orderings differ
+137	(different `event_id` first-5 keys per file). Tokenizer training pools all
+138	4 subjects unless we have a specific reason to per-subject. Pooled is the
+139	default per the parent doc §6.
+140	
+141	## 4. Why three phases, in this order
+142	
+143	The phases trade off cost vs. expected fidelity. We deliberately start with
+144	the cheapest possible MEG tokenizer to (a) prove the §5 harness is correctly
+145	wired for MEG-shaped data, (b) put a floor on the leaderboard, and (c) avoid
+146	prematurely committing to a deep architecture before we know what &quot;good
+147	enough&quot; looks like on this specific THINGS-MEG distribution.
+148	
+149	| Phase | Tokenizer                                | Learns? | Cost     | Role                         |
+150	|-------|------------------------------------------|---------|----------|------------------------------|
+151	| 1     | μ-transform (Cho 2026 baseline)          | No¹     | seconds  | Floor + harness sanity check |
+152	| 2     | Cho 2026 learnable AE (causal / non-causal) | Yes  | hours-GPU | Likely production tokenizer |
+153	| 3     | BrainOmni tokenizer, finetuned           | Yes     | hours-GPU | Stretch / comparison         |
+154	
+155	¹ &quot;Non-learnable&quot; means no gradient-descent weights — but the μ-transform
+156	still has dataset-fit parameters (clip thresholds and max-abs scaler) that
+157	**must** be re-estimated on THINGS-MEG. See §5 for what &quot;recalibration&quot;
+158	actually means.
+159	
+160	## 5. What &quot;recalibration&quot; / &quot;finetuning&quot; actually mean here
+161	
+162	The Cho 2026 paper warns that both tokenizer families need dataset-specific
+163	adaptation. The mechanism is different for each.
+164	
+165	### Phase 1 — μ-transform recalibration (no gradient descent, but still a `fit` step)
+166	
+167	The μ-transform pipeline (paper §3.3.1):
+168	
+169	1. **Clip** the input to a percentile range `[q_lo, q_hi]` to suppress
+170	   outliers.
+171	2. **Max-abs scale** to `[−1, 1]`: `x&#x27; = x / s` with `s = max|x|`.
+172	3. **μ-law compand**: `F(x&#x27;) = sgn(x&#x27;) · ln(1 + μ|x&#x27;|) / ln(1 + μ)`.
+173	4. **Uniform bin** the compressed values into `V` bins → integer token IDs.
+174	
+175	The reference config Cho 2026 ships
+176	([`../../external/Cho2026_Tokenizer/models/tokenizer/mu_transform/config.yml`](../../external/Cho2026_Tokenizer/models/tokenizer/mu_transform/config.yml))
+177	is:
+178	
+179	```yaml
+180	mu: 255
+181	n_tokens: 256
+182	normalization: max_abs
+183	```
+184	
+185	There are **no learned weights**, but two parameters are dataset-dependent
+186	and must be fit on a THINGS-MEG training split, frozen, and reused at
+187	inference:
+188	
+189	- `s = max|x|`: the per-channel (recommended) or global max-abs scaler.
+190	- `q_lo, q_hi`: clip thresholds (defaults around the 0.5 / 99.5 percentiles).
+191	
+192	`μ` and `V` are hyperparameters, not fit from data — start with μ=255,
+193	V=256.
+194	
+195	Concretely: there is no `.train()` loop. There is a `fit(train_dataset) →
+196	calibration.json` step that produces a small JSON sidecar with
+197	`{s_per_channel, q_lo, q_hi, mu, V, channel_mode}`. At inference we load
+198	that JSON and apply the stateless transform. Treat the calibration JSON as
+199	a versioned tokenizer checkpoint.
+200	
+201	&gt; Verified §3 fact that matters here: all 271 channels are `mag`, so the
+202	&gt; grad-vs-mag amplitude disparity problem does not apply. Per-channel `s`
+203	&gt; is still the safer default (inter-sensor amplitude variance is real even
+204	&gt; within one channel type), but the bin-saturation risk is much lower than
+205	&gt; it would be on a mixed-sensor dataset.
+206	
+207	### Phase 2 — Cho 2026 learnable tokenizer (actual gradient training)
+208	
+209	The Cho 2026 learnable tokenizer (paper §3.2) is an **autoencoder**, not a
+210	VQ-VAE: encoder is GRU → Dense → LayerNorm producing per-time-step logits
+211	over a vocab of size `V`; decoder is a bank of `V` 1-D conv kernels (causal
+212	or non-causal) summed with learned per-token gains. Trained end-to-end with
+213	MSE + an annealed soft-to-hard argmax relaxation, then unused tokens are
+214	pruned (&quot;token refactorization&quot;).
+215	
+216	Reference configs they ship
+217	(`../../external/Cho2026_Tokenizer/models/tokenizer/{causal,noncausal}/config.yml`):
+218	
+219	```yaml
+220	sequence_length: 200
+221	n_channels: 52         # NB: 52 source-parcellated channels, NOT sensor
+222	n_tokens: 128
+223	token_dim: 10
+224	rnn_n_units: 128
+225	token_kernel_padding: causal  # or `same` for non-causal
+226	training: { lr: 1e-5, batch: 32, epochs: 40, anneal_stages: 40 }
+227	```
+228	
+229	Three things the configs tell us, in light of the verified data spec:
+230	
+231	1. **They trained on source-reconstructed data (52 parcels), not sensor
+232	   space.** Our THINGS-MEG is **271-sensor**. The tokenizer is applied
+233	   per-channel and the GRU has no channel-conditioning, so weights *can*
+234	   be reused on sensor data, but the *amplitude distribution* of source
+235	   parcels (after `osl_dynamics.standardize()`) is not identical to sensor
+236	   amplitudes. This is the symmetric MEG version of the LABRAM/THINGS
+237	   distribution mismatch in the parent doc.
+238	2. **Their sequence_length = 200 samples ≈ 0.8 s.** Our trials are 281
+239	   samples (1.4 s). Either reduce our windows to 200 samples (matches their
+240	   training distribution → reuse pretrained weights cleanly) or retrain
+241	   with `sequence_length = 281`. Strong prior: **window to 200** for 2a/2b
+242	   to keep the pretrained encoder in-distribution; only change
+243	   `sequence_length` for 2c.
+244	3. **Their LR (1e-5) is very small.** Tells us finetuning is intended to be
+245	   conservative — they expect the loss landscape to be flat around the
+246	   pretrained optimum. Start with that LR and only increase if the loss is
+247	   not moving after 1 epoch.
+248	
+249	&quot;Finetuning on our dataset&quot; then has three concrete recipes:
+250	
+251	- **2a.** Load pretrained weights, apply on THINGS-MEG **as-is** (zero
+252	  finetune). Establishes the floor for what their pretrained tokenizer
+253	  buys us on distribution-shifted data.
+254	- **2b.** Load pretrained weights, continue MSE training on THINGS-MEG
+255	  (lr=1e-5, anneal κ already at 0 → hard tokens — or restart anneal).
+256	  This is the &quot;actual finetune.&quot;
+257	- **2c.** Take their architecture, train from scratch on THINGS-MEG. This
+258	  is needed if (a) pretrained weights fail the §5 harness even after 2b,
+259	  (b) we want to change `sequence_length` or `n_tokens`, or (c) the
+260	  source-vs-sensor mismatch turns out to dominate. With ~108k trials
+261	  pooled across P1–P4 (see §3 — much more than the parent doc estimated),
+262	  from-scratch is more viable than first assumed.
+263	
+264	Run **2a → 2b → 2c** in order; stop as soon as the harness numbers are
+265	acceptable. Do not skip 2a — the gap between 2a and 2b is the answer to
+266	&quot;how much did pretraining buy us.&quot;
+267	
+268	&gt; System-level note: their pretraining data is **resting-state** MEG;
+269	&gt; THINGS-MEG is **event-related** (stimulus-locked). Expect the pretrained
+270	&gt; kernels to capture continuous oscillatory structure well and to
+271	&gt; underweight evoked transients. Reconstruction MSE may look fine while
+272	&gt; the §5.3 linear probe quietly tanks — watch that metric closely after
+273	&gt; each of 2a/2b/2c.
+274	
+275	### Phase 3 — BrainOmni (deferred)
+276	
+277	Multi-modal tokenizer. Not the path forward unless phase 2 has clear
+278	distribution-mismatch symptoms AND BrainOmni&#x27;s pretraining corpus includes
+279	event-related MEG. Revisit after phase 2 numbers land.
+280	
+281	## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
+282	
+283	The `external/Cho2026_Tokenizer` submodule we pinned in this branch is
+284	**TensorFlow 2.11** + `osl_dynamics` + `osl_foundation` (see their
+285	`README.md`, &quot;Requirements&quot;). Our stack (ml-4m, Modal, existing eval code)
+286	is **PyTorch**. Do not try to bridge TF→Torch inside this subdir.
+287	
+288	The OHBA group released a PyTorch port: **[`OHBA-analysis/EphysTokenizer`](https://github.com/OHBA-analysis/EphysTokenizer)**
+289	(linked from the Cho2026 README&#x27;s &quot;PyTorch version&quot; toggle). This is the
+290	real runtime target for phase 2. The plan is:
+291	
+292	- **Keep `external/Cho2026_Tokenizer`** — it is the source of truth for
+293	  the paper&#x27;s configs (`models/tokenizer/{mu_transform,causal,noncausal}/config.yml`),
+294	  reference scripts (`scripts/01_train_tokenizer.py`, etc.), and the
+295	  reproducibility of the published numbers. Read it, don&#x27;t run it.
+296	- **Add `external/EphysTokenizer` as a second submodule** when phase 2
+297	  starts. That is the PyTorch implementation we will actually finetune
+298	  and integrate behind the `Tokenizer` protocol.
+299	- **Adapter pattern, no fork.** Implement `meg/cho2026/adapter.py` as a
+300	  thin wrapper that imports from `external/EphysTokenizer/...` and exposes
+301	  the `Tokenizer` protocol. Do not copy upstream code into `meg/`. If we
+302	  have to patch upstream, do it as a real fork pinned by submodule SHA.
+303	
+304	Open question for the user before phase 2 starts: do we also pin
+305	`EphysTokenizer`, or reimplement the (small) PyTorch tokenizer in-tree?
+306	Both are defensible — EphysTokenizer if we want to inherit pretrained
+307	checkpoints; in-tree if we want to control the training loop without an
+308	extra dependency.
+309	
+310	## 7. File layout under `meg/`
+311	
+312	Each phase is a self-contained subpackage that exposes a class implementing
+313	the `Tokenizer` protocol from the parent §5. Do **not** flatten all three
+314	into one set of `meg_encoder.py` / `meg_decoder.py` files — the parent §7
+315	&quot;three files per tokenizer&quot; rule applies *per-tokenizer*, not per-modality,
+316	and these three tokenizers have nothing useful in common at the
+317	implementation level.
+318	
+319	```
+320	meg/
+321	  CLAUDE.md                   # this file
+322	  meg_config.py               # channels (271), sfreq (200 Hz), tmin/tmax, named bands
+323	  modality_registration.py    # MEG entry for 4M&#x27;s MODALITY_INFO (V, max_len, ...)
+324	  data.py                     # mne.read_epochs(...) loader, pooled across P1–P4
+325	  __init__.py                 # exports the three Tokenizer-protocol classes
+326	
+327	  mu_transform/               # Phase 1
+328	    __init__.py
+329	    encoder.py                # clip → max-abs → μ-law companding (stateless)
+330	    quantizer.py              # uniform binning → int token IDs
+331	    decoder.py                # bin-center lookup → inverse μ-law → inverse max-abs
+332	    calibration.py            # fit(train_dataset) → calibration.json
+333	    tokenizer.py              # MuTransformTokenizer composing the above
+334	    calibration.json          # CHECKED IN — versioned tokenizer state
+335	
+336	  cho2026/                    # Phase 2 — thin adapter, NOT a fork
+337	    __init__.py
+338	    adapter.py                # wraps external/EphysTokenizer behind Tokenizer protocol
+339	    finetune.py               # Modal entrypoint: load pretrained → train on THINGS-MEG
+340	    README.md                 # which checkpoint, which config, why
+341	    # NO model code lives here — that lives in external/ (see §6)
+342	
+343	  brainomni/                  # Phase 3 — empty until phase 2 ships
+344	```
+345	
+346	This keeps each phase replaceable in isolation: deleting `cho2026/` does
+347	not break phase 1; adding `brainomni/` does not touch phase 2.
+348	
+349	## 8. Evaluation contract
+350	
+351	Identical to the parent §5. The same `test_tokenizer.py` harness must pass
+352	for each of the three MEG tokenizers before it is wired into 4M:
+353	
+354	1. Reconstruction fidelity (time MSE + per-channel Pearson + **spectral
+355	   MSE**). Spectral MSE is the diagnostic metric for MEG — band power
+356	   (especially α/β) is what carries task signal. PSD range: 1–100 Hz
+357	   (Nyquist for 200 Hz data is 100 Hz).
+358	2. Codebook utilization (perplexity, dead-code fraction). The μ-transform&#x27;s
+359	   dead-code fraction is the metric to watch; Cho 2026 prunes dead codes
+360	   (&quot;token refactorization&quot;) so its effective `V*` can be reported
+361	   alongside nominal `V`.
+362	3. Linear probe on THINGS labels. With 22,449 image-level codes / 1854
+363	   concepts / ~27 superordinate categories, use the THINGS
+364	   **superordinate** categories as the primary probe target, 1854-way
+365	   concept ID as a secondary, image ID never (too noisy at 27k trials per
+366	   subject). The `image_id → concept_id → superordinate` mapping comes
+367	   from THINGS metadata, not the .fif files — add it under
+368	   `meg/data.py`.
+369	4. Token-sequence statistics (unigram entropy, bigram conditional entropy,
+370	   run-length). The μ-transform is at particular risk of degenerate run
+371	   lengths on slow drifts — watch this.
+372	
+373	MEG-specific harness parameters (PSD frequency range, named bands) go in
+374	`meg_config.py` and are passed into the harness as `EvalConfig`. Do not
+375	hardcode them.
+376	
+377	## 9. Open decisions
+378	
+379	Resolve in the PR that implements each phase, not here.
+380	
+381	- **Phase 1**: per-channel vs. global max-abs scaler. (Strong prior:
+382	  per-channel — see §5.)
+383	- **Phase 1**: vocab size `V`. Defaults to 256 (paper). Sweep `{64, 128,
+384	  256, 512}` once the §5 harness is producing stable numbers.
+385	- **Phase 2**: causal vs. non-causal decoder. Non-causal has strictly more
+386	  reconstruction capacity; causal is needed only for real-time downstream
+387	  uses. For 4M offline pretraining, **non-causal is the default** unless
+388	  there is a downstream use case we know about.
+389	- **Phase 2**: pin `EphysTokenizer` as a second submodule, or reimplement
+390	  the (small) PyTorch tokenizer in-tree? (See §6.)
+391	- **Phase 2**: window THINGS-MEG to 200 samples (match pretraining
+392	  `sequence_length`) or use full 281 (retrain from scratch). Strong prior:
+393	  window for 2a/2b, full length for 2c.
+394	- **Phase 2**: preprocessing match — match Cho 2026&#x27;s pipeline (so the
+395	  pretrained encoder sees in-distribution input) or use our preprocessed
+396	  THINGS-MEG as-is. Strong prior: **as-is for 2a** (cheapest), **match
+397	  their standardize-per-channel step for 2b** (the obvious cheap win),
+398	  **own pipeline for 2c**.
+399	- **4M registration**: per-channel sequence (`num_channels=271,
+400	  max_length=281`) vs. flattened sequence (`max_length=271 × 281`).
+401	  Strong prior: per-channel (see §2).
+402	- **Split policy**: implement `/project/data/things-meg/splits/by_image.json`
+403	  before training any tokenizer; trial-index splits leak THINGS image
+404	  identity across train/val. Owner: whoever ships phase 1.
+405	
+406	## 10. Engineering norms specific to this subdir
+407	
+408	(Inherits everything from parent §7. The below is additional.)
+409	
+410	- All three phases must satisfy the parent §5 `Tokenizer` protocol and
+411	  pass through `test_tokenizer.py` identically. Do not add MEG-specific
+412	  code paths inside the harness.
+413	- Calibration JSON (`mu_transform/calibration.json`) and finetune
+414	  checkpoints (`cho2026/*.ckpt`) are versioned tokenizer state. JSON goes
+415	  in git; checkpoints go on the Modal Volume with a pointer file in git.
+416	- No magic numbers: clip percentiles, `μ`, `V`, sampling rate, channel
+417	  counts (271, not 272), anneal schedule all named in `meg_config.py`.
+418	- Phase 1 is testable on a laptop with synthetic `(271, 281)` tensors —
+419	  write the §5 harness wire-up against phase 1 FIRST, then move to phase
+420	  2 on Modal. This proves the harness before we pay for GPU time.
+421	- The modality registration in `modality_registration.py` is the artifact
+422	  4M consumes. It must declare exactly the `(V, max_length, num_channels)`
+423	  produced by whichever tokenizer is loaded. Mismatch here will silently
+424	  break 4M training.
+425	- Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+426	  after any preprocessing pipeline change, and update §3 of this doc with
+427	  the new verified numbers.
+428	
+429	## 11. Automation / `.claude` candidates
+430	
+431	Worth building once the phase-1 recipe stabilizes, not before:
+432	
+433	- A `calibrate-mu-transform` skill: fits clip + max-abs on the
+434	  THINGS-MEG training split (loaded from `/project/data/things-meg/`),
+435	  writes `calibration.json`, and runs the §5 harness on a held-out
+436	  split. One command, reproducible.
+437	- A pre-commit hook that re-runs the §5 harness on any tokenizer touched
+438	  by the diff. Prevents silent regressions.
+439	- A `tokenize-things-meg` slash command that takes a tokenizer name
+440	  (`mu_transform | cho2026 | brainomni`) and produces a token cache on
+441	  the Modal Volume at `/project/data/things-meg/tokens/&lt;tokenizer&gt;/`,
+442	  ready for 4M consumption. Wraps `modal run` so we don&#x27;t retype the
+443	  same incantation.
+444	
+445	Each of these locks in a workflow. Do not build them while the workflow
+446	is still in flux — the global CLAUDE.md&#x27;s &quot;automation should follow
+447	stable recipes&quot; rule applies.
+448	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-36-871Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-36-871Z" class="timestamp-link"><time datetime="2026-05-23T05:33:36.871Z" data-timestamp="2026-05-23T05:33:36.871Z">2026-05-23T05:33:36.871Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-36-922Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-36-922Z" class="timestamp-link"><time datetime="2026-05-23T05:33:36.922Z" data-timestamp="2026-05-23T05:33:36.922Z">2026-05-23T05:33:36.922Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01DVSZrTn8TavhmNyK4MgST2"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/tokenizer.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-36-933Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-36-933Z" class="timestamp-link"><time datetime="2026-05-23T05:33:36.933Z" data-timestamp="2026-05-23T05:33:36.933Z">2026-05-23T05:33:36.933Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;MuTransformTokenizer — Phase 1 MEG tokenizer, Tokenizer-protocol compliant.
+2	
+3	Composes encoder + quantizer + decoder behind the protocol from
+4	evaluation/protocol.py:
+5	
+6	    tokenize(x)        : (B, C, T) float -&gt; (B, C, T) long
+7	    decode_tokens(tok) : (B, C, T) long  -&gt; (B, C, T) float
+8	
+9	We keep tokens as (B, C, T) rather than flattening because:
+10	  1. The 4M modality registration declares
+11	     `num_channels=271, max_length=281, type=&#x27;seq&#x27;` (meg/CLAUDE.md §2) —
+12	     so the per-channel/time factorization matters to 4M.
+13	  2. The §5 harness handles arbitrary trailing token shape via reshape, so
+14	     this costs nothing.
+15	
+16	No learnable parameters; the only state is the MuCalibration object.
+17	&quot;&quot;&quot;
+18	
+19	from __future__ import annotations
+20	
+21	import torch
+22	
+23	from .calibration import MuCalibration
+24	from .decoder import decode as _decode
+25	from .encoder import encode as _encode
+26	from .quantizer import quantize as _quantize
+27	
+28	
+29	class MuTransformTokenizer:
+30	    &quot;&quot;&quot;Phase 1 MEG tokenizer satisfying evaluation.protocol.Tokenizer.
+31	
+32	    Attributes:
+33	        calibration: fitted MuCalibration.
+34	        codebook_size: vocab_size from the calibration (the protocol field).
+35	
+36	    Example:
+37	        &gt;&gt;&gt; from .calibration import MuCalibration
+38	        &gt;&gt;&gt; calib = MuCalibration.load(&quot;calibration.json&quot;)
+39	        &gt;&gt;&gt; tok = MuTransformTokenizer(calib)
+40	        &gt;&gt;&gt; tokens = tok.tokenize(x)         # (B, C, T) long
+41	        &gt;&gt;&gt; x_hat = tok.decode_tokens(tokens)  # (B, C, T) float
+42	    &quot;&quot;&quot;
+43	
+44	    def __init__(self, calibration: MuCalibration):
+45	        self.calibration = calibration
+46	        self.codebook_size: int = int(calibration.vocab_size)
+47	
+48	    # ---- Tokenizer protocol ------------------------------------------
+49	
+50	    def tokenize(self, x: torch.Tensor) -&gt; torch.Tensor:
+51	        &quot;&quot;&quot;(B, C, T) float -&gt; (B, C, T) long token IDs in [0, V).&quot;&quot;&quot;
+52	        companded = _encode(x, self.calibration)
+53	        return _quantize(companded, self.calibration.vocab_size)
+54	
+55	    def decode_tokens(self, tokens: torch.Tensor) -&gt; torch.Tensor:
+56	        &quot;&quot;&quot;(B, C, T) long -&gt; (B, C, T) float on the input amplitude scale.&quot;&quot;&quot;
+57	        return _decode(tokens, self.calibration)
+58	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-37-127Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-37-127Z" class="timestamp-link"><time datetime="2026-05-23T05:33:37.127Z" data-timestamp="2026-05-23T05:33:37.127Z">2026-05-23T05:33:37.127Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_0189fbG71omCN92Hq44DBvhS"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/calibration.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-37-138Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-37-138Z" class="timestamp-link"><time datetime="2026-05-23T05:33:37.138Z" data-timestamp="2026-05-23T05:33:37.138Z">2026-05-23T05:33:37.138Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;μ-transform calibration: fit per-channel clip percentiles + scaler.
+2	
+3	There is no gradient descent here — this is the &quot;fit&quot; step that produces the
+4	dataset-dependent constants the μ-transform needs:
+5	
+6	  * clip_lo[c], clip_hi[c]   per-channel percentile clip thresholds
+7	  * scaler[c]                 per-channel max-abs scaler s, derived from
+8	                              the clip thresholds (a clipped signal can&#x27;t
+9	                              exceed max(|q_lo|, |q_hi|) by construction)
+10	
+11	These are saved as a small JSON sidecar and reloaded at inference. Treat
+12	the JSON as a versioned tokenizer &quot;checkpoint&quot; (per meg/CLAUDE.md §10).
+13	
+14	Why we derive `s` from the clip thresholds instead of computing a separate
+15	max|x|: after clipping, max|x| is exactly max(|q_lo|, |q_hi|). Two birds,
+16	one pass.
+17	
+18	Why fit on a subsample: per-channel quantile estimates at 0.5% / 99.5%
+19	converge in ~1k trials × 281 samples = ~280k samples per channel. The full
+20	train split (~24k trials × 281 ≈ 7M samples) is overkill. Subsampling lets
+21	us do one GPU torch.quantile call instead of streaming-histogram code.
+22	
+23	All math is torch — runs on whatever device the input tensor lives on
+24	(CPU for tests, GPU on Modal).
+25	&quot;&quot;&quot;
+26	
+27	from __future__ import annotations
+28	
+29	from dataclasses import dataclass, asdict
+30	import json
+31	from pathlib import Path
+32	
+33	import torch
+34	
+35	from ..meg_config import MuTransformConfig
+36	
+37	
+38	@dataclass
+39	class MuCalibration:
+40	    &quot;&quot;&quot;Fitted parameters for the μ-transform.
+41	
+42	    Tensor fields are 1-D on CPU; the encoder/decoder move them to the input
+43	    device on demand. Storing on CPU lets us pickle/JSON the calibration
+44	    portably without an explicit device dance.
+45	
+46	    Attributes:
+47	        clip_lo:    (C,) per-channel lower clip threshold (raw amplitude units).
+48	        clip_hi:    (C,) per-channel upper clip threshold.
+49	        scaler:     (C,) per-channel max-abs scaler `s`.
+50	        mu:         companding parameter (a float, not per-channel).
+51	        vocab_size: V (a float-friendly int).
+52	        clip_lo_pct, clip_hi_pct: percentiles used at fit time (for the JSON
+53	                    record so we can audit later).
+54	        channel_mode: &quot;per_channel&quot; or &quot;global&quot; — also recorded for audit.
+55	    &quot;&quot;&quot;
+56	
+57	    clip_lo: torch.Tensor
+58	    clip_hi: torch.Tensor
+59	    scaler: torch.Tensor
+60	    mu: float
+61	    vocab_size: int
+62	    clip_lo_pct: float
+63	    clip_hi_pct: float
+64	    channel_mode: str
+65	
+66	    @property
+67	    def n_channels(self) -&gt; int:
+68	        return int(self.clip_lo.numel())
+69	
+70	    # ---- IO ----------------------------------------------------------
+71	
+72	    def to_json(self) -&gt; dict:
+73	        &quot;&quot;&quot;Serializable dict. Tensors become lists; everything else passes through.&quot;&quot;&quot;
+74	        return {
+75	            &quot;clip_lo&quot;: self.clip_lo.tolist(),
+76	            &quot;clip_hi&quot;: self.clip_hi.tolist(),
+77	            &quot;scaler&quot;: self.scaler.tolist(),
+78	            &quot;mu&quot;: float(self.mu),
+79	            &quot;vocab_size&quot;: int(self.vocab_size),
+80	            &quot;clip_lo_pct&quot;: float(self.clip_lo_pct),
+81	            &quot;clip_hi_pct&quot;: float(self.clip_hi_pct),
+82	            &quot;channel_mode&quot;: str(self.channel_mode),
+83	        }
+84	
+85	    @classmethod
+86	    def from_json(cls, d: dict) -&gt; &quot;MuCalibration&quot;:
+87	        return cls(
+88	            clip_lo=torch.tensor(d[&quot;clip_lo&quot;], dtype=torch.float32),
+89	            clip_hi=torch.tensor(d[&quot;clip_hi&quot;], dtype=torch.float32),
+90	            scaler=torch.tensor(d[&quot;scaler&quot;], dtype=torch.float32),
+91	            mu=float(d[&quot;mu&quot;]),
+92	            vocab_size=int(d[&quot;vocab_size&quot;]),
+93	            clip_lo_pct=float(d[&quot;clip_lo_pct&quot;]),
+94	            clip_hi_pct=float(d[&quot;clip_hi_pct&quot;]),
+95	            channel_mode=str(d[&quot;channel_mode&quot;]),
+96	        )
+97	
+98	    def save(self, path: str | Path) -&gt; None:
+99	        Path(path).write_text(json.dumps(self.to_json(), indent=2))
+100	
+101	    @classmethod
+102	    def load(cls, path: str | Path) -&gt; &quot;MuCalibration&quot;:
+103	        return cls.from_json(json.loads(Path(path).read_text()))
+104	
+105	
+106	# ---------- fit -----------------------------------------------------------
+107	
+108	@torch.no_grad()
+109	def fit_calibration(
+110	    X_sample: torch.Tensor,
+111	    config: MuTransformConfig,
+112	) -&gt; MuCalibration:
+113	    &quot;&quot;&quot;Estimate clip thresholds + per-channel scaler from a subsample.
+114	
+115	    Args:
+116	        X_sample: (N, C, T) float tensor — a uniformly-drawn subsample of
+117	                  trials from the *training* split. Put it on the device
+118	                  you want the quantile reduction to run on (typically GPU
+119	                  on Modal, CPU in tests).
+120	        config:   MuTransformConfig (μ, V, percentiles, channel_mode).
+121	
+122	    Returns:
+123	        MuCalibration with CPU tensors.
+124	
+125	    Notes on quantile computation:
+126	      - per_channel: flatten over (batch, time) per channel → quantile per ch.
+127	      - global:      flatten everything → single scalar quantile broadcast
+128	                     across all channels.
+129	    &quot;&quot;&quot;
+130	    if X_sample.ndim != 3:
+131	        raise ValueError(f&quot;X_sample must be (N, C, T); got {tuple(X_sample.shape)}&quot;)
+132	    if X_sample.shape[0] == 0:
+133	        raise ValueError(&quot;X_sample is empty — cannot fit calibration on 0 trials.&quot;)
+134	
+135	    N, C, T = X_sample.shape
+136	    q_lo = config.clip_lo_pct / 100.0
+137	    q_hi = config.clip_hi_pct / 100.0
+138	
+139	    if config.channel_mode == &quot;per_channel&quot;:
+140	        # (C, N*T) — torch.quantile reduces over the last dim by default.
+141	        flat = X_sample.permute(1, 0, 2).reshape(C, N * T).contiguous()
+142	        clip_lo, clip_hi = _safe_quantile(flat, q_lo, q_hi)
+143	    elif config.channel_mode == &quot;global&quot;:
+144	        flat = X_sample.reshape(-1)
+145	        lo_g, hi_g = _safe_quantile(flat.unsqueeze(0), q_lo, q_hi)
+146	        clip_lo = lo_g.expand(C).clone()
+147	        clip_hi = hi_g.expand(C).clone()
+148	    else:
+149	        raise ValueError(f&quot;unknown channel_mode {config.channel_mode!r}&quot;)
+150	
+151	    # After clipping, |x| &lt;= max(|q_lo|, |q_hi|), so that&#x27;s exactly the scaler.
+152	    scaler = torch.maximum(clip_lo.abs(), clip_hi.abs()).clamp_min(1e-12)
+153	
+154	    return MuCalibration(
+155	        clip_lo=clip_lo.cpu().to(torch.float32),
+156	        clip_hi=clip_hi.cpu().to(torch.float32),
+157	        scaler=scaler.cpu().to(torch.float32),
+158	        mu=config.mu,
+159	        vocab_size=config.vocab_size,
+160	        clip_lo_pct=config.clip_lo_pct,
+161	        clip_hi_pct=config.clip_hi_pct,
+162	        channel_mode=config.channel_mode,
+163	    )
+164	
+165	
+166	def _safe_quantile(
+167	    flat: torch.Tensor,
+168	    q_lo: float,
+169	    q_hi: float,
+170	) -&gt; tuple[torch.Tensor, torch.Tensor]:
+171	    &quot;&quot;&quot;Per-row quantile that handles torch.quantile&#x27;s 16M-sample limit.
+172	
+173	    `torch.quantile` errors above ~16M elements per reduction dim on GPU.
+174	    For pooled THINGS-MEG calibration (2k trials × 281 ≈ 562k samples per
+175	    channel) we&#x27;re well under that, but the helper is defensive: if a row
+176	    exceeds the limit we sub-sample it down before reducing.
+177	    &quot;&quot;&quot;
+178	    MAX_PER_ROW = 16_000_000 - 1
+179	    if flat.shape[-1] &gt; MAX_PER_ROW:
+180	        idx = torch.randperm(flat.shape[-1], device=flat.device)[:MAX_PER_ROW]
+181	        flat = flat[:, idx]
+182	    q = torch.tensor([q_lo, q_hi], dtype=flat.dtype, device=flat.device)
+183	    out = torch.quantile(flat, q, dim=-1)   # (2, n_rows)
+184	    return out[0].contiguous(), out[1].contiguous()
+185	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-37-219Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-37-219Z" class="timestamp-link"><time datetime="2026-05-23T05:33:37.219Z" data-timestamp="2026-05-23T05:33:37.219Z">2026-05-23T05:33:37.219Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01CBMXWy9AYuCi1AS9T5KDYG"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/meg_config.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-37-233Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-37-233Z" class="timestamp-link"><time datetime="2026-05-23T05:33:37.233Z" data-timestamp="2026-05-23T05:33:37.233Z">2026-05-23T05:33:37.233Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;MEG-wide constants and per-phase tokenizer defaults.
+2	
+3	All magic numbers for the MEG tokenizers live here (parent §7 &quot;no magic
+4	constants&quot; rule). Each tokenizer phase imports its own dataclass from this
+5	module and never hardcodes literals.
+6	
+7	Why dataclasses instead of one big constants module:
+8	  - `MEGDataSpec` is fixed by the dataset (verified on 2026-05-22 — see
+9	    meg/CLAUDE.md §3). It does NOT change between phases.
+10	  - `MuTransformConfig` is Phase 1 — μ/V/percentiles can be swept per §9.
+11	  - `EvalDefaults` is shared eval-harness knobs (PSD range, bands) that
+12	    `EvalConfig` from the evaluation package gets populated from.
+13	
+14	Per-phase config is intentionally a dataclass not a yaml: it&#x27;s small,
+15	type-checkable, and importable directly into tests without a yaml loader.
+16	The Cho 2026 yaml configs in `external/` are reference material, not runtime
+17	configuration.
+18	&quot;&quot;&quot;
+19	
+20	from __future__ import annotations
+21	
+22	from dataclasses import dataclass, field
+23	
+24	
+25	# ---------- THINGS-MEG dataset spec (verified 2026-05-22) -----------------
+26	#
+27	# Source of truth: re-run modal/modal_inspect_things_meg.py if any preprocessing
+28	# changes. The numbers below correspond to /project/data/things-meg/preprocessed/.
+29	
+30	@dataclass(frozen=True)
+31	class MEGDataSpec:
+32	    &quot;&quot;&quot;Immutable description of the preprocessed THINGS-MEG data layout.&quot;&quot;&quot;
+33	
+34	    n_channels: int = 271
+35	    n_timepoints: int = 281
+36	    sfreq_hz: float = 200.0
+37	    tmin_s: float = -0.100
+38	    tmax_s: float = 1.300
+39	    n_trials_per_subject: int = 27048
+40	    subjects: tuple[str, ...] = (&quot;P1&quot;, &quot;P2&quot;, &quot;P3&quot;, &quot;P4&quot;)
+41	    data_dir: str = &quot;/project/data/things-meg/preprocessed&quot;
+42	
+43	    @property
+44	    def trial_shape(self) -&gt; tuple[int, int]:
+45	        &quot;&quot;&quot;(channels, time) per trial.&quot;&quot;&quot;
+46	        return (self.n_channels, self.n_timepoints)
+47	
+48	
+49	MEG_DATA = MEGDataSpec()
+50	
+51	
+52	# ---------- Phase 1: μ-transform tokenizer config -------------------------
+53	#
+54	# Cho 2026 reference:
+55	#   external/Cho2026_Tokenizer/models/tokenizer/mu_transform/config.yml
+56	#   (mu=255, n_tokens=256, normalization=max_abs).
+57	# Their clip percentiles are implicit in the paper; we default to a symmetric
+58	# 0.5 / 99.5 split. Per-channel scaler is the strong prior in meg/CLAUDE.md §5.
+59	
+60	@dataclass(frozen=True)
+61	class MuTransformConfig:
+62	    &quot;&quot;&quot;All knobs for the μ-transform tokenizer.
+63	
+64	    Fields:
+65	        mu:           companding parameter (paper default: 255).
+66	        vocab_size:   number of uniform bins in [-1, 1] (paper default: 256).
+67	        clip_lo_pct:  lower clip percentile in (0, 100).
+68	        clip_hi_pct:  upper clip percentile.
+69	        channel_mode: &quot;per_channel&quot; or &quot;global&quot; max-abs scaler.
+70	
+71	    Why these defaults: μ=255, V=256 reproduce the paper baseline. Per-channel
+72	    is safer than global because inter-sensor amplitude variance is real even
+73	    after preprocessing (CLAUDE.md §5 caveat).
+74	    &quot;&quot;&quot;
+75	
+76	    mu: float = 255.0
+77	    vocab_size: int = 256
+78	    clip_lo_pct: float = 0.5
+79	    clip_hi_pct: float = 99.5
+80	    channel_mode: str = &quot;per_channel&quot;   # or &quot;global&quot;
+81	
+82	    def __post_init__(self):
+83	        if self.channel_mode not in (&quot;per_channel&quot;, &quot;global&quot;):
+84	            raise ValueError(
+85	                f&quot;channel_mode must be per_channel|global, got {self.channel_mode!r}&quot;
+86	            )
+87	        if not (0.0 &lt; self.clip_lo_pct &lt; self.clip_hi_pct &lt; 100.0):
+88	            raise ValueError(
+89	                f&quot;need 0 &lt; clip_lo_pct &lt; clip_hi_pct &lt; 100, got &quot;
+90	                f&quot;({self.clip_lo_pct}, {self.clip_hi_pct})&quot;
+91	            )
+92	        if self.vocab_size &lt; 2:
+93	            raise ValueError(f&quot;vocab_size must be &gt;= 2, got {self.vocab_size}&quot;)
+94	        if self.mu &lt;= 0:
+95	            raise ValueError(f&quot;mu must be &gt; 0, got {self.mu}&quot;)
+96	
+97	
+98	MU_TRANSFORM_DEFAULT = MuTransformConfig()
+99	
+100	
+101	# ---------- Eval-harness defaults (passed into EvalConfig) ----------------
+102	
+103	MEG_BANDS: dict[str, tuple[float, float]] = {
+104	    &quot;delta&quot;: (1.0, 4.0),
+105	    &quot;theta&quot;: (4.0, 8.0),
+106	    &quot;alpha&quot;: (8.0, 13.0),
+107	    &quot;beta&quot;:  (13.0, 30.0),
+108	    &quot;gamma&quot;: (30.0, 80.0),
+109	}
+110	
+111	
+112	@dataclass(frozen=True)
+113	class EvalDefaults:
+114	    &quot;&quot;&quot;Defaults for the §5 harness when applied to MEG.
+115	
+116	    Used by the Modal entrypoint to construct an EvalConfig — keeping these
+117	    here means the harness stays modality-agnostic and all MEG-specific knobs
+118	    live in meg_config.py.
+119	    &quot;&quot;&quot;
+120	
+121	    sample_rate_hz: float = MEG_DATA.sfreq_hz
+122	    bands: dict[str, tuple[float, float]] = field(
+123	        default_factory=lambda: dict(MEG_BANDS)
+124	    )
+125	    psd_nperseg: int = 128       # ~0.64 s window → multiple windows fit in 1.4 s trial
+126	    probe_epochs: int = 200
+127	    probe_top_k: tuple[int, ...] = (1, 5)
+128	    probe_test_frac: float = 0.2
+129	
+130	
+131	EVAL_DEFAULTS = EvalDefaults()
+132	
+133	
+134	# ---------- Split policy defaults -----------------------------------------
+135	#
+136	# Phase-1 split is by image_id, not by trial — see meg/CLAUDE.md §9. When the
+137	# team-wide things_split.json is finalized, only `splits.py::split_by_image`&#x27;s
+138	# internals change; the (train/val/test) interface every downstream caller
+139	# uses stays the same.
+140	#
+141	# Why two SplitDefaults variants:
+142	#   - μ-transform (Phase 1) is non-learnable; it needs only calibration data
+143	#     + held-out eval data. val_frac=0.0 saves 10% of trials for calibration.
+144	#   - Cho2026 (Phase 2) is a learned AE; it needs a val split for early
+145	#     stopping / lr scheduling. val_frac=0.10.
+146	#
+147	# Critical invariant maintained by splits.py: the TEST SET is determined by
+148	# (seed, test_frac) alone — independent of val_frac. So Phase 1 and Phase 2
+149	# evaluate on identical trials, and the §5 leaderboard is apples-to-apples.
+150	
+151	@dataclass(frozen=True)
+152	class SplitDefaults:
+153	    train_frac: float
+154	    val_frac: float
+155	    test_frac: float
+156	    seed: int = 0
+157	
+158	    def __post_init__(self):
+159	        total = self.train_frac + self.val_frac + self.test_frac
+160	        if abs(total - 1.0) &gt; 1e-6:
+161	            raise ValueError(f&quot;split fractions must sum to 1.0, got {total}&quot;)
+162	        for name, v in ((&quot;train_frac&quot;, self.train_frac), (&quot;val_frac&quot;, self.val_frac),
+163	                        (&quot;test_frac&quot;, self.test_frac)):
+164	            if v &lt; 0.0 or v &gt; 1.0:
+165	                raise ValueError(f&quot;{name}={v} must be in [0, 1]&quot;)
+166	
+167	
+168	# Phase 1: μ-transform — no val.
+169	MU_SPLIT_DEFAULTS = SplitDefaults(train_frac=0.90, val_frac=0.0, test_frac=0.10, seed=0)
+170	
+171	# Phase 2+: learnable tokenizers — val for early stopping.
+172	LEARNABLE_SPLIT_DEFAULTS = SplitDefaults(
+173	    train_frac=0.80, val_frac=0.10, test_frac=0.10, seed=0
+174	)
+175	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-41-266Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-41-266Z" class="timestamp-link"><time datetime="2026-05-23T05:33:41.266Z" data-timestamp="2026-05-23T05:33:41.266Z">2026-05-23T05:33:41.266Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01BtrrnpRtg61QQr7YGBHSTb">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List modal and runs dirs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/modal/ /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/runs/ 2&gt;&amp;1 | head -50</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-41-303Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-41-303Z" class="timestamp-link"><time datetime="2026-05-23T05:33:41.303Z" data-timestamp="2026-05-23T05:33:41.303Z">2026-05-23T05:33:41.303Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/modal/:
+__init__.py
+__pycache__
+modal_download_things_labels.py
+modal_meg_calibrate_mu.py
+modal_meg_eval.py
+modal_meg_inspect_labels.py
+
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/runs/:
+V256_mu255_clip0.5-99.5_per_channel_s0</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-41-983Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-41-983Z" class="timestamp-link"><time datetime="2026-05-23T05:33:41.983Z" data-timestamp="2026-05-23T05:33:41.983Z">2026-05-23T05:33:41.983Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01K579mMBy7RkYZ28vz9mNKn"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_calibrate_mu.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-42-000Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-42-000Z" class="timestamp-link"><time datetime="2026-05-23T05:33:42.000Z" data-timestamp="2026-05-23T05:33:42.000Z">2026-05-23T05:33:42.000Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Phase-1 calibration on Modal: fit μ-transform on the THINGS-MEG train split.
+2	
+3	What it does (one short remote function):
+4	  1. Discover P1–P4 epoch files on the `project` Volume.
+5	  2. Build per-subject by-image splits with MU_SPLIT_DEFAULTS — guarantees
+6	     the test trials match those used by Phase 2+ (cross-phase invariant
+7	     enforced by splits.py).
+8	  3. Uniformly subsample N trials from the pooled train split.
+9	  4. Move the subsample to GPU, run `fit_calibration` (one torch.quantile
+10	     reduction per channel), return the resulting calibration dict.
+11	
+12	The calibration dict is small (~6 KB JSON). It is returned to the local
+13	entrypoint via `.remote()` and written to disk locally, so it lands directly
+14	in git-trackable form (see meg/CLAUDE.md §10: &quot;JSON goes in git&quot;).
+15	
+16	We DO NOT touch the test split here — that comes in modal_meg_eval.py.
+17	
+18	Run:
+19	    modal run neural_tokenizers/meg/modal/modal_meg_calibrate_mu.py::calibrate \\
+20	        --n-sample 2000 \\
+21	        --output neural_tokenizers/meg/mu_transform/calibration.json
+22	&quot;&quot;&quot;
+23	
+24	from __future__ import annotations
+25	
+26	from pathlib import Path
+27	import sys
+28	
+29	# Local-only sys.path tweak: makes `neural_tokenizers.*` importable when the
+30	# script is invoked from anywhere on the laptop. On Modal&#x27;s remote container,
+31	# `add_local_python_source(&quot;neural_tokenizers&quot;)` already mounts the package
+32	# (and the script itself lives at /root/script.py, where parents[3] would
+33	# IndexError), so we skip the tweak whenever the import already works OR the
+34	# file isn&#x27;t deep enough on disk to have a sensible parents[3].
+35	try:
+36	    import neural_tokenizers  # noqa: F401
+37	except ImportError:
+38	    try:
+39	        _REPO_ROOT = Path(__file__).resolve().parents[3]
+40	        sys.path.insert(0, str(_REPO_ROOT))
+41	    except IndexError:
+42	        # Remote container — neural_tokenizers should already be on sys.path
+43	        # via add_local_python_source. If it isn&#x27;t, fail loudly downstream.
+44	        pass
+45	
+46	import modal  # noqa: E402
+47	
+48	# ---------- Modal setup (kept inline; sharing across scripts via a sibling
+49	# common.py turned out to be fragile — the remote container re-imports the
+50	# entrypoint script during function hydration and `from common import ...`
+51	# isn&#x27;t reachable as a top-level module there).
+52	app = modal.App(&quot;neural-fm&quot;)
+53	project_volume = modal.Volume.from_name(&quot;project&quot;)
+54	PROJECT_MOUNT = &quot;/project&quot;
+55	
+56	meg_image = (
+57	    modal.Image.debian_slim(python_version=&quot;3.11&quot;)
+58	    .pip_install(&quot;mne&quot;, &quot;scipy&quot;, &quot;torch&quot;, &quot;numpy&quot;)
+59	    .add_local_python_source(&quot;neural_tokenizers&quot;)
+60	)
+61	
+62	
+63	@app.function(
+64	    image=meg_image,
+65	    volumes={PROJECT_MOUNT: project_volume},
+66	    gpu=&quot;A10&quot;,
+67	    cpu=4.0,
+68	    memory=16 * 1024,
+69	    timeout=60 * 30,
+70	)
+71	def fit_remote(
+72	    n_sample: int = 2000,
+73	    seed: int = 0,
+74	    mu: float = 255.0,
+75	    vocab_size: int = 256,
+76	    clip_lo_pct: float = 0.5,
+77	    clip_hi_pct: float = 99.5,
+78	    channel_mode: str = &quot;per_channel&quot;,
+79	) -&gt; dict:
+80	    &quot;&quot;&quot;Fit μ-transform calibration on the THINGS-MEG train split.
+81	
+82	    Args:
+83	        n_sample: trials pooled from the train split. 2000 × 281 = 562k
+84	            samples per channel — plenty for tight 0.5%/99.5% estimates.
+85	        seed: split seed. Threads into split_by_image so identical seeds
+86	            give identical (train, test) trials across runs.
+87	        mu, vocab_size, clip_lo_pct, clip_hi_pct, channel_mode: μ-transform
+88	            hyperparameters (defaults reproduce the paper baseline).
+89	            Override to sweep V or clip percentiles.
+90	
+91	    Returns:
+92	        The calibration dict (MuCalibration.to_json()), small enough to ship
+93	        back through `.remote()`.
+94	    &quot;&quot;&quot;
+95	    import torch
+96	
+97	    from neural_tokenizers.meg import (
+98	        MU_SPLIT_DEFAULTS,
+99	        MuTransformConfig,
+100	        SplitDefaults,
+101	        fit_calibration,
+102	    )
+103	    from neural_tokenizers.meg.data import list_subjects, sample_train_trials
+104	    from neural_tokenizers.meg.splits import split_by_image
+105	
+106	    # Compose a per-run config; do NOT mutate the global MU_TRANSFORM_DEFAULT.
+107	    cfg = MuTransformConfig(
+108	        mu=mu,
+109	        vocab_size=vocab_size,
+110	        clip_lo_pct=clip_lo_pct,
+111	        clip_hi_pct=clip_hi_pct,
+112	        channel_mode=channel_mode,
+113	    )
+114	    print(f&quot;[calib] config: {cfg}&quot;)
+115	
+116	    split_cfg = SplitDefaults(
+117	        train_frac=MU_SPLIT_DEFAULTS.train_frac,
+118	        val_frac=MU_SPLIT_DEFAULTS.val_frac,
+119	        test_frac=MU_SPLIT_DEFAULTS.test_frac,
+120	        seed=seed,
+121	    )
+122	
+123	    subjects = list_subjects()
+124	    print(f&quot;[calib] discovered subjects: {[s.subject for s in subjects]}&quot;)
+125	
+126	    # Per-subject by-image splits → pool train indices for the subsample.
+127	    train_per_subj: dict[str, &quot;list[int]&quot;] = {}
+128	    for s in subjects:
+129	        sp = split_by_image(s.image_ids, split_cfg)
+130	        train_per_subj[s.subject] = sp.train
+131	        print(
+132	            f&quot;[calib] {s.subject}: train={len(sp.train)} val={len(sp.val)} test={len(sp.test)}&quot;
+133	        )
+134	
+135	    X_sample = sample_train_trials(
+136	        subjects, train_per_subj, n_sample=n_sample, seed=seed
+137	    )
+138	    print(f&quot;[calib] subsample shape: {tuple(X_sample.shape)} dtype={X_sample.dtype}&quot;)
+139	
+140	    device = &quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;
+141	    X_sample = X_sample.to(device)
+142	    print(f&quot;[calib] fitting on device={device} ...&quot;)
+143	    calib = fit_calibration(X_sample, cfg)
+144	    print(
+145	        f&quot;[calib] done. scaler stats: &quot;
+146	        f&quot;min={calib.scaler.min().item():.3e} &quot;
+147	        f&quot;max={calib.scaler.max().item():.3e} &quot;
+148	        f&quot;mean={calib.scaler.mean().item():.3e}&quot;
+149	    )
+150	    return calib.to_json()
+151	
+152	
+153	@app.local_entrypoint()
+154	def calibrate(
+155	    n_sample: int = 2000,
+156	    seed: int = 0,
+157	    mu: float = 255.0,
+158	    vocab_size: int = 256,
+159	    clip_lo_pct: float = 0.5,
+160	    clip_hi_pct: float = 99.5,
+161	    channel_mode: str = &quot;per_channel&quot;,
+162	    runs_dir: str = &quot;neural_tokenizers/meg/mu_transform/runs&quot;,
+163	):
+164	    &quot;&quot;&quot;Run calibration remotely; write the returned JSON locally under
+165	    `&lt;runs_dir&gt;/&lt;slug&gt;/calibration.json`.
+166	
+167	    Per-config subdir (slug) prevents sweeps from overwriting each other.
+168	    The slug encodes (V, μ, clip percentiles, channel mode, seed) — anything
+169	    that changes the calibration math gets its own directory.
+170	
+171	    Invoke:
+172	        modal run neural_tokenizers/meg/modal/modal_meg_calibrate_mu.py::calibrate \\
+173	            --vocab-size 256 --mu 255 --seed 0
+174	    &quot;&quot;&quot;
+175	    import json
+176	
+177	    from neural_tokenizers.meg.mu_transform import run_slug
+178	
+179	    payload = fit_remote.remote(
+180	        n_sample=n_sample, seed=seed, mu=mu, vocab_size=vocab_size,
+181	        clip_lo_pct=clip_lo_pct, clip_hi_pct=clip_hi_pct, channel_mode=channel_mode,
+182	    )
+183	    slug = run_slug(mu, vocab_size, clip_lo_pct, clip_hi_pct, channel_mode, seed)
+184	    out_dir = Path(runs_dir) / slug
+185	    out_dir.mkdir(parents=True, exist_ok=True)
+186	    out_path = out_dir / &quot;calibration.json&quot;
+187	    out_path.write_text(json.dumps(payload, indent=2))
+188	
+189	    # Drop a tiny `config.json` next to it so the directory is self-describing.
+190	    (out_dir / &quot;config.json&quot;).write_text(json.dumps({
+191	        &quot;slug&quot;: slug, &quot;mu&quot;: mu, &quot;vocab_size&quot;: vocab_size,
+192	        &quot;clip_lo_pct&quot;: clip_lo_pct, &quot;clip_hi_pct&quot;: clip_hi_pct,
+193	        &quot;channel_mode&quot;: channel_mode, &quot;seed&quot;: seed, &quot;n_sample&quot;: n_sample,
+194	    }, indent=2))
+195	
+196	    print(f&quot;[calib] slug: {slug}&quot;)
+197	    print(f&quot;[calib] wrote {out_path}&quot;)
+198	    print(f&quot;[calib] preview (first 3 channels):&quot;)
+199	    for k in (&quot;clip_lo&quot;, &quot;clip_hi&quot;, &quot;scaler&quot;):
+200	        print(f&quot;  {k}[:3] = {payload[k][:3]}&quot;)
+201	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-45-171Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-45-171Z" class="timestamp-link"><time datetime="2026-05-23T05:33:45.171Z" data-timestamp="2026-05-23T05:33:45.171Z">2026-05-23T05:33:45.171Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-48-544Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-48-544Z" class="timestamp-link"><time datetime="2026-05-23T05:33:48.544Z" data-timestamp="2026-05-23T05:33:48.544Z">2026-05-23T05:33:48.544Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01MiSzmbRn2f9N6JexQVryJA"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;List ALL files and folders in the BrainOmni repo at the root level, then list everything in the braintokenizer/ folder. I need to know the exact code structure. Tell me: directory contents, key Python file names with one-line purpose of each. Especially in braintokenizer/, factory/, share/, brainomni/, downstream/, script/. Also tell me what arXiv paper / preprint this corresponds to if any link is given.&#34;,
+  &#34;url&#34;: &#34;https://github.com/OpenTSLab/BrainOmni/tree/main&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-50-113Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-50-113Z" class="timestamp-link"><time datetime="2026-05-23T05:33:50.113Z" data-timestamp="2026-05-23T05:33:50.113Z">2026-05-23T05:33:50.113Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01S6JY9fQCpe16b3uzGUCVQt"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/evaluation/protocol.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-50-131Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-50-131Z" class="timestamp-link"><time datetime="2026-05-23T05:33:50.131Z" data-timestamp="2026-05-23T05:33:50.131Z">2026-05-23T05:33:50.131Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Interface contract for the tokenizer evaluation harness.
+2	
+3	Defines the minimal Tokenizer protocol any object must satisfy to be evaluated,
+4	the EvalConfig dataclass that carries modality-specific knobs, and the
+5	MetricResult / TokenizerReport types each metric module returns.
+6	
+7	Protocol method names and shapes mirror fourm.vq.vqvae.VQ (see
+8	external/ml-4m/fourm/vq/vqvae.py L39-394) so a 4M VQVAE / DiVAE satisfies this
+9	protocol with zero adapter code. We deliberately exclude the training-time
+10	methods (`encode` 3-tuple, `forward`, `autoencode`) — they are not needed to
+11	evaluate a tokenizer and would force every eval-only stub to implement them.
+12	
+13	Recommended pattern for concrete tokenizers (e.g. EEGTokenizer):
+14	
+15	    class EEGTokenizer(nn.Module):
+16	        codebook_size: int
+17	
+18	        def __init__(self, codebook_size: int = 1024, ...):
+19	            super().__init__()
+20	            self.codebook_size = codebook_size
+21	            ...
+22	
+23	        def tokenize(self, x: torch.Tensor) -&gt; torch.Tensor: ...
+24	        def decode_tokens(self, tokens: torch.Tensor) -&gt; torch.Tensor: ...
+25	
+26	Do NOT inherit from Tokenizer — it&#x27;s a Protocol, satisfied structurally. The
+27	whole point is that 4M&#x27;s VQ class (which doesn&#x27;t know about us) drops in by
+28	shape alone; same applies to your own tokenizers.
+29	&quot;&quot;&quot;
+30	
+31	from __future__ import annotations
+32	
+33	from dataclasses import dataclass, field
+34	from typing import Protocol, runtime_checkable
+35	
+36	import torch
+37	
+38	
+39	DEFAULT_BANDS: dict[str, tuple[float, float]] = {
+40	    &quot;delta&quot;: (1.0, 4.0),
+41	    &quot;theta&quot;: (4.0, 8.0),
+42	    &quot;alpha&quot;: (8.0, 13.0),
+43	    &quot;beta&quot;: (13.0, 30.0),
+44	    &quot;gamma&quot;: (30.0, 80.0),
+45	}
+46	
+47	
+48	@runtime_checkable
+49	class Tokenizer(Protocol):
+50	    &quot;&quot;&quot;The minimal interface a tokenizer must satisfy.
+51	
+52	    Tokens may have any shape `(B, ...)`. The harness flattens to `(B, L)`
+53	    internally where it needs a sequence (e.g. for bigram entropy reading
+54	    row-major). This is what makes 4M image tokenizers — which return
+55	    `(B, H_q, W_q)` — work alongside our EEG/MEG tokenizers that return
+56	    `(B, L)`.
+57	
+58	    Optional method (checked via `has_token_embeddings` below):
+59	        tokens_to_embedding(tokens) -&gt; float tensor with one extra trailing
+60	            dim of size D. The probe uses these continuous codebook embeddings
+61	            as features when available — strictly more informative than the
+62	            bag-of-codes fallback.
+63	    &quot;&quot;&quot;
+64	
+65	    codebook_size: int
+66	
+67	    def tokenize(self, x: torch.Tensor) -&gt; torch.Tensor:
+68	        &quot;&quot;&quot;Encode a batch of signals to discrete token IDs.
+69	
+70	        Args:
+71	            x: (B, C, T) float tensor.
+72	
+73	        Returns:
+74	            (B, ...) long tensor with values in [0, codebook_size).
+75	        &quot;&quot;&quot;
+76	        ...
+77	
+78	    def decode_tokens(self, tokens: torch.Tensor) -&gt; torch.Tensor:
+79	        &quot;&quot;&quot;Reconstruct signals from token IDs.
+80	
+81	        Args:
+82	            tokens: long tensor of the same shape `tokenize` returned.
+83	
+84	        Returns:
+85	            (B, C, T) float tensor matching the original signal shape.
+86	        &quot;&quot;&quot;
+87	        ...
+88	
+89	
+90	def has_token_embeddings(tokenizer: Tokenizer) -&gt; bool:
+91	    &quot;&quot;&quot;Whether the tokenizer exposes the optional tokens_to_embedding method.&quot;&quot;&quot;
+92	    return hasattr(tokenizer, &quot;tokens_to_embedding&quot;) and callable(
+93	        tokenizer.tokens_to_embedding
+94	    )
+95	
+96	
+97	@dataclass
+98	class EvalConfig:
+99	    &quot;&quot;&quot;Modality-specific evaluation knobs.
+100	
+101	    Nothing about signal shape lives here — the harness reads C, T, L from the
+102	    tensors at runtime. Only modality-level constants (sample rate, frequency
+103	    bands, class count) and harness-level knobs (device, seed) go here.
+104	    &quot;&quot;&quot;
+105	
+106	    sample_rate_hz: float
+107	    bands: dict[str, tuple[float, float]] = field(
+108	        default_factory=lambda: dict(DEFAULT_BANDS)
+109	    )
+110	    device: str = &quot;cpu&quot;
+111	    batch_size: int = 64
+112	    seed: int = 0
+113	
+114	    run_reconstruction: bool = True
+115	    run_codebook: bool = True
+116	    run_probe: bool = True
+117	    run_sequence: bool = True
+118	
+119	    probe_epochs: int = 100
+120	    probe_lr: float = 1e-2
+121	    probe_weight_decay: float = 1e-4
+122	    probe_top_k: tuple[int, ...] = (1, 5)
+123	    probe_test_frac: float = 0.2
+124	
+125	    psd_nperseg: int | None = None
+126	
+127	
+128	@dataclass
+129	class MetricResult:
+130	    &quot;&quot;&quot;Output of a single metric module (one of the four §5 axes).&quot;&quot;&quot;
+131	
+132	    name: str
+133	    values: dict[str, float]
+134	
+135	    def __str__(self) -&gt; str:
+136	        lines = [f&quot;  [{self.name}]&quot;]
+137	        for k, v in self.values.items():
+138	            lines.append(f&quot;    {k:&lt;32s} {v:.4f}&quot;)
+139	        return &quot;\n&quot;.join(lines)
+140	
+141	
+142	@dataclass
+143	class TokenizerReport:
+144	    &quot;&quot;&quot;Aggregated four-axis report. Any axis may be None if disabled in config.&quot;&quot;&quot;
+145	
+146	    reconstruction: MetricResult | None = None
+147	    codebook: MetricResult | None = None
+148	    probe: MetricResult | None = None
+149	    sequence: MetricResult | None = None
+150	
+151	    def axes(self) -&gt; list[MetricResult]:
+152	        return [m for m in (self.reconstruction, self.codebook, self.probe, self.sequence) if m is not None]
+153	
+154	    def __str__(self) -&gt; str:
+155	        return &quot;TokenizerReport\n&quot; + &quot;\n&quot;.join(str(m) for m in self.axes())
+156	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-50-484Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-50-484Z" class="timestamp-link"><time datetime="2026-05-23T05:33:50.484Z" data-timestamp="2026-05-23T05:33:50.484Z">2026-05-23T05:33:50.484Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01GfjorHmFks4rMPpRRruBGq"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/mu_transform/test_mu_transform.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-50-496Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-50-496Z" class="timestamp-link"><time datetime="2026-05-23T05:33:50.496Z" data-timestamp="2026-05-23T05:33:50.496Z">2026-05-23T05:33:50.496Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Unit tests for the μ-transform tokenizer.
+2	
+3	Strategy: write tests that pin mathematical properties (idempotence,
+4	round-trip error bounds, output ranges) so failures point at a real bug,
+5	not at incidental numerical noise. Tests use small synthetic tensors that
+6	match the THINGS-MEG shape — (B, 271, 281) at MEG_DATA defaults — but
+7	with a tiny B so the suite runs in seconds on CPU.
+8	
+9	Run:
+10	    cd neural_tokenizers &amp;&amp; pytest meg/mu_transform/test_mu_transform.py -v
+11	&quot;&quot;&quot;
+12	
+13	from __future__ import annotations
+14	
+15	import json
+16	
+17	import pytest
+18	import torch
+19	
+20	from evaluation import EvalConfig, evaluate
+21	from meg import (
+22	    MEG_DATA,
+23	    MU_TRANSFORM_DEFAULT,
+24	    MuCalibration,
+25	    MuTransformConfig,
+26	    MuTransformTokenizer,
+27	    fit_calibration,
+28	)
+29	from meg.mu_transform import encoder as enc_mod
+30	from meg.mu_transform import quantizer as q_mod
+31	
+32	
+33	# ----------------------------- fixtures -----------------------------------
+34	
+35	
+36	@pytest.fixture
+37	def small_shape() -&gt; tuple[int, int, int]:
+38	    &quot;&quot;&quot;Use a small B so the suite stays fast; full MEG (C, T) keeps it realistic.&quot;&quot;&quot;
+39	    return (8, MEG_DATA.n_channels, MEG_DATA.n_timepoints)
+40	
+41	
+42	@pytest.fixture
+43	def synthetic_meg(small_shape) -&gt; torch.Tensor:
+44	    &quot;&quot;&quot;Synthetic MEG-like signal: per-channel scaled Gaussian + occasional outliers.&quot;&quot;&quot;
+45	    torch.manual_seed(0)
+46	    B, C, T = small_shape
+47	    x = torch.randn(B, C, T)
+48	    # Inter-channel amplitude variance: scale each channel by a random factor in
+49	    # [0.5, 2.0] — mirrors the real per-sensor variance the per-channel scaler
+50	    # is designed to absorb.
+51	    scale = 0.5 + 1.5 * torch.rand(C)
+52	    x = x * scale.view(1, C, 1)
+53	    # Sprinkle outliers (1 in 1000 samples) — the clip percentiles should remove these.
+54	    mask = torch.rand(B, C, T) &lt; 1e-3
+55	    x[mask] = x[mask] + 50.0 * torch.sign(torch.randn(int(mask.sum())))
+56	    return x
+57	
+58	
+59	@pytest.fixture
+60	def calib(synthetic_meg) -&gt; MuCalibration:
+61	    return fit_calibration(synthetic_meg, MU_TRANSFORM_DEFAULT)
+62	
+63	
+64	# ----------------------------- calibration --------------------------------
+65	
+66	
+67	def test_calibration_shapes(calib):
+68	    C = MEG_DATA.n_channels
+69	    assert calib.clip_lo.shape == (C,)
+70	    assert calib.clip_hi.shape == (C,)
+71	    assert calib.scaler.shape == (C,)
+72	    assert calib.vocab_size == MU_TRANSFORM_DEFAULT.vocab_size
+73	
+74	
+75	def test_calibration_clip_thresholds_ordered(calib):
+76	    &quot;&quot;&quot;Each channel&#x27;s lo &lt; hi (sanity); scaler = max(|lo|, |hi|).&quot;&quot;&quot;
+77	    assert torch.all(calib.clip_lo &lt; calib.clip_hi)
+78	    expected_s = torch.maximum(calib.clip_lo.abs(), calib.clip_hi.abs())
+79	    assert torch.allclose(calib.scaler, expected_s)
+80	
+81	
+82	def test_calibration_global_mode_gives_shared_thresholds():
+83	    torch.manual_seed(1)
+84	    x = torch.randn(16, MEG_DATA.n_channels, MEG_DATA.n_timepoints)
+85	    cfg = MuTransformConfig(channel_mode=&quot;global&quot;)
+86	    cal = fit_calibration(x, cfg)
+87	    assert torch.allclose(cal.clip_lo, cal.clip_lo[0].expand_as(cal.clip_lo))
+88	    assert torch.allclose(cal.clip_hi, cal.clip_hi[0].expand_as(cal.clip_hi))
+89	
+90	
+91	def test_calibration_json_roundtrip(calib, tmp_path):
+92	    p = tmp_path / &quot;calibration.json&quot;
+93	    calib.save(p)
+94	    loaded = MuCalibration.load(p)
+95	    assert torch.allclose(loaded.clip_lo, calib.clip_lo)
+96	    assert torch.allclose(loaded.clip_hi, calib.clip_hi)
+97	    assert torch.allclose(loaded.scaler, calib.scaler)
+98	    assert loaded.mu == calib.mu
+99	    assert loaded.vocab_size == calib.vocab_size
+100	    # JSON should be human-readable, not a base64 blob.
+101	    raw = json.loads(p.read_text())
+102	    assert isinstance(raw[&quot;clip_lo&quot;], list)
+103	
+104	
+105	def test_calibration_empty_input_raises():
+106	    with pytest.raises(ValueError, match=&quot;empty&quot;):
+107	        fit_calibration(torch.empty(0, MEG_DATA.n_channels, MEG_DATA.n_timepoints), MU_TRANSFORM_DEFAULT)
+108	
+109	
+110	# ----------------------------- encoder ------------------------------------
+111	
+112	
+113	def test_encoder_output_in_unit_range(synthetic_meg, calib):
+114	    y = enc_mod.encode(synthetic_meg, calib)
+115	    assert y.shape == synthetic_meg.shape
+116	    # The encoder clips first, so output must lie strictly in [-1, 1].
+117	    assert y.min() &gt;= -1.0 - 1e-6
+118	    assert y.max() &lt;= 1.0 + 1e-6
+119	
+120	
+121	def test_encoder_preserves_sign(calib):
+122	    &quot;&quot;&quot;μ-law is sign-preserving: sgn(F(x)) == sgn(x) for any x in [-1, 1].&quot;&quot;&quot;
+123	    torch.manual_seed(0)
+124	    x = torch.randn(4, MEG_DATA.n_channels, MEG_DATA.n_timepoints)
+125	    y = enc_mod.encode(x, calib)
+126	    # Allow zeros to match either way (sgn(0) == 0).
+127	    nonzero = x.abs() &gt; 1e-6
+128	    assert torch.all(torch.sign(y[nonzero]) == torch.sign(x[nonzero]))
+129	
+130	
+131	# ----------------------------- quantizer ----------------------------------
+132	
+133	
+134	def test_quantize_token_range():
+135	    &quot;&quot;&quot;Every output token id must lie in [0, V).&quot;&quot;&quot;
+136	    V = 256
+137	    x = torch.linspace(-1.5, 1.5, 4096).reshape(1, 1, -1)  # values outside [-1,1] too
+138	    tokens = q_mod.quantize(x, V)
+139	    assert tokens.dtype == torch.long
+140	    assert tokens.min().item() &gt;= 0
+141	    assert tokens.max().item() &lt; V
+142	
+143	
+144	def test_quantize_dequantize_within_bin_width():
+145	    &quot;&quot;&quot;|x - dequantize(quantize(x))| &lt;= bin_width = 2/V (after clamping to [-1,1]).&quot;&quot;&quot;
+146	    V = 256
+147	    bin_width = 2.0 / V
+148	    x = torch.linspace(-1.0, 1.0, 1000).reshape(1, 1, -1)
+149	    tokens = q_mod.quantize(x, V)
+150	    x_back = q_mod.dequantize(tokens, V)
+151	    err = (x_back - x).abs()
+152	    assert err.max().item() &lt;= bin_width + 1e-6
+153	
+154	
+155	def test_bin_centers_are_evenly_spaced():
+156	    V = 256
+157	    centers = q_mod.bin_centers(V)
+158	    assert centers.shape == (V,)
+159	    diffs = centers[1:] - centers[:-1]
+160	    assert torch.allclose(diffs, torch.full_like(diffs, 2.0 / V))
+161	
+162	
+163	# ----------------------------- tokenizer (round-trip) ---------------------
+164	
+165	
+166	def test_tokenizer_protocol_shapes(synthetic_meg, calib):
+167	    tok = MuTransformTokenizer(calib)
+168	    tokens = tok.tokenize(synthetic_meg)
+169	    assert tokens.shape == synthetic_meg.shape       # (B, C, T)
+170	    assert tokens.dtype == torch.long
+171	    assert tokens.min().item() &gt;= 0
+172	    assert tokens.max().item() &lt; tok.codebook_size
+173	
+174	    x_hat = tok.decode_tokens(tokens)
+175	    assert x_hat.shape == synthetic_meg.shape
+176	    assert x_hat.dtype == calib.scaler.dtype
+177	
+178	
+179	def test_roundtrip_error_bounded(synthetic_meg, calib):
+180	    &quot;&quot;&quot;Round-trip error on non-clipped values should be &lt;= scaler * bin_width.&quot;&quot;&quot;
+181	    tok = MuTransformTokenizer(calib)
+182	    x_hat = tok.decode_tokens(tok.tokenize(synthetic_meg))
+183	
+184	    # Restrict to samples that were NOT clipped, so the only loss is quantization.
+185	    lo = calib.clip_lo.view(1, -1, 1)
+186	    hi = calib.clip_hi.view(1, -1, 1)
+187	    not_clipped = (synthetic_meg &gt;= lo) &amp; (synthetic_meg &lt;= hi)
+188	    err = (x_hat - synthetic_meg).abs()
+189	    # Per-channel max permissible: bin_width(=2/V) * scaler_c, after μ-law expansion
+190	    # the actual max is a bit larger near |x|=s; give a 3x slack for safety.
+191	    bin_amp = (2.0 / calib.vocab_size) * calib.scaler.view(1, -1, 1)
+192	    assert (err[not_clipped] &lt;= 3.0 * bin_amp.expand_as(err)[not_clipped]).all()
+193	
+194	
+195	def test_tokenizer_runs_on_gpu_if_available(synthetic_meg, calib):
+196	    &quot;&quot;&quot;Confirm device-agnostic ops: same tokens whether on CPU or CUDA.&quot;&quot;&quot;
+197	    if not torch.cuda.is_available():
+198	        pytest.skip(&quot;no CUDA&quot;)
+199	    tok = MuTransformTokenizer(calib)
+200	    tokens_cpu = tok.tokenize(synthetic_meg)
+201	    tokens_gpu = tok.tokenize(synthetic_meg.cuda()).cpu()
+202	    assert torch.equal(tokens_cpu, tokens_gpu)
+203	
+204	
+205	# ----------------------------- harness e2e --------------------------------
+206	
+207	
+208	def test_mu_passes_eval_harness_smoke(synthetic_meg, calib):
+209	    &quot;&quot;&quot;End-to-end smoke: harness runs on MuTransformTokenizer and produces
+210	    finite numbers for every axis. Doesn&#x27;t assert quality (that&#x27;s what the
+211	    Modal run on real data is for) — just that we satisfy the protocol.&quot;&quot;&quot;
+212	    tok = MuTransformTokenizer(calib)
+213	    B = synthetic_meg.shape[0]
+214	    labels = torch.randint(0, 3, (B,), dtype=torch.long)
+215	    cfg = EvalConfig(
+216	        sample_rate_hz=MEG_DATA.sfreq_hz,
+217	        batch_size=4,
+218	        seed=0,
+219	        psd_nperseg=128,
+220	        probe_epochs=30,
+221	        probe_test_frac=0.25,
+222	    )
+223	    report = evaluate(tok, synthetic_meg, labels, cfg)
+224	    for axis in (report.reconstruction, report.codebook, report.sequence, report.probe):
+225	        assert axis is not None
+226	        for v in axis.values.values():
+227	            assert torch.isfinite(torch.tensor(v)).item()
+228	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-33-54-677Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-33-54-677Z" class="timestamp-link"><time datetime="2026-05-23T05:33:54.677Z" data-timestamp="2026-05-23T05:33:54.677Z">2026-05-23T05:33:54.677Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># BrainOmni Repository Structure
+
+## Root Level Files &amp; Folders
+
+**Directories:**
+- `assets/` – Images for documentation
+- `brainomni/` – Stage 2 training code
+- `braintokenizer/` – Stage 1 training code
+- `downstream/` – Downstream task evaluation
+- `factory/` – Data processing utilities
+- `model_utils/` – Model helper functions
+- `script/` – Shell scripts for training/evaluation
+- `share/custom_montages/` – EEG/MEG electrode layout files
+- `data/` – Dataset storage (evaluate, raw, processed)
+- `train_omni_results/` – BrainOmni checkpoints
+- `train_tokenizer_results/` – BrainTokenizer checkpoints
+- `exp_results_downstream/` – Evaluation results
+
+**Key Files:**
+- `demo.ipynb` – Usage examples
+- `requirements.txt` – Dependencies
+- `pretrain_dataset.py` – Pretraining data handling
+- `accessor.py` – Data access utilities
+- `constant.py` – Configuration constants
+
+---
+
+## braintokenizer/ Folder Contents
+
+The page does not explicitly list files within this directory, but references:
+- `launcher.py` – Training entry point for quantization-based tokenizer stage
+
+---
+
+## Other Key Directories
+
+**factory/** – Data preprocessing pipeline  
+**downstream/** – Contains `dataset_maker/` and `metrics_stat.py` for evaluation workflows  
+**script/** – Shell scripts: `pretrain_preprocess.sh`, `train_braintokenizer.sh`, `train_brainomni.sh`, `evaluation.sh`
+
+---
+
+## Paper Reference
+
+**Arxiv**: &quot;BrainOmni: A Brain Foundation Model for Unified EEG and MEG Signals&quot; – Paper ID 2505.18185, accepted to NeurIPS 2025. Authors: Qinfan Xiao, Ziyun Cui, Chi Zhang, Siqi Chen, Wen Wu, Andrew Thwaites, Alexandra Woolgar, Bowen Zhou, Chao Zhang.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-33-58-013Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-33-58-013Z" class="timestamp-link"><time datetime="2026-05-23T05:33:58.013Z" data-timestamp="2026-05-23T05:33:58.013Z">2026-05-23T05:33:58.013Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-34-00-073Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-34-00-073Z" class="timestamp-link"><time datetime="2026-05-23T05:34:00.073Z" data-timestamp="2026-05-23T05:34:00.073Z">2026-05-23T05:34:00.073Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01QCxaV11iAitBkGXU9fDLmJ"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;List every file in the braintokenizer/ folder (not just the README). For each file give a one-line description. Also list factory/ files. Also fetch the contents of script/train_braintokenizer.sh - I want to see the exact command, hyperparameters, and model architecture used. Be specific: file names, line counts if possible, what each python module does.&#34;,
+  &#34;url&#34;: &#34;https://github.com/OpenTSLab/BrainOmni/tree/main/braintokenizer&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-34-03-784Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-34-03-784Z" class="timestamp-link"><time datetime="2026-05-23T05:34:03.784Z" data-timestamp="2026-05-23T05:34:03.784Z">2026-05-23T05:34:03.784Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># BrainOmni/braintokenizer Directory Summary
+
+Based on the GitHub page content provided, I can identify the following files in the **braintokenizer/** folder:
+
+## Files Listed
+
+1. **config.py** - Configuration settings and parameters
+2. **launcher.py** - Entry point for executing the tokenizer
+3. **metrics.py** - Performance measurement and evaluation utilities
+4. **model.py** - Core neural network architecture definitions
+5. **trainer.py** - Training loop and optimization logic
+
+## Limitations
+
+I cannot provide the additional information requested because:
+
+- The webpage content does not include a README or detailed documentation
+- **factory/ files** are not visible in the provided directory listing
+- **script/train_braintokenizer.sh** contents are not included in the provided HTML
+- Line counts and detailed module descriptions are unavailable
+
+To obtain this information, you would need to:
+1. View the actual files directly on the GitHub repository
+2. Check the README.md in the main BrainOmni directory
+3. Navigate to the scripts/ folder to find the training shell script
+4. Review the factory/ subdirectory if it exists
+
+The page shows only a file browser interface without the actual code contents or shell script details.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-34-06-668Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-34-06-668Z" class="timestamp-link"><time datetime="2026-05-23T05:34:06.668Z" data-timestamp="2026-05-23T05:34:06.668Z">2026-05-23T05:34:06.668Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01U9k5MLXGr9ZCNTs71vfKjo"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;Return the full raw text content of this file. Do not summarize - I need the actual source code.&#34;,
+  &#34;url&#34;: &#34;https://raw.githubusercontent.com/OpenTSLab/BrainOmni/main/braintokenizer/model.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-34-08-175Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-34-08-175Z" class="timestamp-link"><time datetime="2026-05-23T05:34:08.175Z" data-timestamp="2026-05-23T05:34:08.175Z">2026-05-23T05:34:08.175Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_019TPYLaLw8D2NBKWDBbC9fT"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;Return the full raw text content of this shell script — I need to see the exact training command, args, hyperparameters.&#34;,
+  &#34;url&#34;: &#34;https://raw.githubusercontent.com/OpenTSLab/BrainOmni/main/script/train_braintokenizer.sh&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-34-09-136Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-34-09-136Z" class="timestamp-link"><time datetime="2026-05-23T05:34:09.136Z" data-timestamp="2026-05-23T05:34:09.136Z">2026-05-23T05:34:09.136Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_018LQD6abLEcY3oW9U2L38aT"><div class="tool-header"><span class="tool-icon">⚙</span> WebFetch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;prompt&#34;: &#34;Return the full raw text content of this file. Do not summarize - I need the actual source code (config, args, hyperparameters).&#34;,
+  &#34;url&#34;: &#34;https://raw.githubusercontent.com/OpenTSLab/BrainOmni/main/braintokenizer/config.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-34-18-980Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-34-18-980Z" class="timestamp-link"><time datetime="2026-05-23T05:34:18.980Z" data-timestamp="2026-05-23T05:34:18.980Z">2026-05-23T05:34:18.980Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># Full Raw Text of Shell Script
+
+```bash
+#!/bin/bash
+# signal_type=[&#x27;eeg&#x27;,&#x27;meg&#x27;,&#x27;both&#x27;]: when set as eeg, the dataset will only load eeg data
+
+export PYTHONPATH=./
+deepspeed  --num_gpus=8 \
+   braintokenizer/launcher.py \
+   --launcher=pdsh \
+   --signal_type=both \
+   --epoch=16 \
+   --codebook_size=512 \
+   --codebook_dim=256 \
+   --num_quantizers=4 
+```
+
+## Key Training Parameters
+
+The script executes a DeepSpeed training job with these configurations:
+
+- **GPU allocation**: 8 GPUs
+- **Signal type**: both EEG and MEG data
+- **Training epochs**: 16
+- **Codebook size**: 512
+- **Codebook dimension**: 256
+- **Quantizers**: 4
+
+The launcher uses PDSH for distributed training coordination. The Python path is set to the current directory to enable local module imports.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-34-21-056Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-34-21-056Z" class="timestamp-link"><time datetime="2026-05-23T05:34:21.056Z" data-timestamp="2026-05-23T05:34:21.056Z">2026-05-23T05:34:21.056Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># BrainTokenizerTrainerConfig Source Code
+
+This file defines a configuration class for training a brain signal tokenizer model. Here&#x27;s the complete content:
+
+The `BrainTokenizerTrainerConfig` class initializes with parameters including signal type (EEG, MEG, or both), training epochs, neuron count, and quantization settings.
+
+**Key Configuration Areas:**
+
+**Model Architecture:**
+- Window length based on tokenizer segment time and sample rate
+- 32 filters with kernel size of 5
+- Downsampling ratios of [8, 4, 2]
+- 256-dimensional embeddings
+- 4 attention heads with configurable codebook dimensions
+
+**Training Parameters:**
+- Batch size of 16 (32 for EEG signals)
+- Total batch per update: 512
+- Gradient accumulation steps calculated dynamically
+- Learning rate: 2e-4 (codebook: 3e-4)
+- Weight decay: 1e-2
+
+**DeepSpeed Configuration:**
+- BF16 mixed precision enabled
+- AdamW optimizer with betas [0.5, 0.9]
+- WarmupCosineLR scheduler
+- ZeRO stage 2 optimization
+- CPU offloading for optimizer states
+
+**Data Settings:**
+- 10-second time windows with 10-second stride
+- Configurable train/validation data ratios (both 1.0)
+- 32 worker processes
+
+The `get_model_cfg()` method returns a dictionary with all model-specific hyperparameters for instantiation.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-34-29-055Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-34-29-055Z" class="timestamp-link"><time datetime="2026-05-23T05:34:29.055Z" data-timestamp="2026-05-23T05:34:29.055Z">2026-05-23T05:34:29.055Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre># BrainTokenizer Source Code
+
+Here is the complete raw text content of the file:
+
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from einops import rearrange
+from model_utils.attn import RMSNorm
+from model_utils.loss import get_time_loss, get_pcc, get_frequency_domain_loss
+from model_utils.module import (
+    BrainSensorModule,
+    BrainTokenizerEncoder,
+    BrainQuantizer,
+    BrainTokenizerDecoder,
+)
+
+
+class BrainTokenizer(nn.Module):
+    def __init__(
+        self,
+        window_length,
+        n_filters,
+        ratios,
+        kernel_size,
+        last_kernel_size,
+        n_dim,
+        n_neuro,
+        n_head,
+        dropout,
+        codebook_dim: int,
+        codebook_size: int,
+        num_quantizers: int,
+        rotation_trick: bool,
+        quantize_optimize_method: str,
+        **kwargs,
+    ):
+        super().__init__()
+        self.window_length = window_length
+        self.n_dim = n_dim
+        self.sensor_embed = BrainSensorModule(n_dim)
+        self.mask_ratio = 0.25  # hard coded
+
+        self.encoder = BrainTokenizerEncoder(
+            n_filters=n_filters,
+            ratios=ratios,
+            kernel_size=kernel_size,
+            last_kernel_size=last_kernel_size,
+            n_dim=n_dim,
+            n_neuro=n_neuro,
+            n_head=n_head,
+            dropout=dropout,
+        )
+        self.quantizer = BrainQuantizer(
+            n_dim=n_dim,
+            codebook_dim=codebook_dim,
+            codebook_size=codebook_size,
+            num_quantizers=num_quantizers,
+            rotation_trick=rotation_trick,
+            quantize_optimize_method=quantize_optimize_method,
+        )
+        self.decoder = BrainTokenizerDecoder(
+            n_dim=n_dim,
+            n_head=n_head,
+            n_filters=n_filters,
+            ratios=ratios,
+            kernel_size=kernel_size,
+            last_kernel_size=last_kernel_size,
+            dropout=dropout,
+        )
+        # --------------------------------------------------------------------------
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            torch.nn.init.trunc_normal_(m.weight, std=0.02)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, RMSNorm):
+            if isinstance(m.weight, nn.Parameter):
+                nn.init.constant_(m.weight, 1.0)
+        elif isinstance(m, nn.Embedding):
+            nn.init.trunc_normal_(m.weight, std=0.02)
+        elif isinstance(m, nn.Parameter):
+            nn.init.trunc_normal_(m, std=0.02)
+
+    @torch.jit.ignore
+    def get_parameters_groups(self, lr: float, codebook_lr: float, weight_decay: float):
+        normal_params = []
+        no_decay_params = []
+        codebook_params = []
+        for n, p in self.named_parameters():
+            if p.requires_grad:
+                if &quot;norm&quot; in n or n in [
+                    &quot;sensor_embed.sensor_embedding_layer.weight&quot;,
+                ]:
+                    no_decay_params.append(p)
+                elif &quot;quantizer&quot; in n:
+                    codebook_params.append(p)
+                else:
+                    normal_params.append(p)
+        return [
+            {&quot;params&quot;: normal_params, &quot;lr&quot;: lr, &quot;weight_decay&quot;: weight_decay},
+            {&quot;params&quot;: no_decay_params, &quot;lr&quot;: lr, &quot;weight_decay&quot;: 0.0},
+            {&quot;params&quot;: codebook_params, &quot;lr&quot;: codebook_lr, &quot;weight_decay&quot;: 0.0},
+        ]
+
+    def unfold(self, x: torch.Tensor, overlap_ratio: float = 0.0):
+        if x.shape[-1] &lt; self.window_length:
+            x = F.pad(x, pad=(0, self.window_length - x.shape[-1]))
+        if overlap_ratio &gt; 0.0:
+            stride = int(self.window_length * (1 - overlap_ratio))
+            right_remain = (x.shape[-1] - self.window_length) % stride
+            if right_remain &gt; 0:
+                x = F.pad(x, pad=(0, stride - right_remain))
+        return x.unfold(
+            dimension=-1,
+            size=self.window_length,
+            step=int(self.window_length * (1 - overlap_ratio)),
+        )
+
+    def norm_target(self, x: torch.Tensor):
+        &quot;&quot;&quot;
+        x: B C N L
+        &quot;&quot;&quot;
+        x = x.float()
+        x = x - x.mean(dim=-1, keepdim=True)
+        x = x / (x.std(dim=-1,keepdim=True)+1e-6)
+        return x
+
+    def add_noise(self, x: torch.Tensor):
+        return x + torch.randn_like(x) * 0.1
+
+    def forward(
+        self, x: torch.Tensor, pos: torch.Tensor, sensor_type: torch.Tensor, **kwargs
+    ):
+        &quot;&quot;&quot;
+        x: B C (N L)
+        pos: B C 6
+        sensor_type: B C
+        &quot;&quot;&quot;
+        x = self.unfold(x)
+
+        sensor_embedding = self.sensor_embed(pos, sensor_type)
+        random_index = torch.randperm(x.shape[1], device=x.device)
+        x = x.index_select(dim=1, index=random_index)
+        sensor_embedding = sensor_embedding.index_select(dim=1, index=random_index)
+        n_mask_channel = max(int(x.shape[1] * self.mask_ratio), 1)
+        feature = self.encoder(
+            self.add_noise(x[:, n_mask_channel:]),
+            sensor_embedding[:, n_mask_channel:],
+        )
+
+        feature, indices, commitment_loss = self.quantizer(feature)
+
+        x_rec = self.decoder(feature, sensor_embedding)
+
+        x_rec = x_rec.float()
+        x = self.norm_target(x)
+
+        time_loss = get_time_loss(x_rec, x)
+        pcc = get_pcc(x_rec, x)
+        amp_loss, phase_loss = get_frequency_domain_loss(x_rec, x)
+        return {
+            &quot;loss&quot;: time_loss
+            + torch.exp(-pcc)
+            + commitment_loss
+            + amp_loss
+            + 0.5 * phase_loss,
+            &quot;time_loss&quot;: time_loss.detach(),
+            &quot;pcc&quot;: pcc.detach(),
+            &quot;amp_loss&quot;: amp_loss.detach(),
+            &quot;phase_loss&quot;: phase_loss.detach(),
+            &quot;commitment_loss&quot;: commitment_loss.detach(),
+            &quot;judge_loss&quot;: (
+                time_loss
+                + torch.exp(-pcc)
+                + commitment_loss
+                + amp_loss
+                + 0.5 * phase_loss
+            ).detach(),
+        }, indices
+
+    @torch.no_grad()
+    def visualize(
+        self, x: torch.Tensor, pos: torch.Tensor, sensor_type: torch.Tensor, **kwargs
+    ):
+        &quot;&quot;&quot;
+        x: B C (W T)
+        pos: B C 6
+        sensor_type: B C
+        &quot;&quot;&quot;
+        x = self.unfold(x)
+        sensor_embedding = self.sensor_embed(pos, sensor_type)
+        feature = self.encoder(x, sensor_embedding)
+        feature, indices, commitment_loss = self.quantizer(feature)
+        x_rec = self.decoder(feature, sensor_embedding)
+        return {
+            &quot;x&quot;: self.norm_target(x),
+            &quot;x_rec&quot;: x_rec.float(),
+            &quot;sensor_type&quot;: sensor_type,
+        }
+
+    @torch.no_grad()
+    def tokenize(
+        self,
+        x: torch.Tensor,
+        pos: torch.Tensor,
+        sensor_type: torch.Tensor,
+        overlap_ratio: float,
+        **kwargs,
+    ):
+        &quot;&quot;&quot;
+        x: B C T
+        pos: B C 6
+        sensor_type: B C
+        &quot;&quot;&quot;
+        self.eval()
+        x = self.unfold(x, overlap_ratio=overlap_ratio)
+        sensor_embedding = self.sensor_embed(pos, sensor_type)
+        feature = self.encoder(x, sensor_embedding)
+        feature, indices, commitment_loss = self.quantizer(feature)
+        feature = rearrange(feature, &quot;B C N T D-&gt;B C (N T) D&quot;)
+        indices = rearrange(indices, &quot;B C N T Q -&gt; B C (N T) Q&quot;)
+        return feature, indices
+
+    def get_finetune_parameter_groups(self, weight_decay, layer_decay):
+        del self.decoder
+        del self.quantizer
+        parameter_groups = {}
+
+        for n, p in self.named_parameters():
+            if not p.requires_grad:
+                continue
+
+            this_weight_decay = weight_decay
+            group_name = &quot;decay&quot;
+
+            # Create group if it doesn&#x27;t exist
+            if group_name not in parameter_groups:
+                parameter_groups[group_name] = {
+                    &quot;weight_decay&quot;: this_weight_decay,
+                    &quot;params&quot;: [],
+                    &quot;lr_scale&quot;: layer_decay,
+                }
+
+            parameter_groups[group_name][&quot;params&quot;].append(p)
+
+        return list(parameter_groups.values())
+```</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-35-03-696Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-35-03-696Z" class="timestamp-link"><time datetime="2026-05-23T05:35:03.696Z" data-timestamp="2026-05-23T05:35:03.696Z">2026-05-23T05:35:03.696Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-35-07-399Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-35-07-399Z" class="timestamp-link"><time datetime="2026-05-23T05:35:07.399Z" data-timestamp="2026-05-23T05:35:07.399Z">2026-05-23T05:35:07.399Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Got it. I've explored: the BrainOmni repo's <code>braintokenizer/model.py</code> (it's a sensor-aware VQ-VAE with attention + 4-quantizer codebook, trained on 10s windows of unified EEG+MEG with channel-masking + time/freq/PCC loss), the existing <code>mu_transform</code> pattern (encoder/quantizer/decoder/tokenizer/calibration + Modal scripts + tests + runs/), and the parent <code>meg/CLAUDE.md</code> which already reserves Phase 3 for BrainOmni.</p>
+<p>Before I write the plan, I need to lock in two system-level choices that significantly shape it.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T05-35-25-276Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T05-35-25-276Z" class="timestamp-link"><time datetime="2026-05-23T05:35:25.276Z" data-timestamp="2026-05-23T05:35:25.276Z">2026-05-23T05:35:25.276Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01PqQxJ7AkdMJ3bYP8cNjNPd"><div class="tool-header"><span class="tool-icon">⚙</span> AskUserQuestion</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;questions&#34;: [
+    {
+      &#34;question&#34;: &#34;BrainOmni&#39;s BrainTokenizer is ~200M params with a published 200M-param checkpoint pretrained on unified EEG+MEG. Should we finetune from their pretrained weights or train from scratch on THINGS-MEG?&#34;,
+      &#34;header&#34;: &#34;Init strategy&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Finetune pretrained (Recommended)&#34;,
+          &#34;description&#34;: &#34;Download their released checkpoint, adapt config to match (sensor positions, channel count), continue training on THINGS-MEG. Faster to good signal; tests whether their cross-dataset prior transfers. Risk: distribution mismatch (their pretraining is mostly resting-state; THINGS is event-related — same issue we flagged for Cho2026 phase 2).&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Train from scratch&#34;,
+          &#34;description&#34;: &#34;Random init, train the whole BrainTokenizer on THINGS-MEG with their architecture but our data. Cleaner story (no upstream weight dependency), no distribution mismatch, but ~108k trials may be too few for a 200M-param transformer. Likely needs to shrink the model.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Both, in order&#34;,
+          &#34;description&#34;: &#34;Ship the finetune adapter first (cheaper, gets harness numbers fast), then add a from-scratch run for comparison. Mirrors the parent doc&#39;s 2a→2b→2c progression. Most diagnostic but ~2x work.&#34;
+        }
+      ]
+    },
+    {
+      &#34;question&#34;: &#34;BrainOmni trains on 10s windows (window_length=2000 at 200Hz). Our THINGS-MEG trials are 281 samples (1.4s). What window policy?&#34;,
+      &#34;header&#34;: &#34;Window policy&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Retrain with window=281 (Recommended)&#34;,
+          &#34;description&#34;: &#34;Set window_length=281 (or nearest power-of-2-divisible) so one trial = one window. Matches our data, simplest tokenization, no padding. Only viable if we accept retraining/refinetuning (their downsampling ratios [8,4,2] = 64x give ~4 tokens/trial — coarse but matches Cho2026&#39;s per-trial budget).&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Pad to 2000, mask the padding&#34;,
+          &#34;description&#34;: &#34;Zero-pad each trial to 2000 samples; let attention ignore the pad region. Lets us reuse pretrained weights as-is. Wasteful (86% padding) and the model has never seen this padding pattern, so behavior is OOD.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Window=256 with overlap&#34;,
+          &#34;description&#34;: &#34;Trade-off: 256 is power-of-2 and close to 281; use the 25-sample overhang via their unfold(overlap_ratio=...). Compatible with downsampling, modest deviation from pretrained window.&#34;
+        }
+      ]
+    },
+    {
+      &#34;question&#34;: &#34;Where does the BrainOmni source code live in our tree?&#34;,
+      &#34;header&#34;: &#34;Code location&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Git submodule + adapter (Recommended)&#34;,
+          &#34;description&#34;: &#34;Add `external/BrainOmni` as a submodule (matches existing `external/Cho2026_Tokenizer` pattern). Write `meg/brainomni/adapter.py` wrapping their model behind our Tokenizer protocol. No upstream code copied into our tree. Matches parent CLAUDE.md §6.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;In-tree port&#34;,
+          &#34;description&#34;: &#34;Copy the model code we need (BrainTokenizer, BrainSensorModule, BrainQuantizer, etc.) into `meg/brainomni/` and modify freely. Full control over the training loop, no submodule pinning. Diverges from the documented adapter pattern; harder to pull upstream fixes.&#34;
+        }
+      ]
+    }
+  ]
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T05-36-47-011Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T05-36-47-011Z" class="timestamp-link"><time datetime="2026-05-23T05:36:47.011Z" data-timestamp="2026-05-23T05:36:47.011Z">2026-05-23T05:36:47.011Z</time></a></div><div class="message-content"><div class="tool-result tool-error"><div class="truncatable"><div class="truncatable-content"><pre>The user doesn&#x27;t want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message user" id="msg-2026-05-23T05-36-47-014Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-23T05-36-47-014Z" class="timestamp-link"><time datetime="2026-05-23T05:36:47.014Z" data-timestamp="2026-05-23T05:36:47.014Z">2026-05-23T05:36:47.014Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>[Request interrupted by user for tool use]</p></div></div></div>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - Index</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>Claude Code transcript</h1>
+            <div id="search-box">
+                <input type="text" id="search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+        <p style="color: var(--text-muted); margin-bottom: 24px;">6 prompts · 66 messages · 21 tool calls · 0 commits · 2 pages</p>
+        
+<div class="index-item"><a href="page-001.html#msg-2026-05-23T06-31-49-739Z"><div class="index-item-header"><span class="index-item-number">#1</span><time datetime="2026-05-23T06:31:49.739Z" data-timestamp="2026-05-23T06:31:49.739Z">2026-05-23T06:31:49.739Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/brainomni/README.md in the IDE. This may or may not be related to the current task.</ide_opened_file> I have a question when we say something like oh the test set is 3000 examples. I wanna clarify this right now because I understand that we have around 22,000 images here and we also have around four people so that's around 90,000 examples that means myis the way I'm counting my trials and and printing them out to the User the correct way in MEG tokenization</p></div></a><div class="index-item-stats"><span>5 bash · 3 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>I have a question when we say something like oh the test set is 3000 examples. I wanna clarify this right now because I understand that we have around 22,000 images here and we also have around four people so that's around 90,000 examples that means myis the way I'm counting my trials and and printing them out to the User the correct way in MEG tokenization</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Short answer: <strong>the unit ("trial" = one MEG epoch = one image-presentation event) is correct, but your headcount math is off.</strong> Let me lay out the actual numbers from your code.</p>
+<h2>The real counts (verified in <a href="neural-foundation-model/neural_tokenizers/meg/meg_config.py#L39">meg_config.py:39</a>)</h2>
+<ul>
+<li><strong>27,048 trials per subject</strong> — not 22,449</li>
+<li>22,449 is the count of <strong>unique image IDs</strong>, which is different</li>
+<li>4 subjects → <strong>108,192 total trials</strong>, not ~90k</li>
+</ul>
+<p>The gap (27k trials vs 22k images per subject) exists because THINGS-MEG repeats certain "test" images many times per subject for SNR reasons; most images appear once, a small subset appear ~10× each.</p>
+<h2>What "3000 examples" actually is in your pipeline</h2>
+<p>Walking through <a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_eval.py#L182-L199">modal_meg_eval.py:182-199</a>:</p>
+<ol>
+<li><code>split_by_image</code> runs <strong>per subject</strong> with <code>test_frac=0.10</code>. It holds out 10% of the <strong>22,449 unique images</strong> ≈ ~2,245 test images.</li>
+<li>Those test images map back to trials. Per-subject, that's roughly ~2,700 trials. Across 4 subjects: <strong>~10,800 test trials available</strong> — that's what <code>[eval] total test trials available: ...</code> prints.</li>
+<li>Then <code>n_test=3000</code> <strong>caps</strong> it (memory: ~0.9 GB f32, per the docstring at line 137). The cap takes <code>3000 // 4 = 750</code> trials per subject randomly.</li>
+<li>So "3000 examples" = 3000 individual (271, 281) MEG tensors = ~750 from each of P1–P4, drawn from ~2,245 held-out images.</li>
+</ol>
+<h2>So is your counting "correct"?</h2>
+<ul>
+<li><strong>Trial as the unit of "example"</strong>: yes, correct. That's what the probe and reconstruction operate on, one tensor at a time.</li>
+<li><strong>"22k × 4 = 90k"</strong>: no — that's images × subjects. The right number is <strong>trials × subjects = 27,048 × 4 = 108,192</strong>.</li>
+<li><strong>"Test set = 3000"</strong>: that's the <em>capped</em> count, not the natural one. The natural held-out set is ~10,800 trials (covering ~2,245 unique test images). You're capping for memory.</li>
+</ul>
+<h2>One thing to watch when reporting to users</h2>
+<p>When you say "test set = 3000," it's worth distinguishing three different numbers, because they answer different questions:</p>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>What it measures</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~2,245</td>
+<td>unique held-out <strong>images</strong> (statistical generalization unit — see <a href="neural-foundation-model/neural_tokenizers/meg/splits.py#L8-L12">splits.py:8-12</a>)</td>
+</tr>
+<tr>
+<td>~10,800</td>
+<td>held-out <strong>trials</strong> (raw eval capacity)</td>
+</tr>
+<tr>
+<td>3,000</td>
+<td><strong>trials actually materialized</strong> (memory-capped)</td>
+</tr>
+</tbody>
+</table>
+<p>If you want, I can add a single print line at <a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_eval.py#L199">modal_meg_eval.py:199</a> that reports all three at once — something like <code>[eval] test set: 3000 trials / ~2245 held-out images / 10800 available before cap</code>. Want me to do that?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-23T06-33-03-765Z"><div class="index-item-header"><span class="index-item-number">#2</span><time datetime="2026-05-23T06:33:03.765Z" data-timestamp="2026-05-23T06:33:03.765Z">2026-05-23T06:33:03.765Z</time></div><div class="index-item-content"><p>when I run fine-tuning on brain Omni, why do I get the following? Is this adding up to more than the number of examples I actually have and why are all the parameters not trainable I thought that I was fine-tuning the whole thing altogether. May 22 at 23:30:23.564
+[finetune] train=(88340, 271, 281) val=(9816, 271, 281)
+May 22 at 23:30:24.942
+[brainomni] downloaded /root/external/BrainOmni/ckpt_collection/braintokenizer/BrainTokenizer.pt
+May 22 at 23:30:25.091
+[brainomni] downloaded /root/external/BrainOmni/ckpt_collection/braintokenizer/model_cfg.json
+May 22 at 23:30:26.533
+/usr/local/lib/python3.11/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: <code>torch.nn.utils.weight_norm</code> is deprecated in favor of <code>torch.nn.utils.parametrizations.weight_norm</code>.
+  WeightNorm.apply(module, name, dim)
+May 22 at 23:30:26.793
+[finetune] mode=adapt trainable=959,360 / 5,050,338 params</p></div></a><div class="index-item-stats"><span>2 read · 1 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>when I run fine-tuning on brain Omni, why do I get the following? Is this adding up to more than the number of examples I actually have and why are all the parameters not trainable I thought that I was fine-tuning the whole thing altogether. May 22 at 23:30:23.564
+[finetune] train=(88340, 271, 281) val=(9816, 271, 281)
+May 22 at 23:30:24.942
+[brainomni] downloaded /root/external/BrainOmni/ckpt_collection/braintokenizer/BrainTokenizer.pt
+May 22 at 23:30:25.091
+[brainomni] downloaded /root/external/BrainOmni/ckpt_collection/braintokenizer/model_cfg.json
+May 22 at 23:30:26.533
+/usr/local/lib/python3.11/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: <code>torch.nn.utils.weight_norm</code> is deprecated in favor of <code>torch.nn.utils.parametrizations.weight_norm</code>.
+  WeightNorm.apply(module, name, dim)
+May 22 at 23:30:26.793
+[finetune] mode=adapt trainable=959,360 / 5,050,338 params</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Two separate answers — the trial count IS consistent with your data, but only after fixing the "90k" baseline; and "adapt" mode freezes the backbone <em>by design</em>, but it's a one-flag flip to unfreeze.</p>
+<h2>1. The numbers add up — to 108k, not 90k</h2>
+<table>
+<thead>
+<tr>
+<th>Split</th>
+<th>Trials</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>train</td>
+<td>88,340</td>
+</tr>
+<tr>
+<td>val</td>
+<td>9,816</td>
+</tr>
+<tr>
+<td>test</td>
+<td>10,036 (implied; not loaded by this script)</td>
+</tr>
+<tr>
+<td><strong>sum</strong></td>
+<td><strong>108,192</strong></td>
+</tr>
+</tbody>
+</table>
+<p>That matches <strong>27,048 trials/subject × 4 subjects = 108,192</strong> (verified in <a href="neural-foundation-model/neural_tokenizers/meg/meg_config.py#L39">meg_config.py:39</a>).</p>
+<p>Your "22k × 4 = 90k" estimate undercounts because 22,449 is the count of <strong>unique image IDs</strong>, not trials. Each subject's 27,048 trials include the test-set images repeated many times (THINGS-MEG's design — high-repetition images give clean evoked responses for the published validation set). So per subject, ~22k single-presentations + ~5k repeated-presentations = 27,048 trials.</p>
+<p>Why not exactly 80/10/10 of 108,192 (= 86,554 / 10,819 / 10,819)? The split is <strong>by image</strong>, not by trial (<a href="neural-foundation-model/neural_tokenizers/meg/splits.py#L8-L12">splits.py:8-12</a>). When you draw 80% of the 22,449 images at random, the trial yield jitters because some images repeat 1× and others 10×+. This run happened to draw a few extra high-repetition images into train.</p>
+<h2>2. Only ~19% trainable is intentional — <code>mode=adapt</code> freezes the backbone</h2>
+<p>You ran with the default <code>finetune_mode="adapt"</code> (<a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py#L63">modal_meg_finetune_brainomni.py:63</a>). That mode does this (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/trainer.py#L47-L51">trainer.py:47-51</a>):</p>
+<pre><code class="language-python">if mode in (&quot;adapt&quot;, &quot;rvq_only&quot;):
+    for p in model.encoder.seanet_encoder.parameters():
+        p.requires_grad = False
+    for p in model.decoder.seanet_decoder.parameters():
+        p.requires_grad = False
+</code></pre>
+<p>So:
+- <strong>Frozen (~4.1M params)</strong>: SEANet conv encoder + decoder — BrainOmni's pretrained backbone (656 h of resting MEG)
+- <strong>Trainable (~960k)</strong>: sensor layout embedding, cross-attention latent mapping, RVQ codebooks, cross-attn decoder path</p>
+<p>The rationale is in the <a href="neural-foundation-model/neural_tokenizers/meg/brainomni/trainer.py#L17-L28">FinetuneConfig docstring</a>: you have ~42 h of THINGS-MEG event-related data vs. 656 h of resting pretraining, so the conservative default protects against catastrophic forgetting of the conv kernels. RVQ + sensor layout absorb the THINGS-specific domain shift.</p>
+<p>If you actually want full finetuning, three modes are available (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/trainer.py#L12">trainer.py:12</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Trainable</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>adapt</code> (default)</td>
+<td>sensor + cross-attn + RVQ (~960k)</td>
+<td>conservative — small-data finetune</td>
+</tr>
+<tr>
+<td><code>full</code></td>
+<td>everything (~5.05M)</td>
+<td>only if <code>adapt</code> underfits</td>
+</tr>
+<tr>
+<td><code>rvq_only</code></td>
+<td>nothing gradient-updated; RVQ EMA only</td>
+<td>diagnostic</td>
+</tr>
+</tbody>
+</table>
+<p>To unfreeze everything: <code>modal run modal_meg_finetune_brainomni.py::finetune --finetune-mode full</code>.</p>
+<h2>Recommendation</h2>
+<p>Run <code>adapt</code> first, log val loss, then run <code>full</code> and compare. If <code>full</code> overfits (val loss diverges from train), <code>adapt</code> was the right default; if <code>full</code> wins cleanly, your data is large enough that catastrophic-forgetting concern was overblown for THINGS-MEG. That comparison is exactly the kind of experiment the §5 harness leaderboard is designed to settle — don't pick by intuition.</p>
+<p>Want me to add an <code>[finetune]</code> print line showing <em>which</em> submodules are frozen vs trainable (e.g. <code>frozen: seanet_encoder, seanet_decoder | trainable: sensor_embed, quantizer, cross_attn</code>)? Right now you only see the param count, not which parts of the model it corresponds to, which is what surprised you here.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-23T06-46-57-078Z"><div class="index-item-header"><span class="index-item-number">#3</span><time datetime="2026-05-23T06:46:57.078Z" data-timestamp="2026-05-23T06:46:57.078Z">2026-05-23T06:46:57.078Z</time></div><div class="index-item-content"><p>Can you estimate how long it might take for this type of for fine-tuning given that I am on an A10G GPU. You can also note that all my MEG data is around 15 GB</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Rough estimate: <strong>~3–5 hours wall clock for the default 10-epoch <code>adapt</code> run on an A10G</strong>, with most of that being step-by-step GPU work, not I/O. Math below.</p>
+<h2>Step count</h2>
+<p>With <code>batch_size=16</code> (default) and the splits you saw:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Steps</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Train steps / epoch</td>
+<td>88,340 / 16 ≈ <strong>5,521</strong></td>
+</tr>
+<tr>
+<td>Val steps / epoch</td>
+<td>9,816 / 16 ≈ <strong>614</strong></td>
+</tr>
+<tr>
+<td>Total steps × 10 ep</td>
+<td><strong>~61,350</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>Per-step time on A10G</h2>
+<p>The model is small (~5M total params) but each step does a lot per trial:
+- Resample 281 → 360 timepoints (200 → 256 Hz), pad to 512 → input shape <strong>(16, 271, 512)</strong> (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py">preprocess.py</a>)
+- SEANet conv stack over 271 channels × 512 timepoints (frozen but forward + backward through downstream)
+- Cross-attention + RVQ + SEANet decoder
+- Loss = time MSE + PCC + amp + phase + commitment (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/trainer.py#L127-L133">trainer.py:127-133</a>) — the STFT-based amp/phase terms aren't free</p>
+<p>On A10G (≈31 TFLOPS FP32, 24 GB VRAM), a model of this shape + the per-channel attention typically lands at <strong>150–300 ms/step</strong> in FP32 fwd+bwd at batch 16. That gives:</p>
+<table>
+<thead>
+<tr>
+<th>Per-step</th>
+<th>10-epoch wall time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>150 ms</td>
+<td>~2.5 h</td>
+</tr>
+<tr>
+<td>200 ms</td>
+<td>~3.4 h</td>
+</tr>
+<tr>
+<td>300 ms</td>
+<td>~5.1 h</td>
+</tr>
+</tbody>
+</table>
+<p>The first epoch will run ~10–20% slower from kernel autotune + cuDNN benchmark warm-up. Don't extrapolate from epoch 1.</p>
+<h2>The 15 GB / 32 GB memory thing is the bigger risk</h2>
+<p>Your "15 GB" is probably the on-disk <code>.fif</code> size (which I read as ~33 GB compressed across all 4 subjects in the CLAUDE.md). The thing to worry about is <strong>in-memory float32 materialization</strong>:</p>
+<ul>
+<li><code>load_trials_pooled</code> at <a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py#L115-L116">modal_meg_finetune_brainomni.py:115-116</a> loads <code>X_train</code> and <code>X_val</code> as dense tensors.</li>
+<li><code>X_train</code>: 88,340 × 271 × 281 × 4 bytes ≈ <strong>27 GB</strong></li>
+<li><code>X_val</code>: ~3 GB</li>
+<li>Modal function has <code>memory=32 * 1024</code> = 32 GB cap (<a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py#L52">line 52</a>)</li>
+</ul>
+<p>That's basically full. If you OOM, the issue isn't your 15 GB on disk — it's the float32 explosion in CPU RAM. Two cheap fixes: load as float16 (then cast per-batch), or stream from disk with a small worker.</p>
+<h2>Levers to actually speed it up</h2>
+<p>In rough order of bang-for-buck:</p>
+<ol>
+<li><strong>Mixed precision (bf16/fp16)</strong> — wrap <code>_step</code> in <code>torch.autocast</code> + <code>GradScaler</code>. ~1.5–2× speedup. A10G has good bf16 throughput. Easiest single change.</li>
+<li><strong>Bigger batch</strong> — at 5M params, you almost certainly have VRAM headroom for batch 32 or 64. Doubles throughput per epoch if compute-bound.</li>
+<li><strong><code>--max-train-trials 5000</code> for a sanity run first.</strong> The flag exists at <a href="neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py#L119-L122">line 119-122</a>. 5k trials × 10 epochs ≈ 10–15 min on A10G — long enough to see whether loss is moving at all without burning 4 hours on a bad LR.</li>
+<li><strong>Fewer epochs.</strong> Cho 2026's tokenizers used <code>lr=1e-5</code> and saw the loss flatten within a handful of epochs — 10 is a defensive default, not a must.</li>
+</ol>
+<h2>What I'd actually do</h2>
+<p>Before launching the full 10-epoch run, do this in order:</p>
+<ol>
+<li>Run with <code>--max-train-trials 5000 --epochs 2</code> (~5 min). Confirms the pipeline works and loss decreases on a small slice.</li>
+<li>If yes, run <code>--lr-sweep --max-train-trials 20000 --epochs 3</code> to pick LR cheaply (~30–45 min total across 3 LRs).</li>
+<li>Then commit to the full 10-epoch run with the winning LR.</li>
+</ol>
+<p>Want me to add an <code>autocast(device_type='cuda', dtype=torch.bfloat16)</code> wrapper around the forward+backward in <code>_step</code>? That's the single highest-leverage change for A10G and roughly halves the wall time.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-23T07-52-47-434Z"><div class="index-item-header"><span class="index-item-number">#4</span><time datetime="2026-05-23T07:52:47.434Z" data-timestamp="2026-05-23T07:52:47.434Z">2026-05-23T07:52:47.434Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/3b_smoke_sweep/summary.json in the IDE. This may or may not be related to the current task.</ide_opened_file> I understand the brain Omni code is 512 sized how big is the code book for the traditional mutual transform?</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>The μ-transform codebook is <strong>256</strong> by default (<a href="neural-foundation-model/neural_tokenizers/meg/meg_config.py#L77">meg_config.py:77</a>, <code>vocab_size: int = 256</code>), matching the Cho 2026 paper (<code>n_tokens: 256</code>, <code>μ=255</code>).</p>
+<p>One important caveat about comparing the two numbers directly — they aren't equivalent units:</p>
+<table>
+<thead>
+<tr>
+<th>Tokenizer</th>
+<th>Nominal codebook</th>
+<th>Effective capacity</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>μ-transform</td>
+<td>256</td>
+<td>256 per timestep</td>
+<td>Single uniform bin lookup</td>
+</tr>
+<tr>
+<td>BrainOmni RVQ</td>
+<td>512</td>
+<td>512⁴ ≈ 6.9 × 10¹⁰ per timestep</td>
+<td>Residual VQ with <code>num_quantizers=4</code> (<a href="neural-foundation-model/neural_tokenizers/meg/meg_config.py#L188">meg_config.py:188</a>)</td>
+</tr>
+</tbody>
+</table>
+<p>So BrainOmni's "512" is per-quantizer-level in a 4-level residual stack, not a flat 512-way choice. Per-timestep it's actually picking one of ~7 × 10¹⁰ joint codes — orders of magnitude more expressive than the μ-transform's 256.</p>
+<p>That's also why §5.2 codebook utilization is harder to compare across the two: μ-transform "dead code fraction out of 256" means something different from "dead code fraction out of 512 × 4 codebooks." Worth treating them as separate columns in the leaderboard table, not the same metric.</p>
+<p>The μ-transform's V is sweepable — <a href="neural-foundation-model/neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §9</a> explicitly calls out <code>{64, 128, 256, 512}</code> as a sweep once the harness is stable.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-23T07-53-54-380Z"><div class="index-item-header"><span class="index-item-number">#5</span><time datetime="2026-05-23T07:53:54.380Z" data-timestamp="2026-05-23T07:53:54.380Z">2026-05-23T07:53:54.380Z</time></div><div class="index-item-content"><p>I have a question about fine-tuning brain Omni do I have to normalize the data that I'm gonna find tune it with in the same way that it was trained on so like if it was trained.MEG data and a specific way and it expects MG data from a specific distribution and I go and train it with MEG data from a different distribution now that's a problem right do I need a pre-processed the MG data in the same way or normalize it to the same values or something like that such that fine-tuning works.</p></div></a><div class="index-item-stats"><span>7 bash · 2 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>I have a question about fine-tuning brain Omni do I have to normalize the data that I'm gonna find tune it with in the same way that it was trained on so like if it was trained.MEG data and a specific way and it expects MG data from a specific distribution and I go and train it with MEG data from a different distribution now that's a problem right do I need a pre-processed the MG data in the same way or normalize it to the same values or something like that such that fine-tuning works.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Yes, this is the right concern — but the good news is the normalization side is <strong>already handled</strong> by your adapter. The harder distribution mismatch is what fine-tuning is actually for. Let me break it down because there's a subtle bug worth flagging too.</p>
+<h2>Layer 1: Amplitude normalization — already done, on both sides</h2>
+<p>Two z-scores happen back-to-back:</p>
+<p><strong>Your adapter</strong> (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py#L44-L48">preprocess.py:44-48</a>):</p>
+<pre><code class="language-python">def zscore_per_trial(x):
+    mean = x.mean(dim=-1, keepdim=True)
+    std = x.std(dim=-1, keepdim=True).clamp_min(eps)
+    return (x - mean) / std, mean, std
+</code></pre>
+<p><strong>BrainTokenizer internally</strong> (<a href="external/BrainOmni/braintokenizer/model.py#L118-L125">external/BrainOmni/braintokenizer/model.py:118-125</a>):</p>
+<pre><code class="language-python">def norm_target(self, x):    # x is (B, C, N, L)
+    x = x - x.mean(dim=-1, keepdim=True)
+    x = x / (x.std(dim=-1, keepdim=True) + 1e-6)
+    return x
+</code></pre>
+<p>BrainOmni was pretrained with <strong>per-channel-per-window z-score</strong>, applied to the <em>target</em> side of the loss. Your adapter pre-normalizes the input the same way. Since each THINGS trial fits in one window (281 samples → resampled to ~360 → padded to 512, so N=1), per-trial = per-window. Match.</p>
+<p>This is why mean/std scale of THINGS vs. BrainOmni's pretraining sets doesn't matter — both get whitened to mean=0, var=1 before any conv ever sees them.</p>
+<h2>Layer 2: What z-score does NOT fix</h2>
+<p>These survive normalization and are the real "distribution mismatch":</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>THINGS-MEG</th>
+<th>BrainOmni pretrain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Recording type</td>
+<td>event-related, stimulus-locked 1.4s epochs</td>
+<td>mostly continuous / resting-state</td>
+</tr>
+<tr>
+<td>Spectral content</td>
+<td>evoked transients, sharp visual ERPs ~100–200ms post-stim</td>
+<td>dominated by slow oscillations (α/β rhythms)</td>
+</tr>
+<tr>
+<td>Sensor layout</td>
+<td>CTF 271 magnetometers @ specific positions</td>
+<td>mixed datasets, different MEG systems</td>
+</tr>
+</tbody>
+</table>
+<p>Spatial layout is handled explicitly via the <code>pos</code> and <code>sensor_type</code> inputs (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py">sensor_metadata.py</a>) — that's the whole point of the <code>sensor_embed</code> module. So channel geometry is not your problem.</p>
+<p>What's left — <strong>temporal/spectral structure</strong> — is exactly what fine-tuning the cross-attention and RVQ codebooks is supposed to absorb. The frozen SEANet convs encode generic local autocorrelation patterns that transfer; the trainable parts re-learn the THINGS-specific spectral mix.</p>
+<p>This is the symmetric MEG version of the LABRAM/EEG concern in <a href="neural_tokenizers/CLAUDE.md">neural_tokenizers/CLAUDE.md §4</a>, and it's called out explicitly for Cho 2026 in <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §5</a> — "their pretraining data is resting-state MEG; THINGS-MEG is event-related. Reconstruction MSE may look fine while the §5.3 linear probe quietly tanks."</p>
+<h2>Layer 3: Subtle bug — padding interacts badly with the internal z-score</h2>
+<p>This one I noticed reading through the code. Watch the data flow:</p>
+<ol>
+<li>Adapter pads to 512 with <strong>zeros</strong> (<a href="neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py#L60-L68">preprocess.py:60-68</a>)</li>
+<li>Model unfolds → <code>(B, C, 1, 512)</code> with ~232 zero samples on the right</li>
+<li><code>norm_target(x_unfold)</code> computes mean/std <strong>over all 512 samples, including the zeros</strong> (<a href="external/BrainOmni/braintokenizer/model.py#L122-L124">model.py:122-124</a>)</li>
+<li>The zero pad drags the per-window mean down and inflates std — the <em>target's</em> normalization is biased by padding</li>
+</ol>
+<p>The loss masks padded positions out (<code>time_loss = (diff * mask_u).sum() / mask_u.sum()</code>), but the <strong>target values themselves on the valid samples are shifted</strong> because they were normalized against statistics that included the zeros. So during finetune, the model is being asked to reconstruct a slightly-distorted target.</p>
+<p>How bad is this in practice? Probably modest — ~232/512 ≈ 45% of samples are zero, so the mean shift is ~−0.45 × (true mean over valid samples). Since the input was <em>already</em> z-scored to mean≈0 by your adapter, this is actually small. But it's not zero, and it gets worse if you ever reduce <code>window_length</code> or extend trial duration.</p>
+<p><strong>Cheap fix</strong>: replace the right-pad with masked normalization, or pad with the per-channel mean (which is ~0 after the adapter z-score, so equivalent to current behavior but more robust). Or: pad with the last valid sample (edge mode) — keeps the std estimate clean.</p>
+<h2>So the answer is</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Match amplitude scale</td>
+<td>✅ done (double z-score)</td>
+</tr>
+<tr>
+<td>Match channel layout</td>
+<td>✅ explicit via <code>pos</code>/<code>sensor_type</code></td>
+</tr>
+<tr>
+<td>Match spectral content (resting → evoked)</td>
+<td>⚠️ that's <em>why</em> you're finetuning</td>
+</tr>
+<tr>
+<td>Padding artifact in target normalization</td>
+<td>❌ mild bug, fix when you have time</td>
+</tr>
+</tbody>
+</table>
+<p>The thing to actually <em>watch</em> during finetuning: per <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §5</a>, the §5.3 linear probe is the metric most sensitive to distribution mismatch. Reconstruction MSE can look fine while evoked-response information is being thrown away. Track that across <code>adapt</code> vs <code>full</code> vs scratch.</p>
+<p>Want me to (a) fix the padding/norm interaction by switching to edge-mode padding, or (b) leave it and just add a comment flagging the issue for now? It's the kind of thing that's easy to forget and hard to detect later.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-05-23T07-56-33-131Z"><div class="index-item-header"><span class="index-item-number">#6</span><time datetime="2026-05-23T07:56:33.131Z" data-timestamp="2026-05-23T07:56:33.131Z">2026-05-23T07:56:33.131Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py in the IDE. This may or may not be related to the current task.</ide_opened_file> Fix the normalization.</p></div></a><div class="index-item-stats"><span>1 bash</span>
+</div></div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+
+        <dialog id="search-modal">
+            <div class="search-modal-header">
+                <input type="text" id="modal-search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="modal-search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+                <button id="modal-close-btn" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </dialog>
+        <script>
+(function() {
+    var totalPages = 2;
+    var searchBox = document.getElementById('search-box');
+    var searchInput = document.getElementById('search-input');
+    var searchBtn = document.getElementById('search-btn');
+    var modal = document.getElementById('search-modal');
+    var modalInput = document.getElementById('modal-search-input');
+    var modalSearchBtn = document.getElementById('modal-search-btn');
+    var modalCloseBtn = document.getElementById('modal-close-btn');
+    var searchStatus = document.getElementById('search-status');
+    var searchResults = document.getElementById('search-results');
+
+    if (!searchBox || !modal) return;
+
+    // Hide search on file:// protocol (doesn't work due to CORS restrictions)
+    if (window.location.protocol === 'file:') return;
+
+    // Show search box (progressive enhancement)
+    searchBox.style.display = 'flex';
+
+    // Gist preview support - detect if we're on gisthost.github.io or gistpreview.github.io
+    var hostname = window.location.hostname;
+    var isGistPreview = hostname === 'gisthost.github.io' || hostname === 'gistpreview.github.io';
+    var gistId = null;
+    var gistOwner = null;
+    var gistInfoLoaded = false;
+
+    if (isGistPreview) {
+        // Extract gist ID from URL query string like ?78a436a8a9e7a2e603738b8193b95410/index.html
+        var queryMatch = window.location.search.match(/^\?([a-f0-9]+)/i);
+        if (queryMatch) {
+            gistId = queryMatch[1];
+        }
+    }
+
+    async function loadGistInfo() {
+        if (!isGistPreview || !gistId || gistInfoLoaded) return;
+        try {
+            var response = await fetch('https://api.github.com/gists/' + gistId);
+            if (response.ok) {
+                var info = await response.json();
+                gistOwner = info.owner.login;
+                gistInfoLoaded = true;
+            }
+        } catch (e) {
+            console.error('Failed to load gist info:', e);
+        }
+    }
+
+    function getPageFetchUrl(pageFile) {
+        if (isGistPreview && gistOwner && gistId) {
+            // Use raw gist URL for fetching content
+            return 'https://gist.githubusercontent.com/' + gistOwner + '/' + gistId + '/raw/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function getPageLinkUrl(pageFile) {
+        if (isGistPreview && gistId) {
+            // Use gistpreview URL format for navigation links
+            return '?' + gistId + '/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openModal(query) {
+        modalInput.value = query || '';
+        searchResults.innerHTML = '';
+        searchStatus.textContent = '';
+        modal.showModal();
+        modalInput.focus();
+        if (query) {
+            performSearch(query);
+        }
+    }
+
+    function closeModal() {
+        modal.close();
+        // Update URL to remove search fragment, preserving path and query string
+        if (window.location.hash.startsWith('#search=')) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }
+
+    function updateUrlHash(query) {
+        if (query) {
+            // Preserve path and query string when adding hash
+            history.replaceState(null, '', window.location.pathname + window.location.search + '#search=' + encodeURIComponent(query));
+        }
+    }
+
+    function highlightTextNodes(element, searchTerm) {
+        var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        var nodesToReplace = [];
+
+        while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node.nodeValue.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(function(node) {
+            var text = node.nodeValue;
+            var regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            var parts = text.split(regex);
+            if (parts.length > 1) {
+                var span = document.createElement('span');
+                parts.forEach(function(part) {
+                    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                        var mark = document.createElement('mark');
+                        mark.textContent = part;
+                        span.appendChild(mark);
+                    } else {
+                        span.appendChild(document.createTextNode(part));
+                    }
+                });
+                node.parentNode.replaceChild(span, node);
+            }
+        });
+    }
+
+    function fixInternalLinks(element, pageFile) {
+        // Update all internal anchor links to include the page file
+        var links = element.querySelectorAll('a[href^="#"]');
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            link.setAttribute('href', pageFile + href);
+        });
+    }
+
+    function processPage(pageFile, html, query) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var resultsFromPage = 0;
+
+        // Find all message blocks
+        var messages = doc.querySelectorAll('.message');
+        messages.forEach(function(msg) {
+            var text = msg.textContent || '';
+            if (text.toLowerCase().indexOf(query.toLowerCase()) !== -1) {
+                resultsFromPage++;
+
+                // Get the message ID for linking
+                var msgId = msg.id || '';
+                var pageLinkUrl = getPageLinkUrl(pageFile);
+                var link = pageLinkUrl + (msgId ? '#' + msgId : '');
+
+                // Clone the message HTML and highlight matches
+                var clone = msg.cloneNode(true);
+                // Fix internal links to include the page file
+                fixInternalLinks(clone, pageLinkUrl);
+                highlightTextNodes(clone, query);
+
+                var resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<a href="' + link + '">' +
+                    '<div class="search-result-page">' + escapeHtml(pageFile) + '</div>' +
+                    '<div class="search-result-content">' + clone.innerHTML + '</div>' +
+                    '</a>';
+                searchResults.appendChild(resultDiv);
+            }
+        });
+
+        return resultsFromPage;
+    }
+
+    async function performSearch(query) {
+        if (!query.trim()) {
+            searchStatus.textContent = 'Enter a search term';
+            return;
+        }
+
+        updateUrlHash(query);
+        searchResults.innerHTML = '';
+        searchStatus.textContent = 'Searching...';
+
+        // Load gist info if on gistpreview (needed for constructing URLs)
+        if (isGistPreview && !gistInfoLoaded) {
+            searchStatus.textContent = 'Loading gist info...';
+            await loadGistInfo();
+            if (!gistOwner) {
+                searchStatus.textContent = 'Failed to load gist info. Search unavailable.';
+                return;
+            }
+        }
+
+        var resultsFound = 0;
+        var pagesSearched = 0;
+
+        // Build list of pages to fetch
+        var pagesToFetch = [];
+        for (var i = 1; i <= totalPages; i++) {
+            pagesToFetch.push('page-' + String(i).padStart(3, '0') + '.html');
+        }
+
+        searchStatus.textContent = 'Searching...';
+
+        // Process pages in batches of 3, but show results immediately as each completes
+        var batchSize = 3;
+        for (var i = 0; i < pagesToFetch.length; i += batchSize) {
+            var batch = pagesToFetch.slice(i, i + batchSize);
+
+            // Create promises that process results immediately when each fetch completes
+            var promises = batch.map(function(pageFile) {
+                return fetch(getPageFetchUrl(pageFile))
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.text();
+                    })
+                    .then(function(html) {
+                        // Process and display results immediately
+                        var count = processPage(pageFile, html, query);
+                        resultsFound += count;
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    })
+                    .catch(function() {
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    });
+            });
+
+            // Wait for this batch to complete before starting the next
+            await Promise.all(promises);
+        }
+
+        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + totalPages + ' pages';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', function() {
+        openModal(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            openModal(searchInput.value);
+        }
+    });
+
+    modalSearchBtn.addEventListener('click', function() {
+        performSearch(modalInput.value);
+    });
+
+    modalInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(modalInput.value);
+        }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Check for #search= in URL on page load
+    if (window.location.hash.startsWith('#search=')) {
+        var query = decodeURIComponent(window.location.hash.substring(8));
+        if (query) {
+            searchInput.value = query;
+            openModal(query);
+        }
+    }
+})();
+        </script>
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

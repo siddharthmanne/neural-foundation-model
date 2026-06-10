@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 2</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 2/4</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-001.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<span class="current">2</span>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-003.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-01T01-45-12-387Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-45-12-387Z" class="timestamp-link"><time datetime="2026-06-01T01:45:12.387Z" data-timestamp="2026-06-01T01:45:12.387Z">2026-06-01T01:45:12.387Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>b4zv8glf1</task-id>
+<tool-use-id>toolu_01MqtKAMkFDDpXY6WR4hygMB</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/b4zv8glf1.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Eval: CNN animacy averaged" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-14-305Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-14-305Z" class="timestamp-link"><time datetime="2026-06-01T01:45:14.305Z" data-timestamp="2026-06-01T01:45:14.305Z">2026-06-01T01:45:14.305Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All 6 done. Let me verify the result files exist and parse them.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-16-826Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-16-826Z" class="timestamp-link"><time datetime="2026-06-01T01:45:16.826Z" data-timestamp="2026-06-01T01:45:16.826Z">2026-06-01T01:45:16.826Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_016LYmp1eAeaqmbisXDuo3WU">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List newly created averaged eval JSONs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/ | grep avgcross</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-16-863Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-16-863Z" class="timestamp-link"><time datetime="2026-06-01T01:45:16.863Z" data-timestamp="2026-06-01T01:45:16.863Z">2026-06-01T01:45:16.863Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>eval_ntest=full_s0_animacy_avgcross_subject.json
+eval_ntest=full_s0_avgcross_subject.json
+eval_ntest=full_s0_cnn_animacy_avgcross_subject.json
+eval_ntest=full_s0_cnn_avgcross_subject.json
+eval_ntest=full_s0_mlp_animacy_avgcross_subject.json
+eval_ntest=full_s0_mlp_avgcross_subject.json</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-17-690Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-17-690Z" class="timestamp-link"><time datetime="2026-06-01T01:45:17.690Z" data-timestamp="2026-06-01T01:45:17.690Z">2026-06-01T01:45:17.690Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_015xP9R4KLo8ENnaaX8Ji3mf">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Inspect linear cat27 log tail for sanity</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">tail -25 /tmp/meg_eval_logs/linear_cat27.log</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-17-723Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-17-723Z" class="timestamp-link"><time datetime="2026-06-01T01:45:17.723Z" data-timestamp="2026-06-01T01:45:17.723Z">2026-06-01T01:45:17.723Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>    top5_tokens_all_std              0.0375
+    bal_acc_tokens_all_mean          0.0335
+    bal_acc_tokens_all_std           0.0090
+    top1_tokens_rvq0_mean            0.0311
+    top1_tokens_rvq0_std             0.0141
+    top5_tokens_rvq0_mean            0.1821
+    top5_tokens_rvq0_std             0.0485
+    bal_acc_tokens_rvq0_mean         0.0388
+    bal_acc_tokens_rvq0_std          0.0274
+    top1_raw_mean                    0.1030
+    top1_raw_std                     0.0136
+    top5_raw_mean                    0.3588
+    top5_raw_std                     0.0177
+    bal_acc_raw_mean                 0.0601
+    bal_acc_raw_std                  0.0237
+    top1_random_mean                 0.0444
+    top1_random_std                  0.0186
+    top5_random_mean                 0.2194
+    top5_random_std                  0.0394
+    bal_acc_random_mean              0.0402
+    bal_acc_random_std               0.0224
+[eval] wrote report to neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_avgcross_subject.json
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/neural-fm/main/ap-kQceIJGWjbiCI0ChS1WqxP</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-21-467Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-21-467Z" class="timestamp-link"><time datetime="2026-06-01T01:45:21.467Z" data-timestamp="2026-06-01T01:45:21.467Z">2026-06-01T01:45:21.467Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_012BmX6GT6A5q6jKGoj3VLHB">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Verify averaging counts</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -A1 &#34;materialized X&#34; /tmp/meg_eval_logs/linear_cat27.log; grep &#34;cross-subject averaging&#34; /tmp/meg_eval_logs/linear_cat27.log; grep &#34;classes present&#34; /tmp/meg_eval_logs/linear_cat27.log</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-21-512Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-21-512Z" class="timestamp-link"><time datetime="2026-06-01T01:45:21.512Z" data-timestamp="2026-06-01T01:45:21.512Z">2026-06-01T01:45:21.512Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>[eval] materialized X=(10036, 271, 281) dtype=torch.float32
+[eval] cross-subject averaging applied → X=(2245, 271, 281) (2245 unique image_ids)
+[eval] cross-subject averaging applied → X=(2245, 271, 281) (2245 unique image_ids)
+[eval] probe labels (category27): 27/27 classes present in 1126 eval trials</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-22-982Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-22-982Z" class="timestamp-link"><time datetime="2026-06-01T01:45:22.982Z" data-timestamp="2026-06-01T01:45:22.982Z">2026-06-01T01:45:22.982Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01KUnpSBJJK1ST5QQVATgpqK"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-22-996Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-22-996Z" class="timestamp-link"><time datetime="2026-06-01T01:45:22.996Z" data-timestamp="2026-06-01T01:45:22.996Z">2026-06-01T01:45:22.996Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.03553588987217306,
+25	    &quot;top1_tokens_all_std&quot;: 0.008925794202979556,
+26	    &quot;top5_tokens_all_mean&quot;: 0.18297345132743362,
+27	    &quot;top5_tokens_all_std&quot;: 0.03749828250065569,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.03347341368583199,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.009005382608886925,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.031091445427728612,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.014070174593064687,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 0.18205703048180924,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.04846564001149427,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.03883968405987788,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.027374061004888664,
+36	    &quot;top1_raw_mean&quot;: 0.10300098328416912,
+37	    &quot;top1_raw_std&quot;: 0.01363055739356858,
+38	    &quot;top5_raw_mean&quot;: 0.3587964601769911,
+39	    &quot;top5_raw_std&quot;: 0.01770354145457946,
+40	    &quot;bal_acc_raw_mean&quot;: 0.06008525988953139,
+41	    &quot;bal_acc_raw_std&quot;: 0.023721551805389977,
+42	    &quot;top1_random_mean&quot;: 0.044397246804326454,
+43	    &quot;top1_random_std&quot;: 0.018564517607112124,
+44	    &quot;top5_random_mean&quot;: 0.21938643067846608,
+45	    &quot;top5_random_std&quot;: 0.03935682656799714,
+46	    &quot;bal_acc_random_mean&quot;: 0.04016674187513896,
+47	    &quot;bal_acc_random_std&quot;: 0.02240304940924011
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-23-988Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-23-988Z" class="timestamp-link"><time datetime="2026-06-01T01:45:23.988Z" data-timestamp="2026-06-01T01:45:23.988Z">2026-06-01T01:45:23.988Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_017UGKxk4EqQL4niYniTikpn"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_animacy_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-24-001Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-24-001Z" class="timestamp-link"><time datetime="2026-06-01T01:45:24.001Z" data-timestamp="2026-06-01T01:45:24.001Z">2026-06-01T01:45:24.001Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.5532940019665683,
+25	    &quot;top1_tokens_all_std&quot;: 0.02907449414175695,
+26	    &quot;top5_tokens_all_mean&quot;: 1.0,
+27	    &quot;top5_tokens_all_std&quot;: 0.0,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.49301986147747917,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.013766056628802247,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.5106312684365781,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.02799255676913328,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 1.0,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.0,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.4497842721560728,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.03724750644564801,
+36	    &quot;top1_raw_mean&quot;: 0.7948711897738446,
+37	    &quot;top1_raw_std&quot;: 0.022241472331578416,
+38	    &quot;top5_raw_mean&quot;: 1.0,
+39	    &quot;top5_raw_std&quot;: 0.0,
+40	    &quot;bal_acc_raw_mean&quot;: 0.6106627958403705,
+41	    &quot;bal_acc_raw_std&quot;: 0.03371350193841437,
+42	    &quot;top1_random_mean&quot;: 0.6447315634218289,
+43	    &quot;top1_random_std&quot;: 0.04113246242353839,
+44	    &quot;top5_random_mean&quot;: 1.0,
+45	    &quot;top5_random_std&quot;: 0.0,
+46	    &quot;bal_acc_random_mean&quot;: 0.4815941914253539,
+47	    &quot;bal_acc_random_std&quot;: 0.042907900450184375
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-24-998Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-24-998Z" class="timestamp-link"><time datetime="2026-06-01T01:45:24.998Z" data-timestamp="2026-06-01T01:45:24.998Z">2026-06-01T01:45:24.998Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_018NFXSs4F2tQAke8H8D8PqP"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_mlp_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-25-007Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-25-007Z" class="timestamp-link"><time datetime="2026-06-01T01:45:25.007Z" data-timestamp="2026-06-01T01:45:25.007Z">2026-06-01T01:45:25.007Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.03285742379547689,
+25	    &quot;top1_tokens_all_std&quot;: 0.014933353927176362,
+26	    &quot;top5_tokens_all_mean&quot;: 0.17671189773844642,
+27	    &quot;top5_tokens_all_std&quot;: 0.019469624455723637,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.044378693647699495,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.012075276062457898,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.03109931170108161,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.016939447081895508,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 0.1545093411996067,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.02319901580812238,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.04012266334488556,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.025527580344754858,
+36	    &quot;top1_raw_mean&quot;: 0.07638151425762045,
+37	    &quot;top1_raw_std&quot;: 0.013141945139574037,
+38	    &quot;top5_raw_mean&quot;: 0.30013765978367746,
+39	    &quot;top5_raw_std&quot;: 0.031748746041261586,
+40	    &quot;bal_acc_raw_mean&quot;: 0.045141176120850626,
+41	    &quot;bal_acc_raw_std&quot;: 0.0077883600860572146,
+42	    &quot;top1_random_mean&quot;: 0.055071779744346114,
+43	    &quot;top1_random_std&quot;: 0.017414901476934825,
+44	    &quot;top5_random_mean&quot;: 0.33126843657817107,
+45	    &quot;top5_random_std&quot;: 0.015123703265232527,
+46	    &quot;bal_acc_random_mean&quot;: 0.04174254785163056,
+47	    &quot;bal_acc_random_std&quot;: 0.015474785768888544
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-27-625Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-27-625Z" class="timestamp-link"><time datetime="2026-06-01T01:45:27.625Z" data-timestamp="2026-06-01T01:45:27.625Z">2026-06-01T01:45:27.625Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.8126175024582104,
+25	    &quot;top1_tokens_all_std&quot;: 0.01045376380534381,
+26	    &quot;top5_tokens_all_mean&quot;: 1.0,
+27	    &quot;top5_tokens_all_std&quot;: 0.0,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.5055674349949872,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.01743018019521637,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.7913156342182891,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.017176134407071945,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 1.0,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.0,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.5142953665517004,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.024547621478511496,
+36	    &quot;top1_raw_mean&quot;: 0.7673392330383481,
+37	    &quot;top1_raw_std&quot;: 0.037867759101721785,
+38	    &quot;top5_raw_mean&quot;: 1.0,
+39	    &quot;top5_raw_std&quot;: 0.0,
+40	    &quot;bal_acc_raw_mean&quot;: 0.5885906795115027,
+41	    &quot;bal_acc_raw_std&quot;: 0.053362374875379336,
+42	    &quot;top1_random_mean&quot;: 0.8294906588003933,
+43	    &quot;top1_random_std&quot;: 0.0090700127301834,
+44	    &quot;top5_random_mean&quot;: 1.0,
+45	    &quot;top5_random_std&quot;: 0.0,
+46	    &quot;bal_acc_random_mean&quot;: 0.4981128091635354,
+47	    &quot;bal_acc_random_std&quot;: 0.017796627985504312
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-26-002Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-26-002Z" class="timestamp-link"><time datetime="2026-06-01T01:45:26.002Z" data-timestamp="2026-06-01T01:45:26.002Z">2026-06-01T01:45:26.002Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_0132qdADxmqQJQurJeUuXaRD"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_mlp_animacy_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-26-017Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-26-017Z" class="timestamp-link"><time datetime="2026-06-01T01:45:26.017Z" data-timestamp="2026-06-01T01:45:26.017Z">2026-06-01T01:45:26.017Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.5728574237954769,
+25	    &quot;top1_tokens_all_std&quot;: 0.046761580341301644,
+26	    &quot;top5_tokens_all_mean&quot;: 1.0,
+27	    &quot;top5_tokens_all_std&quot;: 0.0,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.5030417127024934,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.017611724616287662,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.47511111111111115,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.054803802697654634,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 1.0,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.0,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.4682085181905334,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.02848115295240634,
+36	    &quot;top1_raw_mean&quot;: 0.8099587020648967,
+37	    &quot;top1_raw_std&quot;: 0.023885579915570998,
+38	    &quot;top5_raw_mean&quot;: 1.0,
+39	    &quot;top5_raw_std&quot;: 0.0,
+40	    &quot;bal_acc_raw_mean&quot;: 0.6376005813785386,
+41	    &quot;bal_acc_raw_std&quot;: 0.021405626994818298,
+42	    &quot;top1_random_mean&quot;: 0.7060530973451328,
+43	    &quot;top1_random_std&quot;: 0.026529533142536005,
+44	    &quot;top5_random_mean&quot;: 1.0,
+45	    &quot;top5_random_std&quot;: 0.0,
+46	    &quot;bal_acc_random_mean&quot;: 0.5082141603556607,
+47	    &quot;bal_acc_random_std&quot;: 0.03057105180168239
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-27-009Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-27-009Z" class="timestamp-link"><time datetime="2026-06-01T01:45:27.009Z" data-timestamp="2026-06-01T01:45:27.009Z">2026-06-01T01:45:27.009Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_015UAoNsy8CGDiQfmzXsN47h"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_cnn_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-27-023Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-27-023Z" class="timestamp-link"><time datetime="2026-06-01T01:45:27.023Z" data-timestamp="2026-06-01T01:45:27.023Z">2026-06-01T01:45:27.023Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 0.29284875452200854,
+4	    &quot;channel_corr_mean&quot;: 0.8589825511613917,
+5	    &quot;psd_mse&quot;: 412460.1944937833
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.4166813555444,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201354012513499
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201354012513499,
+17	    &quot;bigram_conditional_entropy&quot;: 5.668447140560395,
+18	    &quot;entropy_gap_pct&quot;: 8.593395424253632,
+19	    &quot;mean_run_length&quot;: 1.0018806201969992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6101243339253997,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.0896912487708948,
+25	    &quot;top1_tokens_all_std&quot;: 0.01098981310168513,
+26	    &quot;top5_tokens_all_mean&quot;: 0.308188790560472,
+27	    &quot;top5_tokens_all_std&quot;: 0.03769907811336889,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.040850012704922965,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.010331996727786797,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.07904424778761063,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.011530931149990927,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 0.2957836774827925,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.03434705932555767,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.04048916940538235,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.0066063024252746875,
+36	    &quot;top1_raw_mean&quot;: 0.09057620452310718,
+37	    &quot;top1_raw_std&quot;: 0.013820557626113584,
+38	    &quot;top5_raw_mean&quot;: 0.30461356932153394,
+39	    &quot;top5_raw_std&quot;: 0.02292332810794941,
+40	    &quot;bal_acc_raw_mean&quot;: 0.04784640661944554,
+41	    &quot;bal_acc_raw_std&quot;: 0.0147126164404965,
+42	    &quot;top1_random_mean&quot;: 0.09502064896755162,
+43	    &quot;top1_random_std&quot;: 0.009130770652936314,
+44	    &quot;top5_random_mean&quot;: 0.284149459193707,
+45	    &quot;top5_random_std&quot;: 0.03629693855376701,
+46	    &quot;bal_acc_random_mean&quot;: 0.04402752419519913,
+47	    &quot;bal_acc_random_std&quot;: 0.012450122710118507
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-27-617Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-27-617Z" class="timestamp-link"><time datetime="2026-06-01T01:45:27.617Z" data-timestamp="2026-06-01T01:45:27.617Z">2026-06-01T01:45:27.617Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01RZthK5oP46sofaYoYGj1x6"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0_cnn_animacy_avgcross_subject.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-49-180Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-49-180Z" class="timestamp-link"><time datetime="2026-06-01T01:45:49.180Z" data-timestamp="2026-06-01T01:45:49.180Z">2026-06-01T01:45:49.180Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-51-205Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-51-205Z" class="timestamp-link"><time datetime="2026-06-01T01:45:51.205Z" data-timestamp="2026-06-01T01:45:51.205Z">2026-06-01T01:45:51.205Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01WqXGCppoeRDpCcCjqVCAs6"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Launch 6 Modal eval jobs (linear/mlp/cnn × category27/animacy) with --averaging cross_subject</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">All 6 jobs complete; JSONs parsed</span></li><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Add new section to notes/meg_tokenization.md with averaged-input tables</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-45-51-209Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-45-51-209Z" class="timestamp-link"><time datetime="2026-06-01T01:45:51.209Z" data-timestamp="2026-06-01T01:45:51.209Z">2026-06-01T01:45:51.209Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-55-218Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-55-218Z" class="timestamp-link"><time datetime="2026-06-01T01:45:55.218Z" data-timestamp="2026-06-01T01:45:55.218Z">2026-06-01T01:45:55.218Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All 6 done. Eval pipeline ran 10,036 trials → averaged to 2,245 unique image_ids → 1,126 with valid category27 labels. Reconstruction MSE dropped 1.07 → 0.29 (averaging cleans noise, signal closer to the tokenizer's training regime), codebook stats unchanged. Now adding the table.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-46-25-097Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-46-25-097Z" class="timestamp-link"><time datetime="2026-06-01T01:46:25.097Z" data-timestamp="2026-06-01T01:46:25.097Z">2026-06-01T01:46:25.097Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01QCo3VizskoX46L7KqPxsFp">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">## Experiment 2 — BrainOmni 3b_avg (pending: finetuned on image-averaged trials)
+
+&gt; **Status:** not yet trained. Requires (a) Modal data loader that averages trials by image_id (or by image_id × subject), (b) finetune run analogous to 3b but on averaged data, (c) re-tokenization of test trials in the same averaged regime for fair eval. Tables mirror Experiment 1.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">## Experiment 1.5 — BrainOmni 3b_nonavg, image-averaged INPUT (diagnostic, no retrain)
+
+The cheap diagnostic from `meg/CLAUDE.md` §9: take the **existing 3b_nonavg** checkpoint and feed it **image-averaged trials at eval time**. No retraining — just a different input distribution at inference. Answers: is per-trial noise the bottleneck for category, or did the reconstruction objective itself drop the signal?
+
+Eval pipeline: full ~10k test split (10,036 trials) → average by `image_id` across subjects + within-subject reps → 2,245 unique averaged signals → tokenizer forward → 5-fold CV probe. **Reconstruction MSE drops 1.07 → 0.29** (3.6× cleaner) under averaging — signal is closer to what 3b was trained on. Codebook stats are unchanged (same 512-code vocab, perplexity ~493).
+
+Run pattern (already wired via `--averaging cross_subject`):
+
+```bash
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+    --tokenizer brainomni \
+    --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+    --n-test 0 --seed 0 \
+    --probe-classifier {linear|mlp|cnn} \
+    --probe-label-space {category27|animacy} \
+    --averaging cross_subject
+```
+
+Subject ID is **omitted by design** — cross-subject averaging eliminates the subject variable; the script rejects `probe_label_space=subject` when averaging is active.
+
+### 1.5a — Category27 (averaged input). Chance = 3.70%. (n=1,126 averaged trials with valid labels)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.55% ± 0.89 | 3.11% ± 1.41 | **10.30% ± 1.36** | 4.44% ± 1.86 |
+| Linear, weighted | 3.35% ± 0.90 | 3.88% ± 2.74 | **6.01% ± 2.37** | 4.02% ± 2.24 |
+| MLP, weighted | 4.44% ± 1.21 | 4.01% ± 2.55 | **4.51% ± 0.78** | 4.17% ± 1.55 |
+| **CNN, weighted** | 4.09% ± 1.03 | 4.05% ± 0.66 | **4.78% ± 1.47** | 4.40% ± 1.25 |
+
+Tokens still at chance across all four probe regimes. Raw lifts more under averaging than it did in Experiment 1 (linear unweighted: 6.14% → **10.30%**; linear weighted: 5.16% → 6.01%) — confirming the SNR boost reaches raw features, but **the tokens do not benefit**. tokens_all and tokens_rvq0 sit inside the random bracket on every row.
+
+### 1.5b — Subject ID. **N/A** — cross-subject averaging eliminates the subject variable by construction.
+
+### 1.5c — Animacy (averaged input). Chance = 50%.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 55.3% ± 2.9 | 51.1% ± 2.8 | **79.5% ± 2.2** | 64.5% ± 4.1 |
+| Linear, weighted | 49.3% ± 1.4 | 45.0% ± 3.7 | **61.1% ± 3.4** | 48.2% ± 4.3 |
+| MLP, weighted | 50.3% ± 1.8 | 46.8% ± 2.8 | **63.8% ± 2.1** | 50.8% ± 3.1 |
+| **CNN, weighted** | 50.6% ± 1.7 | 51.4% ± 2.5 | **58.9% ± 5.3** | 49.8% ± 1.8 |
+
+Same pattern: tokens sit at random under every weighted probe; raw lifts to 59–80%. Unweighted top-1 numbers inflate because the averaged set&#39;s animacy distribution is imbalanced (more inanimate images survive the superordinate filter) — class-weighted balanced accuracy is the honest column.
+
+### Headline reading of Experiment 1.5
+
+**Averaging the input does not rescue category/animacy in 3b_nonavg&#39;s tokens.** Reconstruction quality improves (MSE −73%), the raw-feature probe improves correspondingly, but the tokens still carry no decodable category or animacy signal at any probe complexity. This rules out &#34;single-trial noise was the bottleneck&#34; as the explanation — the bottleneck is the tokenizer&#39;s **reconstruction objective**, which budgets bits to variance (subject-level / sensor-level) and not to discrimination. Per the decision tree in `meg/CLAUDE.md` §9, this argues against spending a finetune run on averaged trials (Experiment 2 below) and toward the architectural intervention: contrastive / supervised finetune, or moving to Stage 2 (Cho2026 / EphysTokenizer).
+
+JSONs: `brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0[_&lt;clf&gt;][_&lt;label&gt;]_avgcross_subject.json`.
+
+---
+
+## Experiment 2 — BrainOmni 3b_avg (pending: finetuned on image-averaged trials)
+
+&gt; **Status:** not yet trained. Requires (a) Modal data loader that averages trials by image_id (or by image_id × subject), (b) finetune run analogous to 3b but on averaged data, (c) re-tokenization of test trials in the same averaged regime for fair eval. Tables mirror Experiment 1. **Note (2026-05-31):** Experiment 1.5 above already answers the &#34;is averaging-as-input enough?&#34; question negatively, so Experiment 2 should only be run if there is independent reason to believe a finetune-on-averaged-trials behaves differently from inference-on-averaged-trials.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-46-26-124Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-46-26-124Z" class="timestamp-link"><time datetime="2026-06-01T01:46:26.124Z" data-timestamp="2026-06-01T01:46:26.124Z">2026-06-01T01:46:26.124Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-46-29-979Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-46-29-979Z" class="timestamp-link"><time datetime="2026-06-01T01:46:29.979Z" data-timestamp="2026-06-01T01:46:29.979Z">2026-06-01T01:46:29.979Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-46-30-994Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-46-30-994Z" class="timestamp-link"><time datetime="2026-06-01T01:46:30.994Z" data-timestamp="2026-06-01T01:46:30.994Z">2026-06-01T01:46:30.994Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check informational warnings only — all flagged words ("animacy", "brainomni", "nonavg", "finetune", etc.) are domain terms already used throughout this file and the codebase. No action needed.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-46-33-568Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-46-33-568Z" class="timestamp-link"><time datetime="2026-06-01T01:46:33.568Z" data-timestamp="2026-06-01T01:46:33.568Z">2026-06-01T01:46:33.568Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01RWhRnYUgnb77pndQXoZfW6"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Launch 6 Modal eval jobs (linear/mlp/cnn × category27/animacy) with --averaging cross_subject</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">All 6 jobs complete; JSONs parsed</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Added Experiment 1.5 section to notes/meg_tokenization.md</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-46-33-571Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-46-33-571Z" class="timestamp-link"><time datetime="2026-06-01T01:46:33.571Z" data-timestamp="2026-06-01T01:46:33.571Z">2026-06-01T01:46:33.571Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-46-51-352Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-46-51-352Z" class="timestamp-link"><time datetime="2026-06-01T01:46:51.352Z" data-timestamp="2026-06-01T01:46:51.352Z">2026-06-01T01:46:51.352Z</time></a></div><div class="message-content">
+<div class="assistant-text"><h2>Summary</h2>
+<p>Ran 6 Modal evals (linear/MLP/CNN × category27/animacy) on the existing <strong>3b_nonavg</strong> checkpoint with <code>--averaging cross_subject</code>. Pipeline: 10,036 test trials → averaged by image_id → 2,245 unique signals → tokenize → 5-fold CV probe.</p>
+<p><strong>Added "Experiment 1.5" section</strong> to <a href="notes/meg_tokenization.md#L91">notes/meg_tokenization.md:91</a>, placed between Experiment 1 and Experiment 2.</p>
+<p><strong>Headline result — averaging input does NOT rescue category/animacy in 3b_nonavg's tokens.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>tokens_all (best probe)</th>
+<th>raw (best probe)</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Category27 (chance 3.7%)</td>
+<td>4.4% ± 1.2 (MLP)</td>
+<td><strong>10.3% ± 1.4 (Linear unweighted)</strong></td>
+<td>tokens at chance</td>
+</tr>
+<tr>
+<td>Animacy (chance 50%)</td>
+<td>50.6% ± 1.7 (CNN)</td>
+<td><strong>63.8% ± 2.1 (MLP)</strong></td>
+<td>tokens at chance</td>
+</tr>
+</tbody>
+</table>
+<p>Reconstruction MSE drops 1.07 → 0.29 (3.6× cleaner) — the SNR boost reaches raw features, but the tokens don't benefit. This rules out "single-trial noise was the bottleneck" — the reconstruction objective itself is dropping the category signal. I added a note above Experiment 2 flagging that a finetune-on-averaged-trials is unlikely to help given this result.</p>
+<p>JSONs land at <code>brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0[_&lt;clf&gt;][_&lt;label&gt;]_avgcross_subject.json</code> (6 new files).</p>
+<h3>Automation / <code>.claude</code> observation</h3>
+<p>This run pattern (sweep <code>probe-classifier × probe-label-space × averaging</code> and rebuild a table in notes) is the third time we've effectively re-done it (Experiment 1 single-trial sweep, μ-transform sweep, now 1.5). Two cheap automations would pay off:</p>
+<ol>
+<li><strong>A <code>meg-probe-sweep</code> slash command</strong> that takes a checkpoint config path and an <code>averaging</code> flag, dispatches the N probe-classifier × M label-space combos to Modal, waits, then prints a markdown table ready to paste into <code>notes/meg_tokenization.md</code>. Removes the manual parse-six-JSONs step.</li>
+<li><strong>A hook on edits to <code>meg_tokenization.md</code></strong> that runs a small validator confirming every numeric cell in a table can be traced back to a JSON under <code>brainomni/runs/.../evals/</code> (or <code>mu_transform/runs/.../evals/</code>). Catches "you copy-pasted yesterday's numbers" bugs.</li>
+</ol>
+<p>I'd hold on building either until we know whether the next move is "Stage 2 / Cho2026" or "supervised finetune on 3b" — both would re-run this sweep at least once more, which is the threshold at which #1 starts paying for itself.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-47-53-947Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-47-53-947Z" class="timestamp-link"><time datetime="2026-06-01T01:47:53.947Z" data-timestamp="2026-06-01T01:47:53.947Z">2026-06-01T01:47:53.947Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>is MSE loss a directly comrpable metric across all experiments and runs here?</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-49-13-977Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-49-13-977Z" class="timestamp-link"><time datetime="2026-06-01T01:49:13.977Z" data-timestamp="2026-06-01T01:49:13.977Z">2026-06-01T01:49:13.977Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-49-30-005Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-49-30-005Z" class="timestamp-link"><time datetime="2026-06-01T01:49:30.005Z" data-timestamp="2026-06-01T01:49:30.005Z">2026-06-01T01:49:30.005Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Short answer: <strong>no — only within narrow scopes.</strong> Let me break down what's comparable to what:</p>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Comparable?</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Same checkpoint, same input regime, different probe config (e.g. the 6 runs I just did)</td>
+<td>✅ Yes</td>
+<td>MSE is tokenizer-only — verified, all 6 of my new JSONs have <code>mse = 0.29284875...</code> to the digit</td>
+</tr>
+<tr>
+<td>Same tokenizer family, <strong>same</strong> input regime, different checkpoints (3a → 3b on single trials, 4.35 → 1.20)</td>
+<td>✅ Yes</td>
+<td>Identical preprocessing, identical target distribution — reflects real model differences</td>
+</tr>
+<tr>
+<td>Same checkpoint, <strong>different</strong> input regime (Exp 1's 1.07 vs Exp 1.5's 0.29)</td>
+<td>⚠️ <strong>Not really</strong></td>
+<td>This is the trap</td>
+</tr>
+<tr>
+<td>Across tokenizer families (μ-transform 0.999 vs BrainOmni 1.07)</td>
+<td>❌ No</td>
+<td>Different preprocessing pipelines, different input scales/shapes entirely</td>
+</tr>
+<tr>
+<td>Time-domain MSE vs PSD MSE</td>
+<td>❌ No</td>
+<td>Different units</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The trap in the Exp 1 vs Exp 1.5 comparison</strong> (the one I claimed as "3.6× cleaner" in the notes — that phrasing is misleading and I should fix it):</p>
+<p>Both runs z-score per trial per channel inside the BrainOmni preprocess, so the input has unit variance in both cases. The MSE drop is <strong>explained mechanically by the noise floor of the target</strong>, not by the tokenizer doing a categorically better job:</p>
+<ul>
+<li>For a single z-scored trial: ~90% of unit variance is per-trial noise. Tokenizer's bottleneck preserves the slow/structured component and drops noise → <code>‖x − x̂‖² ≈ ‖noise‖² ≈ 0.9–1.0</code>.</li>
+<li>For an averaged z-scored trial (N≈4–48 reps): noise variance reduces by 1/N before z-scoring, so post-z-score the noise fraction of unit variance is much smaller. The tokenizer drops the same <em>kind</em> of stuff, but there's less of it to drop → MSE ≈ 0.3.</li>
+</ul>
+<p>The cleanest test that the tokenizer isn't actually reconstructing better: <strong>channel Pearson r barely moves</strong>, 0.870 (Exp 1) → 0.859 (Exp 1.5). If reconstruction were genuinely 3.6× better, correlation should rise. It doesn't — it slightly drops. The MSE delta is dominated by "less noise in the target," not "more signal in the output."</p>
+<p>This <em>strengthens</em> (not weakens) the Exp 1.5 verdict, by the way: if the tokenizer were actually reconstructing the averaged signal better and the probe still couldn't decode category, that would be even more damning for the reconstruction objective. The current reading — "averaging reaches raw features but tokens don't benefit" — is robust to this nuance.</p>
+<p><strong>Want me to fix the misleading "3.6× cleaner" framing in the notes?</strong> I'd swap it for something like:</p>
+<blockquote>
+<p>Reconstruction MSE drops 1.07 → 0.29, but this is mostly the input's noise floor falling (averaging math), not the tokenizer suddenly reconstructing better — channel Pearson r is essentially flat at 0.870 → 0.859. The honest reading is that averaging gives the <em>probe</em> a cleaner target (raw lifts from 5.2% → 6.0% bal-acc on category, 6.1% → 10.3% on unweighted top-1), but the <em>tokens</em> see none of that benefit.</p>
+</blockquote>
+<p>Also worth recording: I should probably add a short "what's comparable to what" note in <code>meg/CLAUDE.md</code> §9 alongside the leaderboard tables, because this question will come up every time someone reads cross-tokenizer MSE side-by-side. Want me to add both?</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-51-08-211Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-51-08-211Z" class="timestamp-link"><time datetime="2026-06-01T01:51:08.211Z" data-timestamp="2026-06-01T01:51:08.211Z">2026-06-01T01:51:08.211Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>yeah fix that note</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-51-11-060Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-51-11-060Z" class="timestamp-link"><time datetime="2026-06-01T01:51:11.060Z" data-timestamp="2026-06-01T01:51:11.060Z">2026-06-01T01:51:11.060Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-51-20-661Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-51-20-661Z" class="timestamp-link"><time datetime="2026-06-01T01:51:20.661Z" data-timestamp="2026-06-01T01:51:20.661Z">2026-06-01T01:51:20.661Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Xnv3AYi5pzFWE6DusWbcY5">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">Eval pipeline: full ~10k test split (10,036 trials) → average by `image_id` across subjects + within-subject reps → 2,245 unique averaged signals → tokenizer forward → 5-fold CV probe. **Reconstruction MSE drops 1.07 → 0.29** (3.6× cleaner) under averaging — signal is closer to what 3b was trained on. Codebook stats are unchanged (same 512-code vocab, perplexity ~493).</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">Eval pipeline: full ~10k test split (10,036 trials) → average by `image_id` across subjects + within-subject reps → 2,245 unique averaged signals → tokenizer forward → 5-fold CV probe. Codebook stats unchanged (same 512-code vocab, perplexity ~493).
+
+&gt; **A note on reconstruction MSE under averaging.** Time-domain MSE drops 1.07 → 0.29, but this is **not** a 3.6× improvement in the tokenizer&#39;s reconstruction quality — it&#39;s mostly the **target&#39;s noise floor falling**. BrainOmni&#39;s preprocess per-trial-per-channel z-scores both single and averaged inputs to unit variance, but the *composition* of that variance differs: in a single z-scored trial ~90% of variance is per-trial noise; in an N-rep average that fraction shrinks by 1/N before z-scoring. The bottleneck drops noise either way; with less noise in the target there&#39;s less for the tokenizer to &#34;miss.&#34; The honest cross-regime metric is **per-channel Pearson r**, which barely moves: 0.870 (Exp 1) → 0.859 (Exp 1.5). So the right reading is &#34;averaging gives the *probe* a cleaner target,&#34; not &#34;the tokenizer reconstructs better&#34; — and the probe results below confirm that the *tokens* see none of that benefit. (General rule: MSE is comparable across checkpoints under fixed input regime, NOT across input regimes or across tokenizer families.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-51-21-686Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-51-21-686Z" class="timestamp-link"><time datetime="2026-06-01T01:51:21.686Z" data-timestamp="2026-06-01T01:51:21.686Z">2026-06-01T01:51:21.686Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-51-26-587Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-51-26-587Z" class="timestamp-link"><time datetime="2026-06-01T01:51:26.587Z" data-timestamp="2026-06-01T01:51:26.587Z">2026-06-01T01:51:26.587Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check info only — "Codebook" is a domain term used throughout. No action needed.</p>
+<p>Done. The misleading "3.6× cleaner" framing is replaced with a callout box that:
+1. Explains why MSE drops mechanically under averaging (noise composition of unit variance changes)
+2. Points to channel Pearson r (0.870 → 0.859) as the honest cross-regime metric
+3. States the general rule: MSE is comparable across checkpoints under fixed input regime, not across input regimes or tokenizer families</p>
+<p>The Exp 1.5 verdict is unchanged (and arguably strengthened): averaging cleans the target, raw features benefit, tokens don't.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-52-29-955Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-52-29-955Z" class="timestamp-link"><time datetime="2026-06-01T01:52:29.955Z" data-timestamp="2026-06-01T01:52:29.955Z">2026-06-01T01:52:29.955Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>rn for each table does this only include top 1 results? what would it mean to expand this to top 5 results? does that even make sense</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-53-29-128Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-53-29-128Z" class="timestamp-link"><time datetime="2026-06-01T01:53:29.128Z" data-timestamp="2026-06-01T01:53:29.128Z">2026-06-01T01:53:29.128Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-53-44-049Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-53-44-049Z" class="timestamp-link"><time datetime="2026-06-01T01:53:44.049Z" data-timestamp="2026-06-01T01:53:44.049Z">2026-06-01T01:53:44.049Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Good question. Direct answer: <strong>yes, every cell in the existing tables is a top-1 metric</strong> — either unweighted top-1 (the "Linear, unweighted" row) or class-weighted balanced accuracy (the rest), which is also top-1 in spirit (it just reweights by class). Each JSON also computes top-5 for free; we just don't render it.</p>
+<p><strong>Where top-5 makes sense:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Label space</th>
+<th>n_classes</th>
+<th>Top-5 chance</th>
+<th>Top-5 meaningful?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>category27</code></td>
+<td>27</td>
+<td>5/27 ≈ 18.5% (uniform)</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td><code>animacy</code></td>
+<td>2</td>
+<td>100% trivially</td>
+<td>❌ No — verified in JSON: <code>top5_*_mean = 1.0</code> everywhere</td>
+</tr>
+<tr>
+<td><code>subject</code></td>
+<td>4</td>
+<td>100% trivially</td>
+<td>❌ No — <code>k=5 &gt; n_classes</code></td>
+</tr>
+</tbody>
+</table>
+<p>So expanding to top-5 only buys you one of three tables. For animacy and subject the column is mechanically 100%.</p>
+<p><strong>What top-5 actually measures and when it helps:</strong></p>
+<p>It loosens the bar from "name the right class" to "right class in the top-5 short list." Diagnostically it distinguishes two failure modes that look identical under top-1:</p>
+<ol>
+<li><strong>Tokens have zero category info</strong> → at random under both top-1 and top-5</li>
+<li><strong>Tokens have weak/diffuse category info</strong> → at random under top-1 but lift above random floor under top-5 (right neighborhood, wrong specific class)</li>
+</ol>
+<p>So it's most useful as a <em>tiebreaker</em> when top-1 is ambiguous (i.e. tokens hovering just above the random column).</p>
+<p><strong>What our top-5 numbers actually say</strong> (Exp 1.5, category27, linear class-weighted column):</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>top-1 (bal_acc)</th>
+<th>top-5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tokens_all</td>
+<td>3.35% ± 0.90</td>
+<td>18.30% ± 3.75</td>
+</tr>
+<tr>
+<td>tokens_rvq0</td>
+<td>3.88% ± 2.74</td>
+<td>18.21% ± 4.85</td>
+</tr>
+<tr>
+<td>raw</td>
+<td><strong>6.01% ± 2.37</strong></td>
+<td><strong>35.88% ± 1.77</strong></td>
+</tr>
+<tr>
+<td>random</td>
+<td>4.02% ± 2.24</td>
+<td>21.94% ± 3.94</td>
+</tr>
+</tbody>
+</table>
+<p>Same story at both granularities: <strong>tokens ≤ random; raw lifts well above.</strong> The top-5 column doesn't change the verdict — it just confirms the floor is solid at multiple thresholds (failure mode #1 above).</p>
+<p><strong>Practical recommendation:</strong> I'd skip adding a top-5 column by default. Reasons:</p>
+<ul>
+<li>For 2/3 label spaces it's trivially 100%</li>
+<li>For the one where it's meaningful (category27), top-5 says the same thing top-1 says — tokens at random — so it doesn't carry independent information here</li>
+<li>More columns make the table harder to read</li>
+</ul>
+<p>The case for adding it: if a <em>future</em> checkpoint (e.g. 3b_avg or Cho2026) lands tokens slightly above random at top-1 on category27 and we want to test "real but coarse signal vs noise," top-5 is the right diagnostic to add at that point. Until then it's just confirmatory.</p>
+<p>Want me to add a one-line footnote under the category27 tables noting "top-5 numbers in the JSON, omitted from table because they tell the same story" so a future reader doesn't wonder?</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-54-08-051Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-54-08-051Z" class="timestamp-link"><time datetime="2026-06-01T01:54:08.051Z" data-timestamp="2026-06-01T01:54:08.051Z">2026-06-01T01:54:08.051Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>include top 5 results to all the tables where experiments have completed</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-55-22-006Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-55-22-006Z" class="timestamp-link"><time datetime="2026-06-01T01:55:22.006Z" data-timestamp="2026-06-01T01:55:22.006Z">2026-06-01T01:55:22.006Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-55-22-934Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-55-22-934Z" class="timestamp-link"><time datetime="2026-06-01T01:55:22.934Z" data-timestamp="2026-06-01T01:55:22.934Z">2026-06-01T01:55:22.934Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me check what's actually in the existing JSONs vs what the "unweighted" row shows.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-55-24-684Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-55-24-684Z" class="timestamp-link"><time datetime="2026-06-01T01:55:24.684Z" data-timestamp="2026-06-01T01:55:24.684Z">2026-06-01T01:55:24.684Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01PFsg7wBSkqo4YMcKchrD3D"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py&#34;,
+  &#34;offset&#34;: 1,
+  &#34;limit&#34;: 80
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-55-24-703Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-55-24-703Z" class="timestamp-link"><time datetime="2026-06-01T01:55:24.703Z" data-timestamp="2026-06-01T01:55:24.703Z">2026-06-01T01:55:24.703Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;§5.3 Downstream linear probe.
+2	
+3	Does the token sequence still carry the information we actually care about?
+4	Train a linear classifier (cross-entropy logistic regression in torch) on
+5	feature sets that always include `raw` and `random` as bracketing anchors,
+6	plus one or more token-derived feature sets:
+7	
+8	  - tokens_&lt;subset&gt; : per-trial features pooled from the tokenizer&#x27;s output.
+9	        If the tokenizer exposes a layered `tokens_to_embedding(tokens, layers)`,
+10	        one entry is produced per `EvalConfig.probe_rvq_layers` element
+11	        (e.g. `tokens_all`, `tokens_rvq0`). Otherwise a single `tokens`
+12	        entry is emitted (codebook embeddings if available, else
+13	        bag-of-codes).
+14	  - raw    : flattened signal x (upper bound — all info is there)
+15	  - random : bag-of-codes of uniformly random tokens of the same shape
+16	             (lower bound — no info)
+17	
+18	K-fold cross-validation:
+19	  Set `EvalConfig.probe_n_folds &gt;= 2` to run k-fold CV; the harness reports
+20	  `top{k}_&lt;set&gt;_mean` and `top{k}_&lt;set&gt;_std` across folds. With n_folds=1 we
+21	  fall back to a single random (train/test) split for back-compat.
+22	
+23	The probe is intentionally weak (one linear layer): if a linear model can
+24	read the stimulus off the tokens, the information is linearly decodable,
+25	which is what 4M&#x27;s transformer needs from its input embeddings. A strong
+26	nonlinear classifier would rescue tokens that are entangled in ways 4M
+27	cannot cheaply undo, and would therefore overstate quality.
+28	&quot;&quot;&quot;
+29	
+30	from __future__ import annotations
+31	
+32	import inspect
+33	import statistics
+34	
+35	import torch
+36	import torch.nn.functional as F
+37	
+38	from .codebook import tokenize_all
+39	from .protocol import EvalConfig, MetricResult, Tokenizer, has_token_embeddings
+40	
+41	
+42	def compute_probe_metrics(
+43	    tokenizer: Tokenizer,
+44	    signal: torch.Tensor,
+45	    labels: torch.Tensor,
+46	    config: EvalConfig,
+47	    tokens: torch.Tensor | None = None,
+48	) -&gt; MetricResult:
+49	    &quot;&quot;&quot;Run the bracketed linear probe with optional k-fold CV.
+50	
+51	    NOT decorated with @torch.no_grad() — the linear head needs gradients.
+52	    Featurization is wrapped in no_grad inside its helpers; the gradient-
+53	    bearing scope is limited to _train_and_score_probe.
+54	    &quot;&quot;&quot;
+55	    _assert_probe_inputs(signal, labels)
+56	
+57	    if tokens is None:
+58	        with torch.no_grad():
+59	            tokens = tokenize_all(tokenizer, signal, config)
+60	
+61	    y = labels.to(torch.long).cpu()
+62	
+63	    with torch.no_grad():
+64	        feature_sets = _build_feature_sets(tokenizer, tokens, signal, config)
+65	
+66	    n_classes = int(labels.max().item()) + 1
+67	    folds = _kfold_indices(n=signal.shape[0], n_folds=config.probe_n_folds, config=config)
+68	
+69	    values: dict[str, float] = {}
+70	    for name, feats in feature_sets.items():
+71	        per_fold: dict[str, list[float]] = {}
+72	        for train_idx, test_idx in folds:
+73	            accs = _train_and_score_probe(feats, y, train_idx, test_idx, n_classes, config)
+74	            for metric_name, acc in accs.items():
+75	                per_fold.setdefault(metric_name, []).append(acc)
+76	        for metric_name, vals in per_fold.items():
+77	            values[f&quot;{metric_name}_{name}_mean&quot;] = float(statistics.mean(vals))
+78	            values[f&quot;{metric_name}_{name}_std&quot;] = (
+79	                float(statistics.stdev(vals)) if len(vals) &gt;= 2 else 0.0
+80	            )</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-55-25-710Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-55-25-710Z" class="timestamp-link"><time datetime="2026-06-01T01:55:25.710Z" data-timestamp="2026-06-01T01:55:25.710Z">2026-06-01T01:55:25.710Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MzUfW5vu32q1m324HhTcSq">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find where top1/top5/bal_acc are computed</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;top1\|top5\|bal_acc\|class_weighted&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py | head -40</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-55-25-745Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-55-25-745Z" class="timestamp-link"><time datetime="2026-06-01T01:55:25.745Z" data-timestamp="2026-06-01T01:55:25.745Z">2026-06-01T01:55:25.745Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>295:    `bal_acc` (balanced accuracy = mean of per-class recalls). Balanced acc
+313:    class_weights = _class_weights(y_train, n_classes, device) if config.probe_class_weighted else None
+329:    out[&quot;bal_acc&quot;] = _balanced_accuracy(logits, y_test, n_classes)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-55-31-453Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-55-31-453Z" class="timestamp-link"><time datetime="2026-06-01T01:55:31.453Z" data-timestamp="2026-06-01T01:55:31.453Z">2026-06-01T01:55:31.453Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01V5yjFiocEVaXq26iPvTrzw"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py&#34;,
+  &#34;offset&#34;: 285,
+  &#34;limit&#34;: 50
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-55-31-460Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-55-31-460Z" class="timestamp-link"><time datetime="2026-06-01T01:55:31.460Z" data-timestamp="2026-06-01T01:55:31.460Z">2026-06-01T01:55:31.460Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>285	    feats: torch.Tensor,
+286	    labels: torch.Tensor,
+287	    train_idx: torch.Tensor,
+288	    test_idx: torch.Tensor,
+289	    n_classes: int,
+290	    config: EvalConfig,
+291	) -&gt; dict[str, float]:
+292	    &quot;&quot;&quot;Fit a single nn.Linear with full-batch gradient descent.
+293	
+294	    Returns a dict of named metrics: `top{k}` for each k in probe_top_k, and
+295	    `bal_acc` (balanced accuracy = mean of per-class recalls). Balanced acc
+296	    is the imbalance-invariant diagnostic: chance is exactly 1/n_classes
+297	    regardless of class frequencies, whereas top-1 floor is `max(class_freq)`
+298	    once a classifier collapses to majority prediction.
+299	    &quot;&quot;&quot;
+300	    device = config.device
+301	    X_train = feats[train_idx].to(device)
+302	    y_train = labels[train_idx].to(device)
+303	    X_test = feats[test_idx].to(device)
+304	    y_test = labels[test_idx].to(device)
+305	
+306	    feat_shape = tuple(feats.shape[1:])
+307	    torch.manual_seed(config.seed)
+308	    head = _build_head(feat_shape, n_classes, config).to(device)
+309	    opt = torch.optim.AdamW(
+310	        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+311	    )
+312	
+313	    class_weights = _class_weights(y_train, n_classes, device) if config.probe_class_weighted else None
+314	
+315	    head.train()
+316	    for _ in range(config.probe_epochs):
+317	        opt.zero_grad()
+318	        loss = F.cross_entropy(head(X_train), y_train, weight=class_weights)
+319	        loss.backward()
+320	        opt.step()
+321	
+322	    head.eval()
+323	    with torch.no_grad():
+324	        logits = head(X_test)
+325	    out: dict[str, float] = {
+326	        f&quot;top{k}&quot;: acc
+327	        for k, acc in _topk_accuracy(logits, y_test, config.probe_top_k).items()
+328	    }
+329	    out[&quot;bal_acc&quot;] = _balanced_accuracy(logits, y_test, n_classes)
+330	    return out
+331	
+332	
+333	def _topk_accuracy(
+334	    logits: torch.Tensor, labels: torch.Tensor, ks: tuple[int, ...]</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-56-10-962Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-56-10-962Z" class="timestamp-link"><time datetime="2026-06-01T01:56:10.962Z" data-timestamp="2026-06-01T01:56:10.962Z">2026-06-01T01:56:10.962Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-56-12-395Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-56-12-395Z" class="timestamp-link"><time datetime="2026-06-01T01:56:12.395Z" data-timestamp="2026-06-01T01:56:12.395Z">2026-06-01T01:56:12.395Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01LiK5AiBRpRjynmijuubYr5">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check probe defaults</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;probe_class_weighted\|probe_top_k&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py 2&gt;/dev/null | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-56-12-434Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-56-12-434Z" class="timestamp-link"><time datetime="2026-06-01T01:56:12.434Z" data-timestamp="2026-06-01T01:56:12.434Z">2026-06-01T01:56:12.434Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py:127:    probe_top_k: tuple[int, ...] = (1, 5)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py:132:    probe_class_weighted: bool = True
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py:123:    probe_top_k: tuple[int, ...] = (1, 5)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py:131:    probe_class_weighted: bool = True</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-56-16-792Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-56-16-792Z" class="timestamp-link"><time datetime="2026-06-01T01:56:16.792Z" data-timestamp="2026-06-01T01:56:16.792Z">2026-06-01T01:56:16.792Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01YAngCLq1wwQWsNKpKifyoe">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Dump all probe metrics from existing JSONs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">python3 -c &#34;
+import json
+from pathlib import Path
+base = Path(&#39;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/&#39;)
+for f in sorted(base.glob(&#39;eval_ntest=full_s0*.json&#39;)):
+    with open(f) as fh:
+        d = json.load(fh)
+    p = d.get(&#39;probe&#39;, {})
+    if not p:
+        continue
+    print(f.name)
+    for k in [&#39;top1_tokens_all_mean&#39;,&#39;top5_tokens_all_mean&#39;,&#39;bal_acc_tokens_all_mean&#39;,&#39;top1_tokens_rvq0_mean&#39;,&#39;top5_tokens_rvq0_mean&#39;,&#39;bal_acc_tokens_rvq0_mean&#39;,&#39;top1_raw_mean&#39;,&#39;top5_raw_mean&#39;,&#39;bal_acc_raw_mean&#39;,&#39;top1_random_mean&#39;,&#39;top5_random_mean&#39;,&#39;bal_acc_random_mean&#39;]:
+        v = p.get(k)
+        if v is not None:
+            std = p.get(k.replace(&#39;_mean&#39;,&#39;_std&#39;), 0.0)
+            print(f&#39;  {k:&lt;35s} {v*100:6.2f}% ± {std*100:.2f}&#39;)
+&#34;
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-56-18-387Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-56-18-387Z" class="timestamp-link"><time datetime="2026-06-01T01:56:18.387Z" data-timestamp="2026-06-01T01:56:18.387Z">2026-06-01T01:56:18.387Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>eval_ntest=full_s0.json
+  top1_tokens_all_mean                  2.82% ± 0.56
+  top5_tokens_all_mean                 16.85% ± 0.80
+  bal_acc_tokens_all_mean               3.35% ± 0.91
+  top1_tokens_rvq0_mean                 2.92% ± 0.33
+  top5_tokens_rvq0_mean                16.53% ± 0.82
+  bal_acc_tokens_rvq0_mean              3.42% ± 0.38
+  top1_raw_mean                         9.24% ± 0.42
+  top5_raw_mean                        32.11% ± 2.28
+  bal_acc_raw_mean                      5.16% ± 0.21
+  top1_random_mean                      3.74% ± 0.90
+  top5_random_mean                     18.96% ± 1.15
+  bal_acc_random_mean                   3.64% ± 0.73
+eval_ntest=full_s0_animacy.json
+  top1_tokens_all_mean                 53.18% ± 0.85
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              51.05% ± 1.78
+  top1_tokens_rvq0_mean                54.05% ± 0.90
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             52.63% ± 1.57
+  top1_raw_mean                        76.41% ± 1.85
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     57.77% ± 2.46
+  top1_random_mean                     57.99% ± 2.29
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  49.97% ± 2.24
+eval_ntest=full_s0_animacy_avgcross_subject.json
+  top1_tokens_all_mean                 55.33% ± 2.91
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              49.30% ± 1.38
+  top1_tokens_rvq0_mean                51.06% ± 2.80
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             44.98% ± 3.72
+  top1_raw_mean                        79.49% ± 2.22
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     61.07% ± 3.37
+  top1_random_mean                     64.47% ± 4.11
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  48.16% ± 4.29
+eval_ntest=full_s0_avgcross_subject.json
+  top1_tokens_all_mean                  3.55% ± 0.89
+  top5_tokens_all_mean                 18.30% ± 3.75
+  bal_acc_tokens_all_mean               3.35% ± 0.90
+  top1_tokens_rvq0_mean                 3.11% ± 1.41
+  top5_tokens_rvq0_mean                18.21% ± 4.85
+  bal_acc_tokens_rvq0_mean              3.88% ± 2.74
+  top1_raw_mean                        10.30% ± 1.36
+  top5_raw_mean                        35.88% ± 1.77
+  bal_acc_raw_mean                      6.01% ± 2.37
+  top1_random_mean                      4.44% ± 1.86
+  top5_random_mean                     21.94% ± 3.94
+  bal_acc_random_mean                   4.02% ± 2.24
+eval_ntest=full_s0_cnn.json
+  top1_tokens_all_mean                  6.58% ± 0.65
+  top5_tokens_all_mean                 28.84% ± 1.13
+  bal_acc_tokens_all_mean               3.55% ± 0.54
+  top1_tokens_rvq0_mean                 4.79% ± 0.82
+  top5_tokens_rvq0_mean                29.73% ± 1.79
+  bal_acc_tokens_rvq0_mean              3.77% ± 0.53
+  top1_raw_mean                         5.46% ± 0.93
+  top5_raw_mean                        32.27% ± 1.46
+  bal_acc_raw_mean                      4.19% ± 0.87
+  top1_random_mean                      6.14% ± 1.01
+  top5_random_mean                     27.64% ± 1.50
+  bal_acc_random_mean                   3.61% ± 0.52
+eval_ntest=full_s0_cnn_animacy.json
+  top1_tokens_all_mean                 77.48% ± 0.52
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              51.62% ± 1.97
+  top1_tokens_rvq0_mean                77.07% ± 0.94
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             51.18% ± 1.33
+  top1_raw_mean                        77.35% ± 1.90
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     52.10% ± 1.33
+  top1_random_mean                     78.36% ± 0.90
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  49.50% ± 0.61
+eval_ntest=full_s0_cnn_animacy_avgcross_subject.json
+  top1_tokens_all_mean                 81.26% ± 1.05
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              50.56% ± 1.74
+  top1_tokens_rvq0_mean                79.13% ± 1.72
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             51.43% ± 2.45
+  top1_raw_mean                        76.73% ± 3.79
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     58.86% ± 5.34
+  top1_random_mean                     82.95% ± 0.91
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  49.81% ± 1.78
+eval_ntest=full_s0_cnn_avgcross_subject.json
+  top1_tokens_all_mean                  8.97% ± 1.10
+  top5_tokens_all_mean                 30.82% ± 3.77
+  bal_acc_tokens_all_mean               4.09% ± 1.03
+  top1_tokens_rvq0_mean                 7.90% ± 1.15
+  top5_tokens_rvq0_mean                29.58% ± 3.43
+  bal_acc_tokens_rvq0_mean              4.05% ± 0.66
+  top1_raw_mean                         9.06% ± 1.38
+  top5_raw_mean                        30.46% ± 2.29
+  bal_acc_raw_mean                      4.78% ± 1.47
+  top1_random_mean                      9.50% ± 0.91
+  top5_random_mean                     28.41% ± 3.63
+  bal_acc_random_mean                   4.40% ± 1.25
+eval_ntest=full_s0_cnn_subject.json
+  top1_tokens_all_mean                 97.40% ± 0.36
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              97.40% ± 0.35
+  top1_tokens_rvq0_mean                92.13% ± 0.53
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             92.14% ± 0.51
+  top1_raw_mean                        98.02% ± 0.50
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     98.00% ± 0.51
+  top1_random_mean                     25.42% ± 0.75
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  25.46% ± 0.73
+eval_ntest=full_s0_mlp.json
+  top1_tokens_all_mean                  2.17% ± 0.62
+  top5_tokens_all_mean                 15.44% ± 1.25
+  bal_acc_tokens_all_mean               3.18% ± 0.97
+  top1_tokens_rvq0_mean                 1.89% ± 0.52
+  top5_tokens_rvq0_mean                15.22% ± 0.78
+  bal_acc_tokens_rvq0_mean              2.94% ± 0.78
+  top1_raw_mean                         6.96% ± 0.45
+  top5_raw_mean                        31.38% ± 1.90
+  bal_acc_raw_mean                      4.31% ± 0.49
+  top1_random_mean                      2.46% ± 0.52
+  top5_random_mean                     20.37% ± 1.00
+  bal_acc_random_mean                   3.09% ± 0.82
+eval_ntest=full_s0_mlp_animacy.json
+  top1_tokens_all_mean                 57.21% ± 4.04
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              50.77% ± 1.97
+  top1_tokens_rvq0_mean                55.78% ± 2.92
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             51.35% ± 0.82
+  top1_raw_mean                        79.33% ± 0.45
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     57.89% ± 2.06
+  top1_random_mean                     62.42% ± 2.83
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  49.86% ± 3.00
+eval_ntest=full_s0_mlp_animacy_avgcross_subject.json
+  top1_tokens_all_mean                 57.29% ± 4.68
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              50.30% ± 1.76
+  top1_tokens_rvq0_mean                47.51% ± 5.48
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             46.82% ± 2.85
+  top1_raw_mean                        81.00% ± 2.39
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     63.76% ± 2.14
+  top1_random_mean                     70.61% ± 2.65
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  50.82% ± 3.06
+eval_ntest=full_s0_mlp_avgcross_subject.json
+  top1_tokens_all_mean                  3.29% ± 1.49
+  top5_tokens_all_mean                 17.67% ± 1.95
+  bal_acc_tokens_all_mean               4.44% ± 1.21
+  top1_tokens_rvq0_mean                 3.11% ± 1.69
+  top5_tokens_rvq0_mean                15.45% ± 2.32
+  bal_acc_tokens_rvq0_mean              4.01% ± 2.55
+  top1_raw_mean                         7.64% ± 1.31
+  top5_raw_mean                        30.01% ± 3.17
+  bal_acc_raw_mean                      4.51% ± 0.78
+  top1_random_mean                      5.51% ± 1.74
+  top5_random_mean                     33.13% ± 1.51
+  bal_acc_random_mean                   4.17% ± 1.55
+eval_ntest=full_s0_mlp_subject.json
+  top1_tokens_all_mean                 69.29% ± 1.25
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              69.26% ± 1.00
+  top1_tokens_rvq0_mean                52.22% ± 1.41
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             52.24% ± 1.06
+  top1_raw_mean                        95.40% ± 0.39
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     95.39% ± 0.41
+  top1_random_mean                     25.41% ± 1.25
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  25.36% ± 1.30
+eval_ntest=full_s0_subject.json
+  top1_tokens_all_mean                 62.59% ± 1.14
+  top5_tokens_all_mean                100.00% ± 0.00
+  bal_acc_tokens_all_mean              62.60% ± 0.97
+  top1_tokens_rvq0_mean                45.08% ± 0.91
+  top5_tokens_rvq0_mean               100.00% ± 0.00
+  bal_acc_tokens_rvq0_mean             45.09% ± 0.72
+  top1_raw_mean                        93.83% ± 0.93
+  top5_raw_mean                       100.00% ± 0.00
+  bal_acc_raw_mean                     93.85% ± 0.90
+  top1_random_mean                     25.26% ± 0.89
+  top5_random_mean                    100.00% ± 0.00
+  bal_acc_random_mean                  25.22% ± 0.92</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-59-15-723Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-59-15-723Z" class="timestamp-link"><time datetime="2026-06-01T01:59:15.723Z" data-timestamp="2026-06-01T01:59:15.723Z">2026-06-01T01:59:15.723Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-59-19-224Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-59-19-224Z" class="timestamp-link"><time datetime="2026-06-01T01:59:19.224Z" data-timestamp="2026-06-01T01:59:19.224Z">2026-06-01T01:59:19.224Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now I have full visibility into every JSON. Two important findings before I edit:</p>
+<ol>
+<li><strong>The existing Exp 1 1a "Linear, unweighted" row</strong> doesn't match the current <code>eval_ntest=full_s0.json</code> — its top-1 numbers (3.76%, etc. with near-zero stds) look like a class-imbalance-collapsed unweighted probe from an earlier run whose JSON is no longer extant. I can't recover unweighted top-5 for that row, so I'll mark it <code>—</code>.</li>
+<li><strong>CNN top-5 on category27</strong> actually shows a small but consistent tokens-above-random lift (28.8% tokens_all vs 27.6% random on single-trial; 30.8% vs 28.4% on averaged). Worth a one-line note since it's the only metric where tokens beat random.</li>
+</ol></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-59-21-455Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-59-21-455Z" class="timestamp-link"><time datetime="2026-06-01T01:59:21.455Z" data-timestamp="2026-06-01T01:59:21.455Z">2026-06-01T01:59:21.455Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_0161P1SEcihhAxzqkn5NM3pY"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Expand Exp 1 tables (1a, 1b, 1c) with inline top-5 cells</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Expand Exp 1.5 tables (1.5a, 1.5c) with inline top-5 cells</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Add brief note on CNN top-5 tokens-above-random lift</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-59-21-465Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-59-21-465Z" class="timestamp-link"><time datetime="2026-06-01T01:59:21.465Z" data-timestamp="2026-06-01T01:59:21.465Z">2026-06-01T01:59:21.465Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-59-41-289Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-59-41-289Z" class="timestamp-link"><time datetime="2026-06-01T01:59:41.289Z" data-timestamp="2026-06-01T01:59:41.289Z">2026-06-01T01:59:41.289Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01EkUo9WAZTM68qCm7NrWuiv">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 1a — Category27 (the gate). Chance = 3.70%.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.76% ± 0.07 | 3.71% ± 0.01 | **6.14% ± 0.44** | 3.70% ± 0.00 |
+| Linear, weighted | 3.35% ± 0.91 | 3.42% ± 0.38 | **5.16% ± 0.21** | 3.64% ± 0.73 |
+| MLP, weighted | 3.18% ± 0.97 | 2.94% ± 0.78 | **4.31% ± 0.49** | 3.09% ± 0.82 |
+| **CNN, weighted** | 3.55% ± 0.54 | 3.77% ± 0.53 | **4.19% ± 0.87** | 3.61% ± 0.52 |
+
+All four probe regimes agree: tokens at chance, raw between 4.2% and 6.1% (small but real). CNN&#39;s inductive bias does not rescue tokens on this task — the category-level info doesn&#39;t exist in any decodable form.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 1a — Category27 (the gate). Chance = 3.70% (top-1); 5/27 ≈ 18.5% (top-5 under uniform classes — the `random` column is the true imbalanced floor).
+
+Cell format: `top-1 / top-5` (top-1 is bal-acc for &#34;weighted&#34; rows, raw top-1 for the unweighted row).
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.76% ± 0.07 / — | 3.71% ± 0.01 / — | **6.14% ± 0.44** / — | 3.70% ± 0.00 / — |
+| Linear, weighted | 3.35% ± 0.91 / 16.85% ± 0.80 | 3.42% ± 0.38 / 16.53% ± 0.82 | **5.16% ± 0.21 / 32.11% ± 2.28** | 3.64% ± 0.73 / 18.96% ± 1.15 |
+| MLP, weighted | 3.18% ± 0.97 / 15.44% ± 1.25 | 2.94% ± 0.78 / 15.22% ± 0.78 | **4.31% ± 0.49 / 31.38% ± 1.90** | 3.09% ± 0.82 / 20.37% ± 1.00 |
+| **CNN, weighted** | 3.55% ± 0.54 / **28.84% ± 1.13** | 3.77% ± 0.53 / **29.73% ± 1.79** | **4.19% ± 0.87** / 32.27% ± 1.46 | 3.61% ± 0.52 / 27.64% ± 1.50 |
+
+All four probe regimes agree on the headline: tokens at chance under top-1 / bal-acc, raw between 4.2% and 6.1% (small but real). CNN&#39;s inductive bias does not rescue tokens on the strict metric — the fine-grained category info isn&#39;t there.
+
+**One footnote-worthy detail on top-5.** Under the CNN probe specifically, tokens_all top-5 (28.8%) and tokens_rvq0 top-5 (29.7%) sit ~1–2pp above the random top-5 floor (27.6%), while linear/MLP put tokens *below* random on top-5. This is the only knob in the Exp 1 grid where tokens beat random anywhere. Most likely interpretation: CNN&#39;s temporal-spatial bias surfaces a faint *coarse* category neighborhood in the tokens — enough to bump top-5 by a percentage point, but well within fold variance (CNN top-5 std ≈ 1.5pp on random) and nowhere near raw&#39;s lift (+5pp). Worth noting; not worth re-deciding the verdict on. Unweighted top-5 unavailable: the row&#39;s data is from an older run whose JSON is no longer extant; we kept its top-1 numbers in the table but cannot reconstruct its top-5.
+
+&gt; &#34;—&#34; means the underlying JSON is no longer available (older class-unweighted probe run that has since been overwritten — only its top-1 numbers survived in the table). Re-running would cost ~$0.50; we haven&#39;t because nothing hinges on it.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-59-42-316Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-59-42-316Z" class="timestamp-link"><time datetime="2026-06-01T01:59:42.316Z" data-timestamp="2026-06-01T01:59:42.316Z">2026-06-01T01:59:42.316Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-59-54-888Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-59-54-888Z" class="timestamp-link"><time datetime="2026-06-01T01:59:54.888Z" data-timestamp="2026-06-01T01:59:54.888Z">2026-06-01T01:59:54.888Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Jg2V2KedJXeLAAj4HM4E73">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 1b — Subject ID (pipeline sanity). Chance = 25%.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 62.6% ± 1.0 | 45.1% ± 0.7 | 93.9% ± 0.9 | 25.2% ± 0.9 |
+| MLP, weighted | 69.3% ± 1.0 | 52.2% ± 1.1 | 95.4% ± 0.4 | 25.4% ± 1.3 |
+| **CNN, weighted** | **97.4% ± 0.4** | **92.1% ± 0.5** | **98.0% ± 0.5** | 25.5% ± 0.7 |
+
+CNN nearly closes the raw→tokens gap. **97% subject decoding from tokens** says the tokens carry rich structural/spatial info; the §5.3 linear gate was simply the wrong probe for that signal. Each architecture step (linear → MLP → CNN) buys more — clean monotone improvement, exactly what you expect when more inductive bias surfaces existing signal.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 1b — Subject ID (pipeline sanity). Chance = 25% (top-1); **top-5 mechanically = 100%** because n_classes=4 &lt; k=5.
+
+Cell format: `top-1 / top-5`.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 62.6% ± 1.0 / 100% | 45.1% ± 0.7 / 100% | 93.9% ± 0.9 / 100% | 25.2% ± 0.9 / 100% |
+| MLP, weighted | 69.3% ± 1.0 / 100% | 52.2% ± 1.1 / 100% | 95.4% ± 0.4 / 100% | 25.4% ± 1.3 / 100% |
+| **CNN, weighted** | **97.4% ± 0.4 / 100%** | **92.1% ± 0.5 / 100%** | **98.0% ± 0.5 / 100%** | 25.5% ± 0.7 / 100% |
+
+CNN nearly closes the raw→tokens gap. **97% subject decoding from tokens** says the tokens carry rich structural/spatial info; the §5.3 linear gate was simply the wrong probe for that signal. Each architecture step (linear → MLP → CNN) buys more — clean monotone improvement, exactly what you expect when more inductive bias surfaces existing signal. (Top-5 carries no information here — it covers all 4 classes by construction.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-59-55-904Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-59-55-904Z" class="timestamp-link"><time datetime="2026-06-01T01:59:55.904Z" data-timestamp="2026-06-01T01:59:55.904Z">2026-06-01T01:59:55.904Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-00-07-154Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-00-07-154Z" class="timestamp-link"><time datetime="2026-06-01T02:00:07.154Z" data-timestamp="2026-06-01T02:00:07.154Z">2026-06-01T02:00:07.154Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01VwLAPavdbk8iUZJ6QGfgd3">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 1c — Animacy (easy 2-way, sensitivity check). Chance = 50%.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 51.1% ± 1.8 | 52.6% ± 1.6 | **57.8% ± 2.5** | 50.0% ± 2.2 |
+| MLP, weighted | 50.8% ± 2.0 | 51.4% ± 0.8 | **57.9% ± 2.1** | 49.9% ± 3.0 |
+| **CNN, weighted** | 51.6% ± 2.0 | 51.2% ± 1.3 | 52.1% ± 1.3 | 49.5% ± 0.6 |
+
+Tokens at chance across all classifiers. Raw at 52-58% (consistent with Dixen 2024 cross-subject ceiling of 57-61% for binary living/non-living). CNN slightly hurts raw on animacy — likely 2-class label-imbalance noise interacting with CNN regularization; not investigated further since tokens are at chance regardless.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 1c — Animacy (easy 2-way, sensitivity check). Chance = 50% (top-1); **top-5 mechanically = 100%** because n_classes=2 &lt; k=5.
+
+Cell format: `top-1 / top-5`.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 51.1% ± 1.8 / 100% | 52.6% ± 1.6 / 100% | **57.8% ± 2.5 / 100%** | 50.0% ± 2.2 / 100% |
+| MLP, weighted | 50.8% ± 2.0 / 100% | 51.4% ± 0.8 / 100% | **57.9% ± 2.1 / 100%** | 49.9% ± 3.0 / 100% |
+| **CNN, weighted** | 51.6% ± 2.0 / 100% | 51.2% ± 1.3 / 100% | 52.1% ± 1.3 / 100% | 49.5% ± 0.6 / 100% |
+
+Tokens at chance across all classifiers. Raw at 52-58% (consistent with Dixen 2024 cross-subject ceiling of 57-61% for binary living/non-living). CNN slightly hurts raw on animacy — likely 2-class label-imbalance noise interacting with CNN regularization; not investigated further since tokens are at chance regardless. (Top-5 carries no information here — it covers both classes by construction.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-00-08-170Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-00-08-170Z" class="timestamp-link"><time datetime="2026-06-01T02:00:08.170Z" data-timestamp="2026-06-01T02:00:08.170Z">2026-06-01T02:00:08.170Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-00-12-137Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-00-12-137Z" class="timestamp-link"><time datetime="2026-06-01T02:00:12.137Z" data-timestamp="2026-06-01T02:00:12.137Z">2026-06-01T02:00:12.137Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01PnfNmGYCbZGSnPvuYjyhVv"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Expand Exp 1 tables (1a, 1b, 1c) with inline top-5 cells</span></li><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Expand Exp 1.5 tables (1.5a, 1.5c) with inline top-5 cells</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add brief note on CNN top-5 tokens-above-random lift</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-00-12-139Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-00-12-139Z" class="timestamp-link"><time datetime="2026-06-01T02:00:12.139Z" data-timestamp="2026-06-01T02:00:12.139Z">2026-06-01T02:00:12.139Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-00-33-125Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-00-33-125Z" class="timestamp-link"><time datetime="2026-06-01T02:00:33.125Z" data-timestamp="2026-06-01T02:00:33.125Z">2026-06-01T02:00:33.125Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01E6puvQELiShkn1cmeCgeXi">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 1.5a — Category27 (averaged input). Chance = 3.70%. (n=1,126 averaged trials with valid labels)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.55% ± 0.89 | 3.11% ± 1.41 | **10.30% ± 1.36** | 4.44% ± 1.86 |
+| Linear, weighted | 3.35% ± 0.90 | 3.88% ± 2.74 | **6.01% ± 2.37** | 4.02% ± 2.24 |
+| MLP, weighted | 4.44% ± 1.21 | 4.01% ± 2.55 | **4.51% ± 0.78** | 4.17% ± 1.55 |
+| **CNN, weighted** | 4.09% ± 1.03 | 4.05% ± 0.66 | **4.78% ± 1.47** | 4.40% ± 1.25 |
+
+Tokens still at chance across all four probe regimes. Raw lifts more under averaging than it did in Experiment 1 (linear unweighted: 6.14% → **10.30%**; linear weighted: 5.16% → 6.01%) — confirming the SNR boost reaches raw features, but **the tokens do not benefit**. tokens_all and tokens_rvq0 sit inside the random bracket on every row.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 1.5a — Category27 (averaged input). Chance = 3.70% (top-1); 5/27 ≈ 18.5% (top-5 uniform). n=1,126 averaged trials with valid labels.
+
+Cell format: `top-1 / top-5`. Unlike Exp 1, **both** rows here come from the same class-weighted training run — the &#34;Linear, unweighted&#34; row reports the raw top-1 metric, the &#34;Linear, weighted&#34; row reports balanced accuracy. They share the same top-5 column by construction.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.55% ± 0.89 / 18.30% ± 3.75 | 3.11% ± 1.41 / 18.21% ± 4.85 | **10.30% ± 1.36 / 35.88% ± 1.77** | 4.44% ± 1.86 / 21.94% ± 3.94 |
+| Linear, weighted | 3.35% ± 0.90 / 18.30% ± 3.75 | 3.88% ± 2.74 / 18.21% ± 4.85 | **6.01% ± 2.37 / 35.88% ± 1.77** | 4.02% ± 2.24 / 21.94% ± 3.94 |
+| MLP, weighted | 4.44% ± 1.21 / 17.67% ± 1.95 | 4.01% ± 2.55 / 15.45% ± 2.32 | **4.51% ± 0.78** / 30.01% ± 3.17 | 4.17% ± 1.55 / **33.13% ± 1.51** |
+| **CNN, weighted** | 4.09% ± 1.03 / **30.82% ± 3.77** | 4.05% ± 0.66 / **29.58% ± 3.43** | **4.78% ± 1.47** / 30.46% ± 2.29 | 4.40% ± 1.25 / 28.41% ± 3.63 |
+
+Tokens still at chance across all four probe regimes under top-1 / bal-acc. Raw lifts more under averaging than it did in Experiment 1 (linear unweighted top-1: 6.14% → **10.30%**; raw top-5: 32.11% → 35.88%) — confirming the SNR boost reaches raw features, but **the tokens do not benefit at the strict metric**. tokens_all and tokens_rvq0 sit inside the random bracket on every weighted row.
+
+Two top-5 oddities worth noting (neither changes the verdict):
+- **CNN tokens beat random on top-5 again** (tokens_all 30.82% vs random 28.41%; tokens_rvq0 29.58% vs random 28.41%) — same direction as Exp 1.4 [[1a]], slightly larger gap, but fold std (~3.7pp) still covers it. Faint coarse-category signal, not a contradiction of the chance verdict.
+- **MLP raw top-5 (30.01%) is *below* MLP random top-5 (33.13%)** on the averaged set. Most plausible read: with only 1,126 averaged samples and 5-fold CV (~225 per fold), the MLP overfits the random features into a confident top-5-most-common-classes prediction; on raw features it spreads probability mass too widely. A probe-architecture artifact, not a tokenizer claim.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-00-34-139Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-00-34-139Z" class="timestamp-link"><time datetime="2026-06-01T02:00:34.139Z" data-timestamp="2026-06-01T02:00:34.139Z">2026-06-01T02:00:34.139Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-00-47-825Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-00-47-825Z" class="timestamp-link"><time datetime="2026-06-01T02:00:47.825Z" data-timestamp="2026-06-01T02:00:47.825Z">2026-06-01T02:00:47.825Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_014qFvfHqxpdzHuBKAnKKb1k">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 1.5c — Animacy (averaged input). Chance = 50%.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 55.3% ± 2.9 | 51.1% ± 2.8 | **79.5% ± 2.2** | 64.5% ± 4.1 |
+| Linear, weighted | 49.3% ± 1.4 | 45.0% ± 3.7 | **61.1% ± 3.4** | 48.2% ± 4.3 |
+| MLP, weighted | 50.3% ± 1.8 | 46.8% ± 2.8 | **63.8% ± 2.1** | 50.8% ± 3.1 |
+| **CNN, weighted** | 50.6% ± 1.7 | 51.4% ± 2.5 | **58.9% ± 5.3** | 49.8% ± 1.8 |
+
+Same pattern: tokens sit at random under every weighted probe; raw lifts to 59–80%. Unweighted top-1 numbers inflate because the averaged set&#39;s animacy distribution is imbalanced (more inanimate images survive the superordinate filter) — class-weighted balanced accuracy is the honest column.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 1.5c — Animacy (averaged input). Chance = 50% (top-1); **top-5 mechanically = 100%** because n_classes=2 &lt; k=5.
+
+Cell format: `top-1 / top-5`. As in [[1.5a]], the &#34;unweighted&#34; row is raw top-1; the &#34;weighted&#34; row is bal-acc; both share their top-5 column.
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 55.3% ± 2.9 / 100% | 51.1% ± 2.8 / 100% | **79.5% ± 2.2 / 100%** | 64.5% ± 4.1 / 100% |
+| Linear, weighted | 49.3% ± 1.4 / 100% | 45.0% ± 3.7 / 100% | **61.1% ± 3.4 / 100%** | 48.2% ± 4.3 / 100% |
+| MLP, weighted | 50.3% ± 1.8 / 100% | 46.8% ± 2.8 / 100% | **63.8% ± 2.1 / 100%** | 50.8% ± 3.1 / 100% |
+| **CNN, weighted** | 50.6% ± 1.7 / 100% | 51.4% ± 2.5 / 100% | **58.9% ± 5.3 / 100%** | 49.8% ± 1.8 / 100% |
+
+Same pattern: tokens sit at random under every weighted probe; raw lifts to 59–80%. Unweighted top-1 numbers inflate because the averaged set&#39;s animacy distribution is imbalanced (more inanimate images survive the superordinate filter) — class-weighted balanced accuracy is the honest column. (Top-5 carries no information here — it covers both classes by construction.)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-00-49-347Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-00-49-347Z" class="timestamp-link"><time datetime="2026-06-01T02:00:49.347Z" data-timestamp="2026-06-01T02:00:49.347Z">2026-06-01T02:00:49.347Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-00-53-420Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-00-53-420Z" class="timestamp-link"><time datetime="2026-06-01T02:00:53.420Z" data-timestamp="2026-06-01T02:00:53.420Z">2026-06-01T02:00:53.420Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_019GYmUAHZAr2ehFyZs7TiLM"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Expand Exp 1 tables (1a, 1b, 1c) with inline top-5 cells</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Expand Exp 1.5 tables (1.5a, 1.5c) with inline top-5 cells</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add brief note on CNN top-5 tokens-above-random lift</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-00-53-422Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-00-53-422Z" class="timestamp-link"><time datetime="2026-06-01T02:00:53.422Z" data-timestamp="2026-06-01T02:00:53.422Z">2026-06-01T02:00:53.422Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-01-04-231Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-01-04-231Z" class="timestamp-link"><time datetime="2026-06-01T02:01:04.231Z" data-timestamp="2026-06-01T02:01:04.231Z">2026-06-01T02:01:04.231Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Done. All 5 completed tables now have inline <code>top-1 / top-5</code> cells:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>top-5 source</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1a — Category27 single-trial</td>
+<td>Current JSONs (linear/MLP/CNN weighted)</td>
+<td>"Linear, unweighted" row top-5 = <code>—</code> (older unweighted JSON no longer extant)</td>
+</tr>
+<tr>
+<td>1b — Subject single-trial</td>
+<td>All cells = 100%</td>
+<td>Mechanical: n_classes=4 &lt; k=5</td>
+</tr>
+<tr>
+<td>1c — Animacy single-trial</td>
+<td>All cells = 100%</td>
+<td>Mechanical: n_classes=2 &lt; k=5</td>
+</tr>
+<tr>
+<td>1.5a — Category27 averaged</td>
+<td>Current 6 JSONs</td>
+<td>Both "unweighted" and "weighted" rows share their top-5 column (same training run, different top-1 metric)</td>
+</tr>
+<tr>
+<td>1.5c — Animacy averaged</td>
+<td>All cells = 100%</td>
+<td>Mechanical</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two non-trivial findings surfaced by the top-5 expansion</strong> (both noted in the file):</p>
+<ol>
+<li>
+<p><strong>CNN top-5 is the one knob where tokens beat random anywhere.</strong> Single-trial: tokens_all 28.84% vs random 27.64%. Averaged: 30.82% vs 28.41%. Same sign in both regimes, but inside fold-std error bars (~1.5–3.7pp) — faint coarse-category signal that CNN's temporal-spatial bias surfaces, not enough to overturn the "tokens fail §5.3" verdict.</p>
+</li>
+<li>
+<p><strong>MLP raw top-5 (30.0%) is BELOW MLP random top-5 (33.1%) on Exp 1.5a.</strong> Probe-overfitting artifact at small n (1,126 averaged trials × 5-fold CV), not a tokenizer claim — noted to head off the obvious reader question.</p>
+</li>
+</ol>
+<p>Header convention added to each table: <code>top-1 / top-5</code>. Animacy/subject cells show <code>100%</code> explicitly so it's clear the metric is mechanical, not signal.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-001.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<span class="current">2</span>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-003.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

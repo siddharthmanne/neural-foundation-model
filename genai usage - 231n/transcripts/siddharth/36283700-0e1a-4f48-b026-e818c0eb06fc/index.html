@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - Index</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>Claude Code transcript</h1>
+            <div id="search-box">
+                <input type="text" id="search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+        <p style="color: var(--text-muted); margin-bottom: 24px;">3 prompts · 217 messages · 61 tool calls · 0 commits · 1 pages</p>
+        
+<div class="index-item"><a href="page-001.html#msg-2026-05-28T04-40-41-585Z"><div class="index-item-header"><span class="index-item-number">#1</span><time datetime="2026-05-28T04:40:41.585Z" data-timestamp="2026-05-28T04:40:41.585Z">2026-05-28T04:40:41.585Z</time></div><div class="index-item-content"><p>Each time we run validation (both on its own and during training as well), I should list not just results but the total number of tokens seen during training for the model at that checkpoint. This should include all tokens seen (and if there were 5 epochs before hand, it would be 5xnumber of tokens seen during 1 epoch). See if 4M already includes the metadata during each epoch – like in run_training_4m.py it dumps log stats per epoch/checkpoint so maybe we can use something like that if it’s useful. The stock train script should have this – this should be a very simple implementation.  I just want the total number of tokens seen and trained on. Include a separate number for input tokens and target tokens, and then total is just the sum of both. Note that for some image id examples we have placeholder MEG/EEG data and pick dirichlet budget for neural data as 0 for those examples – make sure we don’t falsely count meg/eeg tokens for those!  stock loop already computes and logs tokens-seen every epoch — input, target, and total (in billions) — to log.txt (run_training_4m.py:643-645):</p>
+<p>'input_tokens_seen_b':  (epoch+1) * num_training_steps_per_epoch * (total_batch_size/accum_iter) * num_input_tokens / 1e9,
+'target_tokens_seen_b': ... * num_target_tokens / 1e9,
+'total_tokens_seen_b':  ... * (num_input_tokens + num_target_tokens) / 1e9,
+That's exactly our tokens seen definition. So this partly exists at the training-log level — what's missing is surfacing it per checkpoint at validation time</p></div></a><div class="index-item-stats"><span>19 bash · 18 read · 10 edit · 2 write · 1 askuserquestion</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Each time we run validation (both on its own and during training as well), I should list not just results but the total number of tokens seen during training for the model at that checkpoint. This should include all tokens seen (and if there were 5 epochs before hand, it would be 5xnumber of tokens seen during 1 epoch). See if 4M already includes the metadata during each epoch – like in run_training_4m.py it dumps log stats per epoch/checkpoint so maybe we can use something like that if it’s useful. The stock train script should have this – this should be a very simple implementation.  I just want the total number of tokens seen and trained on. Include a separate number for input tokens and target tokens, and then total is just the sum of both. Note that for some image id examples we have placeholder MEG/EEG data and pick dirichlet budget for neural data as 0 for those examples – make sure we don’t falsely count meg/eeg tokens for those!  stock loop already computes and logs tokens-seen every epoch — input, target, and total (in billions) — to log.txt (run_training_4m.py:643-645):</p>
+<p>'input_tokens_seen_b':  (epoch+1) * num_training_steps_per_epoch * (total_batch_size/accum_iter) * num_input_tokens / 1e9,
+'target_tokens_seen_b': ... * num_target_tokens / 1e9,
+'total_tokens_seen_b':  ... * (num_input_tokens + num_target_tokens) / 1e9,
+That's exactly our tokens seen definition. So this partly exists at the training-log level — what's missing is surfacing it per checkpoint at validation time</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>I've traced the full path. Before proposing approaches, one <strong>critical correctness finding</strong> that changes the framing:</p>
+<p>The stock formula at <a href="external/ml-4m/run_training_4m.py#L643-L645">run_training_4m.py:643-645</a> is <strong>not</strong> actually our tokens-seen definition once placeholders exist. Here's why:</p>
+<ul>
+<li>In <a href="4m_training/lib/neural_masking.py#L56-L70">neural_masking.py:56-70</a>, <code>zero_absent_budgets</code> sets the MEG/EEG Dirichlet budget to 0 for placeholder samples <strong>but does not redistribute</strong> those tokens to other modalities.</li>
+<li>So a placeholder sample truly contributes <em>fewer</em> than <code>num_input_tokens</code>/<code>num_target_tokens</code>.</li>
+<li>The stock formula is a closed-form product <code>(epoch+1) * steps * (batch/accum) * num_input_tokens</code> that assumes <strong>every</strong> sample hits the full budget. It therefore <strong>overcounts</strong> exactly the placeholder MEG/EEG tokens you asked me not to count — and the dropped amount is random per sample (Dirichlet draw), so there's no closed-form correction.</li>
+</ul>
+<p>The faithful way to honor "don't falsely count MEG/EEG for placeholders" is to count the <strong>actual</strong> selected tokens, which the masks already encode: a placeholder modality gets <code>input_budget=0</code> → <a href="external/ml-4m/fourm/data/masking.py#L236-L266">image_mask</a> selects 0 cells → <code>~input_mask</code> sums to 0 for it. No special-casing needed.</p>
+<p>So "surface the stock number" and "don't falsely count placeholders" are in tension. You need to pick which matters more. Here are the options:</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Confirmed — stock resolves <code>auto_resume</code> by globbing <code>checkpoint-*.pth</code> and picking the max numeric epoch (<a href="external/ml-4m/fourm/utils/checkpoint.py#L126-L135">checkpoint.py:126-135</a>). I'll mirror that so token counts stay cumulative across resumes.</p>
+<p>Here's the design and TDD test plan:</p>
+<p><strong>New module <code>lib/token_accounting.py</code>:</strong>
+- <code>TokenAccountant</code> — accumulates <code>(~input_mask)</code>/<code>(~target_mask)</code> sums per training forward (device-tensor accumulation, one sync/epoch; gated on <code>module.training</code>; dist-safe; <code>seed</code> args for resume continuity).
+- <code>make_accounting_train_one_epoch(orig, accountant, on_epoch_end)</code> — pure wrapper: lazily registers the hook on first epoch, merges <code>[tokens] *_seen</code> into train stats, calls <code>on_epoch_end(totals)</code>.
+- <code>install_token_accounting(trainer, resume_totals)</code> → returns the live accountant.
+- <code>read_tokens_seen(ckpt)</code> and <code>resolve_resume_ckpt(args)</code> helpers.</p>
+<p><strong>Wiring:</strong> <code>train_4m._drive_trainer_main</code> sets <code>trainer.args = args</code>, seeds from the resume checkpoint, installs accounting (always-on, independent of in-loop val). Totals stash onto <code>args.tokens_seen</code> → saved by stock <code>save_model</code> into the checkpoint. <code>validate_4m</code> reads and prints them.</p>
+<p>Let me write the tests first.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Good progress — <code>validate_4m</code> now resolves; it just needs <code>fourm</code> (the ml-4m package) which isn't installed in this local env, so <code>test_validate_4m</code> is a fourm-dependent integration test that runs in CI/Modal. Let me confirm the two pure suites pass and that <code>token_accounting</code>/<code>in_loop_val</code> import cleanly.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p><code>test_train_4m_entrypoints.py</code> only unit-tests <code>_clean_extra_argv</code> (and is gated behind fourm at import); it doesn't drive <code>_drive_trainer_main</code>, so no conflict. My new helpers are unit-tested. Let me add one test for the new in-loop-val token-print branch (runnable now), then check the overfit smoke for end-to-end coverage.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All my changes are isolated to the token feature (the large diff stat includes your pre-existing uncommitted work). Here's the summary.</p>
+<h2>What I built</h2>
+<p>A placeholder-correct training-token accountant, surfaced at every validation point.</p>
+<p><strong>New module <a href="4m_training/lib/token_accounting.py">lib/token_accounting.py</a>:</strong>
+- <code>TokenAccountant</code> — a forward-pre-hook that sums actual <code>(~input_mask)</code>/<code>(~target_mask)</code> over every <em>training</em> forward (gated on <code>module.training</code>), accumulating on-device with one host sync per epoch, DDP-all-reduced.
+- <code>make_accounting_train_one_epoch</code> — wraps stock <code>train_one_epoch</code>: lazily registers the hook, merges <code>[tokens] input_seen/target_seen/total_seen</code> into the per-epoch stats (→ <code>log.txt</code>), persists totals.
+- <code>install_token_accounting</code>, <code>read_tokens_seen</code>, <code>resolve_resume_ckpt</code>, <code>format_tokens_seen</code>.</p>
+<p><strong>Wiring (no edits to <code>external/ml-4m</code>):</strong>
+- <a href="4m_training/lib/train_4m.py#L385-L402">train_4m.py:385-402</a> — installs accounting always-on, seeds from the resumed checkpoint so the count stays cumulative across <code>auto_resume</code>.
+- Totals stash onto <code>args.tokens_seen</code>, which stock <code>save_model</code> already serializes → every checkpoint carries its tokens-seen.
+- <a href="4m_training/validate_4m.py#L264-L269">validate_4m.py:264-269</a> — standalone runs read &amp; print it per checkpoint.
+- <a href="4m_training/lib/in_loop_val.py#L64-L71">in_loop_val.py:64-71</a> — in-loop val prints it next to the per-task losses.</p>
+<p><strong>Tests:</strong> 13 new in <a href="4m_training/tests/test_token_accounting.py">test_token_accounting.py</a> + 2 in <a href="4m_training/tests/test_in_loop_val.py">test_in_loop_val.py</a>, all green (the fourm-dependent integration tests need ml-4m installed, so they run on CI/Modal, not locally).</p>
+<h2>The key system-level decisions (why this shape)</h2>
+<ol>
+<li><strong>Count at the mask, not via the formula.</strong> The stock closed-form (<code>steps × budget</code>) assumes every sample hits the full budget, but <a href="4m_training/lib/neural_masking.py#L56-L70">zero_absent_budgets</a> zeroes placeholder MEG/EEG budgets <em>without redistributing</em> — so it overcounts exactly the tokens you said not to count, and the dropped amount is random per sample (no closed-form fix). The masks are the one place the post-zeroing, post-span-masking truth is unambiguous and uniform across modality types, so counting there is exact <strong>with zero placeholder special-casing</strong> (budget 0 → 0 cells selected → 0 counted). Measure the real thing instead of modeling it.</li>
+<li><strong>Hook + monkeypatch seam, not a fork.</strong> Reuses the existing import-and-drive pattern so the vendored trainer stays upgradable.</li>
+<li><strong>Persist on the checkpoint, not a sidecar.</strong> The checkpoint is the natural carrier of "facts about this model state"; nothing to keep in sync, and standalone validate reads it straight back.</li>
+</ol>
+<p>I also fixed a latent bug while there: <code>trainer.args = args</code> (<a href="4m_training/lib/train_4m.py#L372">train_4m.py:372</a>). Stock <code>train_one_epoch</code> references a module-global <code>args</code> (frozen-model branch) that only exists in stock's <code>__main__</code> block — under our import-and-drive path it would <code>NameError</code> if <code>frozen_model_epochs &gt; 0</code>.</p>
+<hr />
+<p>One offer: the "count from masks vs. closed-form, and why placeholders make the formula wrong" reasoning is genuinely non-obvious and easy to forget. Want me to add a short <strong><code>notes/token_accounting.md</code></strong> capturing it (alongside your existing <code>notes/4m_neural_modality_design.md</code>)? Otherwise I'm done.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-28T05-11-48-265Z"><div class="index-item-header"><span class="index-item-number">#2</span><time datetime="2026-05-28T05:11:48.265Z" data-timestamp="2026-05-28T05:11:48.265Z">2026-05-28T05:11:48.265Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /temp/readonly/Bash tool output (n6fnvr) in the IDE. This may or may not be related to the current task.</ide_opened_file> ok can u run some modal tests where u manually count the num of tokens in some examples and then see what this new module says in terms of the count and verify the 2 are equal</p></div></a><div class="index-item-stats"><span>4 bash · 4 read · 1 write · 1 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Now I have the full picture of the production masking path. I'll write a Modal verification that builds real shards (real / placeholder / mixed neural), runs them through the <strong>production</strong> <code>PresenceAwareUnifiedMasking</code>, and compares the <code>TokenAccountant</code> count against an independent manual mask count — with explicit placeholder proof.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Auth works — it ran on Modal. The failure is the classic editable-install-in-process issue: <code>ensure_fourm()</code> pip-installs fourm, but the running interpreter's <code>sys.path</code> doesn't pick up the new <code>.pth</code>. The smoke tests avoid this by running training in a subprocess. I'll add the ml-4m dir to <code>sys.path</code> directly (it's what <code>training_env</code>'s PYTHONPATH points at).</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>All checks passed on Modal (CPU, 3.4s) through the <strong>real</strong> <code>PresenceAwareUnifiedMasking</code> pipeline. Here's what the run proves:</p>
+<h2>Result: module count == manual count, in every scenario</h2>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Module (input/target)</th>
+<th>Manual (input/target)</th>
+<th>Neural counted</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>real</strong> (all real MEG/EEG)</td>
+<td>716 / 697</td>
+<td>716 / 697 ✓</td>
+<td>497 / 527 (&gt;0 ✓)</td>
+</tr>
+<tr>
+<td><strong>placeholder</strong> (all sentinel)</td>
+<td>224 / 171</td>
+<td>224 / 171 ✓</td>
+<td><strong>0 / 0</strong> ✓</td>
+</tr>
+<tr>
+<td><strong>mixed</strong> (alternating)</td>
+<td>506 / 447</td>
+<td>506 / 447 ✓</td>
+<td>277 / 271</td>
+</tr>
+<tr>
+<td><strong>end-to-end</strong> (real model forward, hook registered the production way)</td>
+<td>568 / 487</td>
+<td>568 / 487 ✓</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Beyond the totals matching, the run also asserted, per example, that the accountant's running total equals the manual cumulative sum after <em>every</em> batch; that <code>decoder_attention_mask</code> (a different field) independently agrees with the <code>~target_mask</code> count; and that an eval forward (<code>training=False</code>) is not counted.</p>
+<h2>The placeholder proof, made concrete</h2>
+<p>Look at the per-example tables in the placeholder scenario — every neural row reads <code>in=0 tgt=0</code>. Only vision gets tokens. This is the payoff:</p>
+<ul>
+<li>The <strong>stock closed-form</strong> would report <code>n_in × n_examples = 128 × 6 = 768</code> input tokens for those 6 placeholder samples.</li>
+<li>The <strong>module</strong> reports <strong>224</strong> — because the zeroed neural budget is <em>not</em> redistributed, so ~544 tokens (3.4×) would have been <strong>falsely counted as MEG/EEG that never existed</strong>.</li>
+</ul>
+<p>That gap is exactly the bug you flagged ("don't falsely count meg/eeg for placeholder examples"), and the module closes it. (Even the all-<em>real</em> case lands at 716 not 768 — the mask count also captures <code>max_tokens</code> clamping, e.g. EEG's 17-cell cap, which the closed-form ignores too.)</p>
+<p>The verification script is at <a href="4m_training/modal/modal_verify_token_count.py">modal/modal_verify_token_count.py</a>; re-run with <code>modal run 4m_training/modal/modal_verify_token_count.py --n-examples 8</code>.</p>
+<p>One note on what this does and doesn't cover: it verifies the <strong>counting logic</strong> against the real masking pipeline end-to-end. It does not exercise the resume-seeding or the per-checkpoint persistence into <code>args.tokens_seen</code> — those are covered by the unit tests, and would only show up in a real multi-epoch run with checkpointing. Want me to also kick off a short real training run (e.g. the smoke config) and confirm the <code>[tokens] *_seen</code> lines land in <code>log.txt</code> and the checkpoint?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-28T05-44-16-195Z"><div class="index-item-header"><span class="index-item-number">#3</span><time datetime="2026-05-28T05:44:16.195Z" data-timestamp="2026-05-28T05:44:16.195Z">2026-05-28T05:44:16.195Z</time></div><div class="index-item-content"><p>so now where does this info actually land? when im training...where can i actually see this token info, where does it go?</p></div></a><div class="index-item-stats"><span>1 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Volume is <code>project</code>, so your run lands at <code>/project/runs/4m_things_neural/</code>. Here's exactly where the token info goes, in order of how soon you see it.</p>
+<h2>1. Live console (stdout / Modal logs) — every epoch</h2>
+<p>The in-loop-val hook prints it next to the val losses (<a href="4m_training/lib/in_loop_val.py#L64-L71">in_loop_val.py:64-71</a>). With your config (<code>eval_freq: 1</code>, <code>in_loop_val_tasks</code> set), that's <strong>every epoch</strong>:</p>
+<pre><code>[in-loop val] epoch 0: [in-loop val: rgb2depth] loss=8.93  ...
+[in-loop val] epoch 0: tokens seen (training): input=22,016 target=18,300 total=40,316
+</code></pre>
+<p>This streams live while <code>modal run ...</code> is going. <strong>Caveat:</strong> this line is emitted by the in-loop-val path, so it only shows if <code>in_loop_val_tasks</code> is set. Turn that off and the console goes quiet on tokens (it'd only be in log.txt).</p>
+<h2>2. <code>log.txt</code> — every epoch, persistent</h2>
+<p>The stock trainer writes one JSON line per epoch to <code>{output_dir}/log.txt</code> (<a href="external/ml-4m/run_training_4m.py#L667-L669">run_training_4m.py:667-669</a>). Our wrapper merges the accurate counts into that line, so at <strong><code>/project/runs/4m_things_neural/log.txt</code></strong> you get:</p>
+<pre><code class="language-json">{&quot;[Epoch] loss&quot;: ..., &quot;epoch&quot;: 0,
+ &quot;[tokens] input_seen&quot;: 22016, &quot;[tokens] target_seen&quot;: 18300, &quot;[tokens] total_seen&quot;: 40316,
+ &quot;input_tokens_seen_b&quot;: 0.000131, &quot;target_tokens_seen_b&quot;: ...}
+</code></pre>
+<p>Note both live side by side: <code>[tokens] *_seen</code> (our accurate raw counts) and stock's <code>*_tokens_seen_b</code> (the closed-form, in billions — the one that overcounts placeholders). You can compare them directly.</p>
+<h2>3. Inside each checkpoint <code>.pth</code> — every 10 epochs</h2>
+<p><code>install_token_accounting</code> stashes the running total onto <code>args.tokens_seen</code>, and stock <code>save_model</code> serializes <code>args</code> into the file (<a href="external/ml-4m/fourm/utils/checkpoint.py#L100-L105">checkpoint.py:100-105</a>). So <code>/project/runs/4m_things_neural/checkpoint-9.pth</code>, <code>-19.pth</code>, …, <code>checkpoint-final.pth</code> each carry the tokens-seen for <em>that</em> model state. Read it with <code>read_tokens_seen(torch.load(path, weights_only=False))</code>.</p>
+<h2>4. Standalone validation — reads it back from the checkpoint</h2>
+<p><code>modal run 4m_training/modal/modal_train.py --validate</code> (or <code>validate_4m.py</code>) prints <code>tokens seen (training): ...</code> for whatever checkpoint it loads (<a href="4m_training/validate_4m.py#L267">validate_4m.py:267</a>).</p>
+<h2>5. wandb — only if you enable it</h2>
+<p>Your config has <code>log_wandb: false</code>. Flip it to <code>true</code> and the <code>[tokens] *_seen</code> keys ride along in <code>log_writer.update(log_stats)</code> as epoch-level metrics. (The per-<em>step</em> wandb token log at <a href="external/ml-4m/run_training_4m.py#L776-L783">run_training_4m.py:776-783</a> is stock's overcounting formula only — our accurate number is per-epoch / per-checkpoint, not per-step.)</p>
+<hr />
+<p>To read the files (output_dir is on the Modal volume, not local):</p>
+<pre><code>modal volume ls project runs/4m_things_neural
+modal volume get project runs/4m_things_neural/log.txt .
+</code></pre>
+<p>One thing worth deciding: right now the <strong>console</strong> line is tied to in-loop val running. If you'd rather see <code>tokens seen</code> on the console <strong>every epoch regardless</strong> of whether in-loop val is enabled, I can move that print into the token-accounting wrapper itself (one line, decoupled). Want me to?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+
+        <dialog id="search-modal">
+            <div class="search-modal-header">
+                <input type="text" id="modal-search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="modal-search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+                <button id="modal-close-btn" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </dialog>
+        <script>
+(function() {
+    var totalPages = 1;
+    var searchBox = document.getElementById('search-box');
+    var searchInput = document.getElementById('search-input');
+    var searchBtn = document.getElementById('search-btn');
+    var modal = document.getElementById('search-modal');
+    var modalInput = document.getElementById('modal-search-input');
+    var modalSearchBtn = document.getElementById('modal-search-btn');
+    var modalCloseBtn = document.getElementById('modal-close-btn');
+    var searchStatus = document.getElementById('search-status');
+    var searchResults = document.getElementById('search-results');
+
+    if (!searchBox || !modal) return;
+
+    // Hide search on file:// protocol (doesn't work due to CORS restrictions)
+    if (window.location.protocol === 'file:') return;
+
+    // Show search box (progressive enhancement)
+    searchBox.style.display = 'flex';
+
+    // Gist preview support - detect if we're on gisthost.github.io or gistpreview.github.io
+    var hostname = window.location.hostname;
+    var isGistPreview = hostname === 'gisthost.github.io' || hostname === 'gistpreview.github.io';
+    var gistId = null;
+    var gistOwner = null;
+    var gistInfoLoaded = false;
+
+    if (isGistPreview) {
+        // Extract gist ID from URL query string like ?78a436a8a9e7a2e603738b8193b95410/index.html
+        var queryMatch = window.location.search.match(/^\?([a-f0-9]+)/i);
+        if (queryMatch) {
+            gistId = queryMatch[1];
+        }
+    }
+
+    async function loadGistInfo() {
+        if (!isGistPreview || !gistId || gistInfoLoaded) return;
+        try {
+            var response = await fetch('https://api.github.com/gists/' + gistId);
+            if (response.ok) {
+                var info = await response.json();
+                gistOwner = info.owner.login;
+                gistInfoLoaded = true;
+            }
+        } catch (e) {
+            console.error('Failed to load gist info:', e);
+        }
+    }
+
+    function getPageFetchUrl(pageFile) {
+        if (isGistPreview && gistOwner && gistId) {
+            // Use raw gist URL for fetching content
+            return 'https://gist.githubusercontent.com/' + gistOwner + '/' + gistId + '/raw/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function getPageLinkUrl(pageFile) {
+        if (isGistPreview && gistId) {
+            // Use gistpreview URL format for navigation links
+            return '?' + gistId + '/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openModal(query) {
+        modalInput.value = query || '';
+        searchResults.innerHTML = '';
+        searchStatus.textContent = '';
+        modal.showModal();
+        modalInput.focus();
+        if (query) {
+            performSearch(query);
+        }
+    }
+
+    function closeModal() {
+        modal.close();
+        // Update URL to remove search fragment, preserving path and query string
+        if (window.location.hash.startsWith('#search=')) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }
+
+    function updateUrlHash(query) {
+        if (query) {
+            // Preserve path and query string when adding hash
+            history.replaceState(null, '', window.location.pathname + window.location.search + '#search=' + encodeURIComponent(query));
+        }
+    }
+
+    function highlightTextNodes(element, searchTerm) {
+        var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        var nodesToReplace = [];
+
+        while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node.nodeValue.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(function(node) {
+            var text = node.nodeValue;
+            var regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            var parts = text.split(regex);
+            if (parts.length > 1) {
+                var span = document.createElement('span');
+                parts.forEach(function(part) {
+                    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                        var mark = document.createElement('mark');
+                        mark.textContent = part;
+                        span.appendChild(mark);
+                    } else {
+                        span.appendChild(document.createTextNode(part));
+                    }
+                });
+                node.parentNode.replaceChild(span, node);
+            }
+        });
+    }
+
+    function fixInternalLinks(element, pageFile) {
+        // Update all internal anchor links to include the page file
+        var links = element.querySelectorAll('a[href^="#"]');
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            link.setAttribute('href', pageFile + href);
+        });
+    }
+
+    function processPage(pageFile, html, query) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var resultsFromPage = 0;
+
+        // Find all message blocks
+        var messages = doc.querySelectorAll('.message');
+        messages.forEach(function(msg) {
+            var text = msg.textContent || '';
+            if (text.toLowerCase().indexOf(query.toLowerCase()) !== -1) {
+                resultsFromPage++;
+
+                // Get the message ID for linking
+                var msgId = msg.id || '';
+                var pageLinkUrl = getPageLinkUrl(pageFile);
+                var link = pageLinkUrl + (msgId ? '#' + msgId : '');
+
+                // Clone the message HTML and highlight matches
+                var clone = msg.cloneNode(true);
+                // Fix internal links to include the page file
+                fixInternalLinks(clone, pageLinkUrl);
+                highlightTextNodes(clone, query);
+
+                var resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<a href="' + link + '">' +
+                    '<div class="search-result-page">' + escapeHtml(pageFile) + '</div>' +
+                    '<div class="search-result-content">' + clone.innerHTML + '</div>' +
+                    '</a>';
+                searchResults.appendChild(resultDiv);
+            }
+        });
+
+        return resultsFromPage;
+    }
+
+    async function performSearch(query) {
+        if (!query.trim()) {
+            searchStatus.textContent = 'Enter a search term';
+            return;
+        }
+
+        updateUrlHash(query);
+        searchResults.innerHTML = '';
+        searchStatus.textContent = 'Searching...';
+
+        // Load gist info if on gistpreview (needed for constructing URLs)
+        if (isGistPreview && !gistInfoLoaded) {
+            searchStatus.textContent = 'Loading gist info...';
+            await loadGistInfo();
+            if (!gistOwner) {
+                searchStatus.textContent = 'Failed to load gist info. Search unavailable.';
+                return;
+            }
+        }
+
+        var resultsFound = 0;
+        var pagesSearched = 0;
+
+        // Build list of pages to fetch
+        var pagesToFetch = [];
+        for (var i = 1; i <= totalPages; i++) {
+            pagesToFetch.push('page-' + String(i).padStart(3, '0') + '.html');
+        }
+
+        searchStatus.textContent = 'Searching...';
+
+        // Process pages in batches of 3, but show results immediately as each completes
+        var batchSize = 3;
+        for (var i = 0; i < pagesToFetch.length; i += batchSize) {
+            var batch = pagesToFetch.slice(i, i + batchSize);
+
+            // Create promises that process results immediately when each fetch completes
+            var promises = batch.map(function(pageFile) {
+                return fetch(getPageFetchUrl(pageFile))
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.text();
+                    })
+                    .then(function(html) {
+                        // Process and display results immediately
+                        var count = processPage(pageFile, html, query);
+                        resultsFound += count;
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    })
+                    .catch(function() {
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    });
+            });
+
+            // Wait for this batch to complete before starting the next
+            await Promise.all(promises);
+        }
+
+        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + totalPages + ' pages';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', function() {
+        openModal(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            openModal(searchInput.value);
+        }
+    });
+
+    modalSearchBtn.addEventListener('click', function() {
+        performSearch(modalInput.value);
+    });
+
+    modalInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(modalInput.value);
+        }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Check for #search= in URL on page load
+    if (window.location.hash.startsWith('#search=')) {
+        var query = decodeURIComponent(window.location.hash.substring(8));
+        if (query) {
+            searchInput.value = query;
+            openModal(query);
+        }
+    }
+})();
+        </script>
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

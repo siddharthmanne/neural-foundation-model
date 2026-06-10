@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 1</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 1/1</h1>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+        
+<div class="message user" id="msg-2026-06-01T03-37-31-925Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T03-37-31-925Z" class="timestamp-link"><time datetime="2026-06-01T03:37:31.925Z" data-timestamp="2026-06-01T03:37:31.925Z">2026-06-01T03:37:31.925Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>what is bal_acc in meg tokenization md</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T03-37-33-995Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T03-37-33-995Z" class="timestamp-link"><time datetime="2026-06-01T03:37:33.995Z" data-timestamp="2026-06-01T03:37:33.995Z">2026-06-01T03:37:33.995Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T03-37-34-935Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T03-37-34-935Z" class="timestamp-link"><time datetime="2026-06-01T03:37:34.935Z" data-timestamp="2026-06-01T03:37:34.935Z">2026-06-01T03:37:34.935Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_019EFfyLwKv9KUyKrzdnqDuG">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find md files mentioning bal_acc</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -ri &#34;bal_acc&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg --include=&#34;*.md&#34; -l</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T03-37-36-278Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T03-37-36-278Z" class="timestamp-link"><time datetime="2026-06-01T03:37:36.278Z" data-timestamp="2026-06-01T03:37:36.278Z">2026-06-01T03:37:36.278Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T03-37-38-708Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T03-37-38-708Z" class="timestamp-link"><time datetime="2026-06-01T03:37:38.708Z" data-timestamp="2026-06-01T03:37:38.708Z">2026-06-01T03:37:38.708Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MSqJe91kXPN6MpZtcvUWTt">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show bal_acc context</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n -B2 -A4 &#34;bal_acc&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T03-37-38-743Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T03-37-38-743Z" class="timestamp-link"><time datetime="2026-06-01T03:37:38.743Z" data-timestamp="2026-06-01T03:37:38.743Z">2026-06-01T03:37:38.743Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>585-| Metric                      | tokens           | raw              | random           |
+586-|-----------------------------|------------------|------------------|------------------|
+587:| bal_acc (linear, weighted)  | 3.57% ± 0.47     | **5.16% ± 0.21** | 4.22% ± 0.78     |
+588-
+589-μ-transform passes §5.3 by the same margin BrainOmni does — i.e. it
+590-doesn&#x27;t. Tokens at chance, raw lifts to 5.16% (identical to BrainOmni&#x27;s
+591-raw because the underlying signal and probe are identical — confirms the</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T03-37-42-607Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T03-37-42-607Z" class="timestamp-link"><time datetime="2026-06-01T03:37:42.607Z" data-timestamp="2026-06-01T03:37:42.607Z">2026-06-01T03:37:42.607Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><code>bal_acc</code> = <strong>balanced accuracy</strong>: per-class recall averaged across classes, so it's not inflated by class imbalance. In <a href="neural_tokenizers/meg/CLAUDE.md#L587">neural_tokenizers/meg/CLAUDE.md:587</a> it's the THINGS concept-decoding probe metric (linear probe, class-weighted), compared across token / raw / random representations. Chance for a many-class THINGS probe is ~1/N_classes, which is why ~4–5% shows up as the floor.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T05-50-22-090Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T05-50-22-090Z" class="timestamp-link"><time datetime="2026-06-01T05:50:22.090Z" data-timestamp="2026-06-01T05:50:22.090Z">2026-06-01T05:50:22.090Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>make a lean form of the meg tokenization with mostly just data, some results.md</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-50-24-584Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-50-24-584Z" class="timestamp-link"><time datetime="2026-06-01T05:50:24.584Z" data-timestamp="2026-06-01T05:50:24.584Z">2026-06-01T05:50:24.584Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-50-25-458Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-50-25-458Z" class="timestamp-link"><time datetime="2026-06-01T05:50:25.458Z" data-timestamp="2026-06-01T05:50:25.458Z">2026-06-01T05:50:25.458Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01FbRoAvKHxwrr31wmjEBgXW">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check file size</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">wc -l /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-50-25-495Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-50-25-495Z" class="timestamp-link"><time datetime="2026-06-01T05:50:25.495Z" data-timestamp="2026-06-01T05:50:25.495Z">2026-06-01T05:50:25.495Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>     844 /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-50-27-653Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-50-27-653Z" class="timestamp-link"><time datetime="2026-06-01T05:50:27.653Z" data-timestamp="2026-06-01T05:50:27.653Z">2026-06-01T05:50:27.653Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01VxpRsuaBLVr3Ktx2wvy7ue"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-50-27-867Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-50-27-867Z" class="timestamp-link"><time datetime="2026-06-01T05:50:27.867Z" data-timestamp="2026-06-01T05:50:27.867Z">2026-06-01T05:50:27.867Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG Tokenizers — CLAUDE.md
+2	
+3	Scope: this file applies only to work in `neural_tokenizers/meg/`. Read it
+4	before making MEG-tokenizer changes. The parent doc
+5	[`../CLAUDE.md`](../CLAUDE.md) defines the cross-modality contract (the
+6	`Tokenizer` protocol, the four §5 evaluation axes, Modal training, file-layout
+7	norms). This doc only adds what is MEG-specific. EEG-specific work will live
+8	in a sibling `eeg/` folder maintained by someone else — do not touch it from
+9	here.
+10	
+11	## 1. Goal
+12	
+13	Ship one MEG tokenizer that passes the §5 harness in
+14	[`../CLAUDE.md`](../CLAUDE.md) on THINGS-MEG and is registered as a 4M
+15	modality. We will get there in three phases, each producing an independent
+16	tokenizer that satisfies the same `Tokenizer` protocol so the harness
+17	compares them apples-to-apples.
+18	
+19	## 2. What 4M expects from a new modality — the binding constraint
+20	
+21	Before designing anything, the codebook size we ship has to fit 4M&#x27;s modality
+22	registration model. Read [`../../external/ml-4m/fourm/data/modality_info.py`](../../external/ml-4m/fourm/data/modality_info.py)
+23	— that file is the source of truth.
+24	
+25	Concrete facts that drive the design:
+26	
+27	- **No fixed vocab across modalities.** Each modality declares its own
+28	  `vocab_size` in `MODALITY_INFO`. Image-token modalities range from 4096
+29	  (semseg) to 16384 (RGB); text/sequence is 30_000; `human_poses` &quot;borrows&quot;
+30	  the 30k text vocab via `shared_vocab: [&#x27;caption&#x27;]`. We are free to pick.
+31	- **But vocab IS fixed at registration time.** 4M allocates a learnable
+32	  embedding `[vocab_size, d_model]` for the modality. Adding tokens
+33	  mid-training breaks that table. **Pick V before computing the token cache
+34	  that 4M trains on; commit to it.**
+35	- **`type: &#x27;seq&#x27;` is the right modality type for MEG**, not image-grid.
+36	  Mirror `human_poses` (`modality_info.py:172`) more than `tok_rgb`. The
+37	  per-channel-per-timestep token stream is a sequence, not a 2D grid.
+38	  Pose-tokenizer registration template:
+39	  `vocab_size`, `encoder_embedding = SequenceEncoderEmbedding(...)`,
+40	  `decoder_embedding = SequenceDecoderEmbedding(...)`,
+41	  `max_length`, `num_channels`, `type: &#x27;seq&#x27;`,
+42	  `id: generate_uint15_hash(&#x27;meg_tokens&#x27;)`.
+43	- **Multi-codebook (`num_codebooks &gt; 1`) is supported by the `memcodes`
+44	  quantizer** (used by `human_poses`, 1024 × 8). Cho 2026&#x27;s tokenizers use
+45	  a single codebook per channel. Stick with **`num_codebooks = 1`** for MEG
+46	  — there is no reason to fight the upstream tokenizer&#x27;s design.
+47	- **Whether to share vocab with another modality is a 4M-side decision.**
+48	  Human_poses reuses the text vocab because pose tokens are mapped into the
+49	  WordPiece range; this lets a 4M decoder generate poses with the same head
+50	  as captions. We do **not** want that for MEG — it couples MEG to text
+51	  training. **Register a dedicated `meg_tokens` modality with its own
+52	  vocab.**
+53	
+54	So the headline constraint: pick `V` and `max_length` (= per-trial token
+55	sequence length) when you write the tokenizer, because the modality
+56	registration that goes into 4M has to declare both.
+57	
+58	Sensible starting points, derived from Cho 2026 + the verified THINGS-MEG
+59	data spec in §3 + 4M conventions:
+60	
+61	| Tokenizer            | V                              | num_codebooks | per-trial token shape |
+62	|----------------------|--------------------------------|---------------|------------------------|
+63	| Phase 1 (μ-transform)| 256 (paper default)            | 1             | 271 × 281 (per sample) |
+64	| Phase 2 (Cho2026 learned) | 128 (paper) → V* after refactor | 1        | 271 × 281 (target)     |
+65	| Phase 3 (BrainOmni)  | **512** (per RVQ layer)        | **4**         | **16 × 8 × 4 = 512** indices |
+66	
+67	Registration shape for sample-level tokenizers (Phase 1/2):
+68	`num_channels = 271`, `max_length = 281`. BrainOmni registers separately as
+69	`meg_tokens_brainomni`: `num_channels = 16` latent sources, `max_length = 8`
+70	temporal tokens, `num_codebooks = 4`, `vocab_size = 512`. See
+71	`meg/modality_registration.py`. Flattening 271 × 281 = 76,151 tokens per trial
+72	blows past sensible 4M context — BrainOmni&#x27;s 512-token grid is the practical
+73	production shape for 4M.
+74	
+75	## 3. Data — verified, not assumed
+76	
+77	Preprocessed THINGS-MEG already lives on the team&#x27;s `project` Modal Volume.
+78	This section is grounded in actual file metadata pulled from the volume on
+79	2026-05-22 — re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+80	to refresh after any preprocessing pipeline change.
+81	
+82	### Where it lives
+83	
+84	- **Volume**: `project` (NOT the `neural-fm-data` shared volume — see the
+85	  rationale at the top of [`../../modal/modal_download_things_meg.py`](../../modal/modal_download_things_meg.py)).
+86	- **Path inside container**: `/project/data/things-meg/preprocessed/`.
+87	- **File layout**: 4 subjects (P1–P4), each split across 4 MNE `.fif` files
+88	  (`preprocessed_P{1..4}-epo.fif` + auto-continuations `-epo-1.fif`,
+89	  `-epo-2.fif`, `-epo-3.fif` — MNE splits whenever a file exceeds 2 GB).
+90	  Total ~33 GB on disk. Load with `mne.read_epochs(primary_path)` — MNE
+91	  follows the `-N.fif` chain automatically.
+92	
+93	### What each file actually contains (verified)
+94	
+95	| Field            | Value                                  | Notes |
+96	|------------------|----------------------------------------|-------|
+97	| `sfreq`          | **200 Hz**                             | Already downsampled from native 1200 Hz |
+98	| `n_channels`     | **271, all `mag`**                     | Originally CTF 275 → 271 after dropping ref/bad channels |
+99	| `n_epochs/subj`  | **27,048**                             | Identical across all 4 subjects |
+100	| `tmin, tmax`     | **−0.100 s, +1.300 s**                 | 100 ms pre-stim baseline + 1.3 s post-stim |
+101	| `timepoints`     | **281** (= 1.4 s × 200 Hz + 1 inclusive) | Per-trial sequence length |
+102	| `unique labels`  | **22,449** (per-image codes)           | Image-level IDs, NOT concept IDs |
+103	| Per-trial shape  | `(271, 281)`                           | Channels × time |
+104	
+105	Three non-obvious things the verification surfaced:
+106	
+107	1. **All channels are `mag` after preprocessing.** The parent doc&#x27;s worry
+108	   about planar-grad vs. magnetometer unit heterogeneity does not apply
+109	   here — there is exactly one channel type. The CTF axial-gradiometer
+110	   sensors are labeled `mag` by MNE. Per-channel normalization is still
+111	   wise for inter-channel amplitude variance, but the magnitude-scale
+112	   disparity problem doesn&#x27;t apply.
+113	2. **Labels are image-level (22,449 codes), not concept-level (1854).**
+114	   The THINGS object database has 1854 concepts × ~12 images per concept ≈
+115	   22k unique images, and that is what the trigger codes index. The linear
+116	   probe in §5.3 will need a `image_id → concept_id` mapping (lives in
+117	   THINGS metadata, not in the .fif files). Coarsen further to
+118	   superordinate categories for the primary probe target. Without that
+119	   mapping the probe is a 22k-way classification on 27k trials per
+120	   subject — too noisy to interpret.
+121	3. **27,048 trials/subject is much more than the parent doc estimated
+122	   (~16k).** Tokenizer training has more data than expected. This shifts
+123	   the calculus on Stage 2 — even from-scratch (option 2c in §4) is more
+124	   plausible than the parent doc assumed.
+125	
+126	### What&#x27;s NOT yet on the volume
+127	
+128	- `/project/data/things-meg/splits/` — persisted split manifests (optional).
+129	  **In-repo split logic exists:** `meg/splits.py` with `LEARNABLE_SPLIT_DEFAULTS`
+130	  (80/10/10) for BrainOmni/Cho2026 and `MU_SPLIT_DEFAULTS` (90/0/10) for
+131	  μ-transform calibration. Test indices are determined by `(seed, test_frac)`
+132	  alone so all tokenizers evaluate on the same held-out trials.
+133	- `/project/data/things-meg/source/` — source-reconstructed parcels.
+134	  Not yet computed. Only needed if phase 2 ends up requiring it (see §4).
+135	
+136	### Subject identity
+137	
+138	Trial counts are identical across P1–P4, but trigger orderings differ
+139	(different `event_id` first-5 keys per file). Tokenizer training pools all
+140	4 subjects unless we have a specific reason to per-subject. Pooled is the
+141	default per the parent doc §6.
+142	
+143	## 4. Why three phases, in this order
+144	
+145	The phases trade off cost vs. expected fidelity. We deliberately start with
+146	the cheapest possible MEG tokenizer to (a) prove the §5 harness is correctly
+147	wired for MEG-shaped data, (b) put a floor on the leaderboard, and (c) avoid
+148	prematurely committing to a deep architecture before we know what &quot;good
+149	enough&quot; looks like on this specific THINGS-MEG distribution.
+150	
+151	| Phase | Tokenizer                                | Learns? | Cost     | Role                         | Status |
+152	|-------|------------------------------------------|---------|----------|------------------------------|--------|
+153	| 1     | μ-transform (Cho 2026 baseline)          | No¹     | seconds  | Floor + harness sanity check | **Shipped** |
+154	| 2     | Cho 2026 learnable AE (causal / non-causal) | Yes  | hours-GPU | Likely production tokenizer | Not started |
+155	| 3     | BrainOmni BrainTokenizer, finetuned        | Yes     | hours-GPU | Learned compression + 4M-friendly grid | **Shipped (3a+3b)** |
+156	
+157	¹ &quot;Non-learnable&quot; means no gradient-descent weights — but the μ-transform
+158	still has dataset-fit parameters (clip thresholds and max-abs scaler) that
+159	**must** be re-estimated on THINGS-MEG. See §5 for what &quot;recalibration&quot;
+160	actually means.
+161	
+162	## 5. What &quot;recalibration&quot; / &quot;finetuning&quot; actually mean here
+163	
+164	The Cho 2026 paper warns that both tokenizer families need dataset-specific
+165	adaptation. The mechanism is different for each.
+166	
+167	### Phase 1 — μ-transform recalibration (no gradient descent, but still a `fit` step)
+168	
+169	The μ-transform pipeline (paper §3.3.1):
+170	
+171	1. **Clip** the input to a percentile range `[q_lo, q_hi]` to suppress
+172	   outliers.
+173	2. **Max-abs scale** to `[−1, 1]`: `x&#x27; = x / s` with `s = max|x|`.
+174	3. **μ-law compand**: `F(x&#x27;) = sgn(x&#x27;) · ln(1 + μ|x&#x27;|) / ln(1 + μ)`.
+175	4. **Uniform bin** the compressed values into `V` bins → integer token IDs.
+176	
+177	The reference config Cho 2026 ships
+178	([`../../external/Cho2026_Tokenizer/models/tokenizer/mu_transform/config.yml`](../../external/Cho2026_Tokenizer/models/tokenizer/mu_transform/config.yml))
+179	is:
+180	
+181	```yaml
+182	mu: 255
+183	n_tokens: 256
+184	normalization: max_abs
+185	```
+186	
+187	There are **no learned weights**, but two parameters are dataset-dependent
+188	and must be fit on a THINGS-MEG training split, frozen, and reused at
+189	inference:
+190	
+191	- `s = max|x|`: the per-channel (recommended) or global max-abs scaler.
+192	- `q_lo, q_hi`: clip thresholds (defaults around the 0.5 / 99.5 percentiles).
+193	
+194	`μ` and `V` are hyperparameters, not fit from data — start with μ=255,
+195	V=256.
+196	
+197	Concretely: there is no `.train()` loop. There is a `fit(train_dataset) →
+198	calibration.json` step that produces a small JSON sidecar with
+199	`{s_per_channel, q_lo, q_hi, mu, V, channel_mode}`. At inference we load
+200	that JSON and apply the stateless transform. Treat the calibration JSON as
+201	a versioned tokenizer checkpoint.
+202	
+203	**Phase 1 status (shipped):** calibrated on THINGS-MEG train split with
+204	μ=255, V=256, per-channel clip `[0.5, 99.5]` percentiles. Run slug:
+205	`V256_mu255_clip0.5-99.5_per_channel_s0`. Eval via
+206	`modal_meg_eval.py --tokenizer mu_transform` (see §9).
+207	
+208	&gt; Verified §3 fact that matters here: all 271 channels are `mag`, so the
+209	&gt; grad-vs-mag amplitude disparity problem does not apply. Per-channel `s`
+210	&gt; is still the safer default (inter-sensor amplitude variance is real even
+211	&gt; within one channel type), but the bin-saturation risk is much lower than
+212	&gt; it would be on a mixed-sensor dataset.
+213	
+214	### Phase 2 — Cho 2026 learnable tokenizer (actual gradient training)
+215	
+216	The Cho 2026 learnable tokenizer (paper §3.2) is an **autoencoder**, not a
+217	VQ-VAE: encoder is GRU → Dense → LayerNorm producing per-time-step logits
+218	over a vocab of size `V`; decoder is a bank of `V` 1-D conv kernels (causal
+219	or non-causal) summed with learned per-token gains. Trained end-to-end with
+220	MSE + an annealed soft-to-hard argmax relaxation, then unused tokens are
+221	pruned (&quot;token refactorization&quot;).
+222	
+223	Reference configs they ship
+224	(`../../external/Cho2026_Tokenizer/models/tokenizer/{causal,noncausal}/config.yml`):
+225	
+226	```yaml
+227	sequence_length: 200
+228	n_channels: 52         # NB: 52 source-parcellated channels, NOT sensor
+229	n_tokens: 128
+230	token_dim: 10
+231	rnn_n_units: 128
+232	token_kernel_padding: causal  # or `same` for non-causal
+233	training: { lr: 1e-5, batch: 32, epochs: 40, anneal_stages: 40 }
+234	```
+235	
+236	Three things the configs tell us, in light of the verified data spec:
+237	
+238	1. **They trained on source-reconstructed data (52 parcels), not sensor
+239	   space.** Our THINGS-MEG is **271-sensor**. The tokenizer is applied
+240	   per-channel and the GRU has no channel-conditioning, so weights *can*
+241	   be reused on sensor data, but the *amplitude distribution* of source
+242	   parcels (after `osl_dynamics.standardize()`) is not identical to sensor
+243	   amplitudes. This is the symmetric MEG version of the LABRAM/THINGS
+244	   distribution mismatch in the parent doc.
+245	2. **Their sequence_length = 200 samples ≈ 0.8 s.** Our trials are 281
+246	   samples (1.4 s). Either reduce our windows to 200 samples (matches their
+247	   training distribution → reuse pretrained weights cleanly) or retrain
+248	   with `sequence_length = 281`. Strong prior: **window to 200** for 2a/2b
+249	   to keep the pretrained encoder in-distribution; only change
+250	   `sequence_length` for 2c.
+251	3. **Their LR (1e-5) is very small.** Tells us finetuning is intended to be
+252	   conservative — they expect the loss landscape to be flat around the
+253	   pretrained optimum. Start with that LR and only increase if the loss is
+254	   not moving after 1 epoch.
+255	
+256	&quot;Finetuning on our dataset&quot; then has three concrete recipes:
+257	
+258	- **2a.** Load pretrained weights, apply on THINGS-MEG **as-is** (zero
+259	  finetune). Establishes the floor for what their pretrained tokenizer
+260	  buys us on distribution-shifted data.
+261	- **2b.** Load pretrained weights, continue MSE training on THINGS-MEG
+262	  (lr=1e-5, anneal κ already at 0 → hard tokens — or restart anneal).
+263	  This is the &quot;actual finetune.&quot;
+264	- **2c.** Take their architecture, train from scratch on THINGS-MEG. This
+265	  is needed if (a) pretrained weights fail the §5 harness even after 2b,
+266	  (b) we want to change `sequence_length` or `n_tokens`, or (c) the
+267	  source-vs-sensor mismatch turns out to dominate. With ~108k trials
+268	  pooled across P1–P4 (see §3 — much more than the parent doc estimated),
+269	  from-scratch is more viable than first assumed.
+270	
+271	Run **2a → 2b → 2c** in order; stop as soon as the harness numbers are
+272	acceptable. Do not skip 2a — the gap between 2a and 2b is the answer to
+273	&quot;how much did pretraining buy us.&quot;
+274	
+275	&gt; System-level note: their pretraining data is **resting-state** MEG;
+276	&gt; THINGS-MEG is **event-related** (stimulus-locked). Expect the pretrained
+277	&gt; kernels to capture continuous oscillatory structure well and to
+278	&gt; underweight evoked transients. Reconstruction MSE may look fine while
+279	&gt; the §5.3 linear probe quietly tanks — watch that metric closely after
+280	&gt; each of 2a/2b/2c.
+281	
+282	### Phase 3 — BrainOmni BrainTokenizer (implemented)
+283	
+284	Adapter over [OpenTSLab/BrainOmni](https://github.com/OpenTSLab/BrainOmni)
+285	**Stage 1 only** (`BrainTokenizer` — reconstruction + RVQ). We do **not** use
+286	BrainOmni Stage 2 (masked token prediction on discrete codes). Checkpoint
+287	auto-downloads from HuggingFace `OpenTSLab/BrainOmni` on first Modal run.
+288	
+289	**Preprocessing** (`meg/brainomni/preprocess.py`):
+290	
+291	1. Resample 200 Hz → 256 Hz (460 samples from 281)
+292	2. Per-trial per-channel z-score (computed **before** zero-pad)
+293	3. Zero-pad post-stimulus tail to **512** samples
+294	
+295	**Token shape:** `(B, 16, 8, 4)` — 16 latent neuro sources, 8 temporal
+296	tokens (SEANet ratios `[8,4,2]` on 512 samples), 4 RVQ layers @ V=512 each
+297	→ **512 integer indices per trial**.
+298	
+299	**Finetune modes** (`meg/brainomni/trainer.py`):
+300	
+301	| Mode | What&#x27;s trainable | Params (approx) |
+302	|------|------------------|-----------------|
+303	| `adapt` (default) | sensor embed, cross-attn, latent neuros, RVQ | ~959k / 5.05M |
+304	| `rvq_only` | RVQ codebooks only | smaller |
+305	| `full` | entire BrainTokenizer | 5.05M |
+306	
+307	Default `adapt` freezes SEANet encoder/decoder (~81% of weights). RVQ
+308	codebooks update via EMA during training.
+309	
+310	**Hyperparameter sweeps (smoke: 1k train / 200 val):**
+311	
+312	| Sweep | Grid | Winner | Smoke best val |
+313	|-------|------|--------|----------------|
+314	| LR | `{3e-6, 1e-5, 3e-5}` × 5 ep | **3e-5** | 1.597 |
+315	| Codebook | `{256, 512, 1024}` × 10 ep | **512** | 1.543 |
+316	| LR coarse | `{1e-4, 1e-3}` × 10 ep | 1e-4 (both worse than 3e-5) | 1.620 |
+317	
+318	Summaries: `brainomni/runs/3b_smoke_sweep/`, `3b_codebook_sweep/`,
+319	`3b_lr_sweep_coarse/`.
+320	
+321	**Full finetune (3b) — completed:**
+322	
+323	- Config: `adapt`, lr=**3e-5**, batch=**32**, 10 epochs, V=512
+324	- Data: 88,340 train / 9,816 val (80/10/10 `LEARNABLE_SPLIT_DEFAULTS`)
+325	- Best val loss: **~1.401** (BrainOmni composite recon loss)
+326	- Checkpoint: Modal volume `/project/checkpoints/meg/brainomni/V512_rvq4_win512_sf256_3b/`
+327	- Local config pointer: `brainomni/runs/V512_rvq4_win512_sf256_3b/config.json`
+328	
+329	**Modal resources (finetune/eval):** L40S GPU, 32 GB RAM, batch 32.
+330	Long jobs: use `finetune_detached` with `modal run --detach` (`.spawn()` —
+331	survives laptop close). Do **not** use `.remote()` for multi-hour runs.
+332	
+333	**Modal entrypoints:**
+334	
+335	```bash
+336	# 3a zero-shot eval
+337	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+338	  --tokenizer brainomni \
+339	  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/config.json \
+340	  --n-test 3000 --seed 0
+341	
+342	# 3b finetuned eval
+343	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+344	  --tokenizer brainomni \
+345	  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+346	  --n-test 3000 --seed 0
+347	
+348	# Full finetune (detached)
+349	modal run --detach neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py::finetune_detached \
+350	  --finetune-mode adapt --lr 3e-05 --epochs 10 --batch-size 32 --stage 3b
+351	```
+352	
+353	**4M integration (draft, not wired in ml-4m yet):**
+354	
+355	- Registration: `meg/modality_registration.py` → `meg_tokens_brainomni`
+356	- At 4M boundary: flatten `(16,8,4)` → `(512,)` seq **or** treat as
+357	  `(16, 32)` 2D grid (`ImageTokenEncoderEmbedding`); both are discrete
+358	  lookup — RVQ layers are extra positions, not a 512⁴ joint vocab
+359	- **Pending:** token-cache export script; add entry to ml-4m `modality_info.py`
+360	
+361	**Key implementation notes:**
+362	
+363	- Subsample split indices **before** loading `.fif` data (88k trials ≈ 30 GB
+364	  if loaded at once)
+365	- `codebook_size` override re-inits quantizer; filter quantizer keys in
+366	  `load_state_dict` (`brainomni/load.py`)
+367	- DeepSpeed import stubbed in `load.py` for HF checkpoint load
+368	- Finetune loss masked on zero-pad region; minor `norm_target()` on full 512
+369	  window including pad — deterministic, not worth restarting training
+370	
+371	See also `meg/brainomni/README.md` for command cheat sheet.
+372	
+373	## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
+374	
+375	The `external/Cho2026_Tokenizer` submodule we pinned in this branch is
+376	**TensorFlow 2.11** + `osl_dynamics` + `osl_foundation` (see their
+377	`README.md`, &quot;Requirements&quot;). Our stack (ml-4m, Modal, existing eval code)
+378	is **PyTorch**. Do not try to bridge TF→Torch inside this subdir.
+379	
+380	The OHBA group released a PyTorch port: **[`OHBA-analysis/EphysTokenizer`](https://github.com/OHBA-analysis/EphysTokenizer)**
+381	(linked from the Cho2026 README&#x27;s &quot;PyTorch version&quot; toggle). This is the
+382	real runtime target for phase 2. The plan is:
+383	
+384	- **Keep `external/Cho2026_Tokenizer`** — it is the source of truth for
+385	  the paper&#x27;s configs (`models/tokenizer/{mu_transform,causal,noncausal}/config.yml`),
+386	  reference scripts (`scripts/01_train_tokenizer.py`, etc.), and the
+387	  reproducibility of the published numbers. Read it, don&#x27;t run it.
+388	- **Add `external/EphysTokenizer` as a second submodule** when phase 2
+389	  starts. That is the PyTorch implementation we will actually finetune
+390	  and integrate behind the `Tokenizer` protocol.
+391	- **Adapter pattern, no fork.** Implement `meg/cho2026/adapter.py` as a
+392	  thin wrapper that imports from `external/EphysTokenizer/...` and exposes
+393	  the `Tokenizer` protocol. Do not copy upstream code into `meg/`. If we
+394	  have to patch upstream, do it as a real fork pinned by submodule SHA.
+395	
+396	Open question for the user before phase 2 starts: do we also pin
+397	`EphysTokenizer`, or reimplement the (small) PyTorch tokenizer in-tree?
+398	Both are defensible — EphysTokenizer if we want to inherit pretrained
+399	checkpoints; in-tree if we want to control the training loop without an
+400	extra dependency.
+401	
+402	## 7. File layout under `meg/`
+403	
+404	Each phase is a self-contained subpackage that exposes a class implementing
+405	the `Tokenizer` protocol from the parent §5. Do **not** flatten all three
+406	into one set of `meg_encoder.py` / `meg_decoder.py` files — the parent §7
+407	&quot;three files per tokenizer&quot; rule applies *per-tokenizer*, not per-modality,
+408	and these three tokenizers have nothing useful in common at the
+409	implementation level.
+410	
+411	```
+412	meg/
+413	  CLAUDE.md                   # this file
+414	  meg_config.py               # channels (271), sfreq (200 Hz), tmin/tmax, named bands
+415	  modality_registration.py    # MEG entry for 4M&#x27;s MODALITY_INFO (V, max_len, ...)
+416	  data.py                     # mne.read_epochs(...) loader, pooled across P1–P4
+417	  splits.py                   # image-aware train/val/test splits
+418	  __init__.py                 # exports the three Tokenizer-protocol classes
+419	
+420	  mu_transform/               # Phase 1
+421	    __init__.py
+422	    encoder.py                # clip → max-abs → μ-law companding (stateless)
+423	    quantizer.py              # uniform binning → int token IDs
+424	    decoder.py                # bin-center lookup → inverse μ-law → inverse max-abs
+425	    calibration.py            # fit(train_dataset) → calibration.json
+426	    tokenizer.py              # MuTransformTokenizer composing the above
+427	    calibration.json          # CHECKED IN — versioned tokenizer state
+428	
+429	  cho2026/                    # Phase 2 — thin adapter, NOT a fork
+430	    __init__.py
+431	    adapter.py                # wraps external/EphysTokenizer behind Tokenizer protocol
+432	    finetune.py               # Modal entrypoint: load pretrained → train on THINGS-MEG
+433	    README.md                 # which checkpoint, which config, why
+434	    # NO model code lives here — that lives in external/ (see §6)
+435	
+436	  brainomni/                  # Phase 3 — BrainOmni BrainTokenizer adapter
+437	    __init__.py
+438	    adapter.py                # BrainOmniTokenizer → Tokenizer protocol
+439	    preprocess.py             # 200→256 Hz, z-score, pad→512
+440	    load.py                   # HF checkpoint load + codebook override
+441	    trainer.py                # finetune modes (adapt/full/rvq_only)
+442	    config.py                 # BrainOmniConfig dataclass
+443	    sensor_metadata.py        # MNE sensor positions → BrainOmni format
+444	    checkpoint.py             # save/load finetuned weights on Modal volume
+445	    compare_eval.py           # side-by-side vs μ-transform eval JSONs
+446	    test_brainomni.py         # unit/smoke tests
+447	    README.md
+448	    runs/                     # config.json + evals/ per stage (git-tracked)
+449	      V512_rvq4_win512_sf256_3a/
+450	      V512_rvq4_win512_sf256_3b/
+451	      3b_smoke_sweep/
+452	      3b_codebook_sweep/
+453	      3b_lr_sweep_coarse/
+454	
+455	  modal/                      # Modal entrypoints (eval, finetune, sweeps)
+456	    modal_meg_eval.py         # --tokenizer {mu_transform, brainomni}
+457	    modal_meg_finetune_brainomni.py
+458	```
+459	
+460	This keeps each phase replaceable in isolation: deleting `cho2026/` does
+461	not break phase 1; `brainomni/` is independent of phase 2.
+462	
+463	Phase 1 run artifact:
+464	`mu_transform/runs/V256_mu255_clip0.5-99.5_per_channel_s0/` (calibration.json,
+465	config.json, evals/).
+466	
+467	## 8. Evaluation contract
+468	
+469	Identical to the parent §5. The same `test_tokenizer.py` harness must pass
+470	for each of the three MEG tokenizers before it is wired into 4M:
+471	
+472	1. Reconstruction fidelity (time MSE + per-channel Pearson + **spectral
+473	   MSE**). Spectral MSE is the diagnostic metric for MEG — band power
+474	   (especially α/β) is what carries task signal. PSD range: 1–100 Hz
+475	   (Nyquist for 200 Hz data is 100 Hz).
+476	2. Codebook utilization (perplexity, dead-code fraction). The μ-transform&#x27;s
+477	   dead-code fraction is the metric to watch; Cho 2026 prunes dead codes
+478	   (&quot;token refactorization&quot;) so its effective `V*` can be reported
+479	   alongside nominal `V`.
+480	3. Linear probe on THINGS labels. With 22,449 image-level codes / 1854
+481	   concepts / 27 superordinate categories, **the harness uses 27-way
+482	   superordinate as the sole probe target.** The 1854-way concept space
+483	   was tried first and sat at chance — at ~3k eval trials it gives
+484	   ~2.6 trials/class, too few for a linear head to fit. The
+485	   `image_id → concept_id` mapping comes from THINGS-MEG OpenNeuro
+486	   events.tsv (see `modal_download_things_labels.py`); the
+487	   `concept_id → superordinate_27` mapping comes from canonical THINGS
+488	   metadata (`category_mat_manual.tsv` in ViCCo-Group/THINGS-data) via
+489	   `modal_download_things_superordinate.py`. Both files are checked into
+490	   git under `meg/data/`. The probe uses **5-fold CV** and reports
+491	   `top{k}_&lt;set&gt;_mean` / `_std` across folds. For BrainOmni it
+492	   additionally reports an RVQ0-only feature set (`tokens_rvq0_*`) next
+493	   to the full-RVQ-sum (`tokens_all_*`) — see
+494	   `notes/linear_probe_design.md` for the rationale.
+495	4. Token-sequence statistics (unigram entropy, bigram conditional entropy,
+496	   run-length). The μ-transform is at particular risk of degenerate run
+497	   lengths on slow drifts — watch this.
+498	
+499	MEG-specific harness parameters (PSD frequency range, named bands) go in
+500	`meg_config.py` and are passed into the harness as `EvalConfig`. Do not
+501	hardcode them.
+502	
+503	Run eval via Modal:
+504	
+505	```bash
+506	# μ-transform baseline
+507	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+508	  --tokenizer mu_transform \
+509	  --calibration neural_tokenizers/meg/mu_transform/runs/V256_mu255_clip0.5-99.5_per_channel_s0/config.json \
+510	  --n-test 3000 --seed 0
+511	
+512	# BrainOmni — see §5 Phase 3 for brainomni commands
+513	```
+514	
+515	Compare JSON reports locally:
+516	
+517	```bash
+518	python neural_tokenizers/meg/brainomni/compare_eval.py
+519	```
+520	
+521	## 9. §5 leaderboard — μ-transform vs BrainOmni (2026-05-22)
+522	
+523	All runs: **n=3000 test trials**, **seed=0**, learnable split 80/10/10
+524	(BrainOmni) / μ-transform uses same test indices via `splits.py`. Eval JSONs
+525	under each run&#x27;s `evals/` folder.
+526	
+527	### Reconstruction (§5.1)
+528	
+529	| Metric | μ-transform | BrainOmni 3a (zero-shot) | BrainOmni 3b (finetuned) |
+530	|--------|-------------|--------------------------|--------------------------|
+531	| MSE ↓ | **0.999** | 4.35 | 1.20 |
+532	| Channel Pearson ↑ | **0.998** | 0.345 | 0.870 |
+533	| PSD MSE ↓ | 1.01×10⁹ | 1.88×10⁸ | **6.13×10⁷** |
+534	
+535	μ-transform&#x27;s near-perfect channel correlation is **misleading** — it is a
+536	near-invertible per-sample codec (clip → μ-law → 256 bins). BrainOmni is a
+537	real compressor (271×281 → 512 codes). **3b finetune** closes most of the
+538	reconstruction gap vs 3a; μ-transform still wins trivial round-trip fidelity.
+539	
+540	### Codebook (§5.2)
+541	
+542	| Metric | μ-transform (V=256) | BrainOmni 3a/3b (V=512) |
+543	|--------|----------------------|-------------------------|
+544	| Codes used | 256/256 | 512/512 |
+545	| Utilization | 100% | 100% |
+546	| Perplexity | 194 | 443 → **494** (3b) |
+547	| Entropy (nats) | 5.27 | 6.09 → **6.20** (3b) |
+548	
+549	Both use full vocab. BrainOmni spreads mass over a larger codebook.
+550	
+551	### Sequence structure (§5.4)
+552	
+553	| Metric | μ-transform | BrainOmni 3a | BrainOmni 3b |
+554	|--------|-------------|--------------|--------------|
+555	| Entropy gap % ↑ | **22.9%** | 9.7% | 5.6% |
+556	| Mean run length | 1.06 | ~1.00 | ~1.00 |
+557	| frac runs ≥ 2 | **1.0** | 0.58 | 0.63 |
+558	
+559	Different token geometries (76k sample tokens vs 512 latent codes) — entropy
+560	gap is not directly comparable. μ-transform shows strong local temporal
+561	redundancy; BrainOmni tokens look more i.i.d.
+562	
+563	### Linear probe (§5.3) — **gate metric**
+564	
+565	&gt; **Label space change (2026-05):** the probe now uses the THINGS **27
+566	&gt; high-level superordinate categories** (from `concepts-metadata_things.tsv`)
+567	&gt; instead of the 1854-way concept space — the old setup gave ~2.6 trials/class
+568	&gt; and sat at chance. Coverage drops to ~50% of trials (892 of 1854 concepts
+569	&gt; have a clean single-category Bottom-up label per Hebart 2019), but the
+570	&gt; remaining ~5,000 trials give ~185/class which the linear head can actually
+571	&gt; fit. See `notes/linear_probe_design.md` and the §5.3 docstring in
+572	&gt; `evaluation/probe.py` for the design rationale.
+573	
+574	**BrainOmni 3b vs raw, full ~10k test split (5032 trials with valid labels),
+575	5-fold CV, class-weighted, balanced accuracy (chance = 1/27 = 3.70%):**
+576	
+577	| Probe variant            | tokens_all       | tokens_rvq0      | raw              | random           |
+578	|--------------------------|------------------|------------------|------------------|------------------|
+579	| Linear, unweighted CE    | 3.76% ± 0.07     | 3.71% ± 0.01     | **6.14% ± 0.44** | 3.70% ± 0.00     |
+580	| Linear, class-weighted   | 3.35% ± 0.91     | 3.42% ± 0.38     | **5.16% ± 0.21** | 3.64% ± 0.73     |
+581	| 2-layer MLP, weighted    | 3.18% ± 0.97     | 2.94% ± 0.78     | **4.31% ± 0.49** | 3.09% ± 0.82     |
+582	
+583	**μ-transform (V=256, BoC features, linear class-weighted, same protocol):**
+584	
+585	| Metric                      | tokens           | raw              | random           |
+586	|-----------------------------|------------------|------------------|------------------|
+587	| bal_acc (linear, weighted)  | 3.57% ± 0.47     | **5.16% ± 0.21** | 4.22% ± 0.78     |
+588	
+589	μ-transform passes §5.3 by the same margin BrainOmni does — i.e. it
+590	doesn&#x27;t. Tokens at chance, raw lifts to 5.16% (identical to BrainOmni&#x27;s
+591	raw because the underlying signal and probe are identical — confirms the
+592	raw number is reproducible).
+593	
+594	Three diagnostic variants, one consistent verdict:
+595	
+596	- **Raw MEG carries signal**: ~5–7σ above chance in every config — there is
+597	  linearly-decodable category info in the preprocessed waveform.
+598	- **BrainOmni 3b tokens are at chance** in every config. Linear or MLP,
+599	  unweighted or class-weighted — the tokens have nothing the probe can find.
+600	  Slightly *below* chance under MLP indicates the head is fitting training
+601	  noise, which only happens when no signal is present to anchor it.
+602	- **`tokens_rvq0 ≈ tokens_all`** — the residual RVQ layers carry no extra
+603	  task signal; the coarse layer alone is just as uninformative.
+604	
+605	The MLP rules out &quot;info is there but nonlinear&quot; — a stronger classifier
+606	finds nothing either. The class-weighted runs rule out &quot;training collapsed
+607	to majority class&quot; — `top1_random` correctly drops from 12.40% (unweighted
+608	majority-floor) to 3.74% (uniform-random) when weights kick in, and tokens
+609	still don&#x27;t move.
+610	
+611	**Verdict (2026-05): BrainOmni 3b passes §5.1 (reconstruction) and §5.2
+612	(codebook utilization) but FAILS §5.3. The finetune improved reconstruction
+613	fidelity without preserving task-relevant signal — exactly the failure mode
+614	§5.3 was designed to catch.**
+615	
+616	### Verdict for 4M
+617	
+618	| Criterion | μ-transform | BrainOmni 3b |
+619	|-----------|-------------|--------------|
+620	| Tokens / trial | ~76,151 | **512** |
+621	| 4M context cost | Very high | **Practical** |
+622	| Reconstruction | Excellent (near-identity) | Good (post-finetune) |
+623	| Linear object info in tokens | None detected | None detected |
+624	| Trained on THINGS | Calibration only | **Yes (adapt finetune)** |
+625	
+626	**Updated recommendation (2026-05):** the previous decision to ship 3b
+627	*despite* probe failure rested on &quot;probe noise at chance is uninformative.&quot;
+628	With the 27-way + 5-fold + class-weighted + MLP triangulation, the probe is
+629	no longer noise: it concretely shows raw MEG has decodable info that 3b&#x27;s
+630	tokens do not. Reconstruction-only training is not enough on this data.
+631	
+632	Next candidates, in order of cost:
+633	
+634	1. **Cheap diagnostic — image-averaged probe.** Average the 88,992 existing
+635	   3b tokens by image_id (4× SNR for exp, 48× for test images) and re-run
+636	   the probe. If averaged tokens lift above chance, single-trial noise was
+637	   the bottleneck and step 2 is worth doing. If not, BrainOmni&#x27;s training
+638	   objective is the bottleneck regardless of input quality → skip to step 3.
+639	2. **BrainOmni finetune on image-averaged signal.** Same `adapt` recipe but
+640	   trained on averaged trials (fewer samples, higher SNR per sample).
+641	3. **Move to Stage 2 (Cho2026 / EphysTokenizer).** The reconstruction
+642	   objective is the root cause; another reconstruction-only model
+643	   architecture is unlikely to rescue this.
+644	
+645	**Pending:** token-cache export; ml-4m `modality_info.py` registration —
+646	both held until §5.3 passes.
+647	
+648	## 10. Open decisions
+649	
+650	Resolve in the PR that implements each phase, not here.
+651	
+652	- **Phase 1**: per-channel vs. global max-abs scaler. **Resolved:** per-channel
+653	  (`clip0.5-99.5`, max-abs per channel). Run:
+654	  `V256_mu255_clip0.5-99.5_per_channel_s0`.
+655	- **Phase 1**: vocab size `V`. **Resolved:** V=256 (paper default). Optional
+656	  sweep `{64, 128, 256, 512}` deferred — 256 passes harness with full codebook use.
+657	- **Phase 3**: BrainOmni codebook size. **Resolved:** V=512 (codebook sweep).
+658	- **Phase 3**: finetune LR. **Resolved:** 3e-5 (`adapt` mode, 10 epochs).
+659	- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.
+660	- **Phase 3 → 4M token cache + shard export**: **Resolved (2026-05-23).** See
+661	  §13 for the production pipeline. BrainOmni 3b tokens for all 98,592 trials
+662	  are cached on the Volume and packed into `tok_meg/` shards aligned with the
+663	  RGB train/val split. 28/28 audit checks pass.
+664	- **Phase 2**: causal vs. non-causal decoder. Non-causal has strictly more
+665	  reconstruction capacity; causal is needed only for real-time downstream
+666	  uses. For 4M offline pretraining, **non-causal is the default** unless
+667	  there is a downstream use case we know about.
+668	- **Phase 2**: pin `EphysTokenizer` as a second submodule, or reimplement
+669	  the (small) PyTorch tokenizer in-tree? (See §6.)
+670	- **Phase 2**: window THINGS-MEG to 200 samples (match pretraining
+671	  `sequence_length`) or use full 281 (retrain from scratch). Strong prior:
+672	  window for 2a/2b, full length for 2c.
+673	- **Phase 2**: preprocessing match — match Cho 2026&#x27;s pipeline (so the
+674	  pretrained encoder sees in-distribution input) or use our preprocessed
+675	  THINGS-MEG as-is. Strong prior: **as-is for 2a** (cheapest), **match
+676	  their standardize-per-channel step for 2b** (the obvious cheap win),
+677	  **own pipeline for 2c**.
+678	- **4M registration**: per-channel sequence (`num_channels=271,
+679	  max_length=281`) for μ-transform / Cho2026; **separate** `meg_tokens_brainomni`
+680	  for BrainOmni (16 × 8 × 4). **Draft in** `modality_registration.py`; not yet
+681	  in ml-4m.
+682	- **Split policy**: **Resolved in-repo** via `meg/splits.py` +
+683	  `LEARNABLE_SPLIT_DEFAULTS` / `MU_SPLIT_DEFAULTS`. Optional persisted
+684	  `/project/data/things-meg/splits/` still TBD.
+685	
+686	## 11. Engineering norms specific to this subdir
+687	
+688	(Inherits everything from parent §7. The below is additional.)
+689	
+690	- All three phases must satisfy the parent §5 `Tokenizer` protocol and
+691	  pass through `test_tokenizer.py` identically. Do not add MEG-specific
+692	  code paths inside the harness.
+693	- Calibration JSON (`mu_transform/calibration.json`) and finetune
+694	  checkpoints (`brainomni/` on Modal volume at
+695	  `/project/checkpoints/meg/brainomni/&lt;slug&gt;/`; `cho2026/*.ckpt` when
+696	  phase 2 lands) are versioned tokenizer state. JSON/config pointers go
+697	  in git; weight checkpoints go on the Modal Volume.
+698	- No magic numbers: clip percentiles, `μ`, `V`, sampling rate, channel
+699	  counts (271, not 272), anneal schedule all named in `meg_config.py`.
+700	- Phase 1 is testable on a laptop with synthetic `(271, 281)` tensors —
+701	  write the §5 harness wire-up against phase 1 FIRST, then move to phase
+702	  2 on Modal. This proves the harness before we pay for GPU time.
+703	- The modality registration in `modality_registration.py` is the artifact
+704	  4M consumes. It must declare exactly the `(V, max_length, num_channels)`
+705	  produced by whichever tokenizer is loaded. Mismatch here will silently
+706	  break 4M training.
+707	- Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+708	  after any preprocessing pipeline change, and update §3 of this doc with
+709	  the new verified numbers.
+710	- After any change to the BrainOmni checkpoint, the bridge, the catalog, or
+711	  the shard packer, **re-run the full pipeline audit** before considering the
+712	  cache trustworthy:
+713	  `cd modal &amp;&amp; modal run modal_meg_pipeline_audit.py::audit`
+714	  (28 cross-layer checks — structural / consistency / integrity / protocol).
+715	  Treat any FAIL as a stop-the-world condition.
+716	
+717	## 12. Automation / `.claude` candidates
+718	
+719	Worth building once the phase-1 recipe stabilizes, not before:
+720	
+721	- A `calibrate-mu-transform` skill: fits clip + max-abs on the
+722	  THINGS-MEG training split (loaded from `/project/data/things-meg/`),
+723	  writes `calibration.json`, and runs the §5 harness on a held-out
+724	  split. One command, reproducible.
+725	- A pre-commit hook that re-runs the §5 harness on any tokenizer touched
+726	  by the diff. Prevents silent regressions.
+727	- A `tokenize-things-meg` slash command that takes a tokenizer name
+728	  (`mu_transform | cho2026 | brainomni`) and produces a token cache on
+729	  the Modal Volume at `/project/data/things-meg/tokens/&lt;tokenizer&gt;/`,
+730	  ready for 4M consumption. **Partially built (2026-05-23):** the
+731	  BrainOmni 3b recipe is fully scripted in §13 — promoting it to a slash
+732	  command is now a thin wrapper. The mu_transform and cho2026 token
+733	  exports are not yet scripted; build those into the same skill when
+734	  those tokenizers are ready to ship into 4M.
+735	- A `meg-pipeline-audit` slash command wrapping
+736	  [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py).
+737	  This script is already stable; promoting to a skill or a pre-commit hook
+738	  is now safe.
+739	
+740	Each of these locks in a workflow. Do not build them while the workflow
+741	is still in flux — the global CLAUDE.md&#x27;s &quot;automation should follow
+742	stable recipes&quot; rule applies.
+743	
+744	## 13. Production token cache + tok_meg/ shard export (2026-05-23, shipped)
+745	
+746	This is the pipeline that turns the BrainOmni 3b finetuned checkpoint into
+747	4M-consumable shards. Read this before re-tokenizing, switching checkpoints,
+748	or changing the shard layout. The shared cross-modality data layout is in
+749	[`../CLAUDE.md`](../CLAUDE.md) §9 — read that first if you&#x27;ve never seen the
+750	`things_catalog.json` / `things_manifest.json` / `things/&lt;modality&gt;/` convention.
+751	
+752	### 13.1 Pipeline (four idempotent Modal jobs)
+753	
+754	| Step | Script | Cost | Run from | Output |
+755	|---|---|---|---|---|
+756	| 1. Bridge | [`modal/modal_download_meg_image_bridge.py`](modal/modal_download_meg_image_bridge.py) `::build` | ~$0.10, ~2 min CPU | inner repo root | `meg_trigger_to_image_id.json` |
+757	| 2. Tokenize | [`modal/modal_meg_tokenize_all.py`](modal/modal_meg_tokenize_all.py) `::tokenize_all` | ~$1, ~6 min L40S | inner repo root | `tokens/brainomni/&lt;slug&gt;/{config,P1..P4}.{json,npz}` |
+758	| 3. Pack shards | [`../../modal/modal_meg_pack_shards.py`](../../modal/modal_meg_pack_shards.py) `::{plan,pack,verify}` | ~$0.30, ~5 min CPU | `modal/` subdir | `train/things/tok_meg/`, `val/things/tok_meg/` |
+759	| 4. Audit | [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py) `::audit` | ~$0.10, ~3 min CPU | `modal/` subdir | 28-check report (PASS/FAIL per check) |
+760	
+761	All four are idempotent — re-running on a clean Volume produces the same
+762	artifacts (modulo non-determinism in any future stochastic step, of which
+763	there are none today).
+764	
+765	### 13.2 On-Volume artifacts
+766	
+767	```
+768	/project/data/things-meg/
+769	  labels/meg_trigger_to_image_id.json    # 22,448 triggers → 9-digit image_ids
+770	                                         # built from OpenNeuro sample_attributes_P*.csv
+771	                                         # 100% catalog coverage (no orphans)
+772	  tokens/brainomni/V512_rvq4_win512_sf256_3b/   # slug == producing checkpoint
+773	    config.json                          # tokenizer + checkpoint metadata
+774	    P{1..4}.npz                          # per-subject cache:
+775	                                         #   tokens             (24648, 16, 8, 4) int16
+776	                                         #   meg_trigger_codes  (24648,)         int64
+777	                                         #   trial_idx          (24648,)         int64
+778	                                         #   subject            ()                str
+779	
+780	/project/data/train/things/tok_meg/shard_NNN.tar     # 23 shards, 83,456 entries
+781	/project/data/val/things/tok_meg/shard_NNN.tar       # 4 shards,  15,136 entries
+782	/project/data/{train,val}/things_meg_manifest.json   # per-shard entry counts + tokenizer cfg
+783	```
+784	
+785	Per-tar entry: `&lt;image_id&gt;_&lt;subject&gt;_t&lt;trial_idx&gt;.meg.npy`, shape `(16,8,4) int16`.
+786	Aligns with the RGB shards by `image_id // 1000`-within-split (the canonical
+787	catalog ID lookup is the manifest JSON, not arithmetic).
+788	
+789	### 13.3 Filtering policy + corpus counts
+790	
+791	- **Catch trials** (artificial oddball stimuli, ~2400/subject) are filtered out
+792	  at tokenize time. They&#x27;re not THINGS images and have no entry in the
+793	  trigger→image_id bridge.
+794	- **exp images** (~22,248): each shown 1× per subject → **88,992 trials total**
+795	  (4 per image). Filename pattern: `&lt;id&gt;_&lt;subj&gt;_t0.meg.npy`.
+796	- **test images** (200, used for within-subject reliability analysis): each
+797	  shown 12× per subject → **9,600 trials total** (48 per image). Filename
+798	  pattern: `&lt;id&gt;_&lt;subj&gt;_t{0..11}.meg.npy`.
+799	- **Total: 98,592 trials** across all 4 subjects, **24,648 per subject**.
+800	
+801	### 13.4 4M-side consumption (how to pair RGB ↔ MEG)
+802	
+803	```python
+804	# WebDataset pseudo-code (4M ingest):
+805	rgb_sample = next(wds.WebDataset(&quot;train/things/rgb/shard_005.tar&quot;))
+806	# rgb_sample[&quot;__key__&quot;] = &quot;000005847&quot;, rgb_sample[&quot;jpg&quot;] = &lt;bytes&gt;
+807	
+808	meg_sample = next(wds.WebDataset(&quot;train/things/tok_meg/shard_005.tar&quot;))
+809	# meg_sample[&quot;__key__&quot;] = &quot;000005847_P1_t0&quot;, meg_sample[&quot;meg.npy&quot;] = &lt;(16,8,4) int16&gt;
+810	
+811	# Pair by stripping everything after the first &#x27;_&#x27; in the MEG key:
+812	image_id = meg_sample[&quot;__key__&quot;].split(&quot;_&quot;, 1)[0]   # &quot;000005847&quot;
+813	# Then look up rgb_sample[image_id] from the RGB shard or zip across both
+814	# WebDatasets with a custom collator.
+815	```
+816	
+817	### 13.5 Re-running triggers
+818	
+819	| Change | Steps to re-run |
+820	|---|---|
+821	| BrainOmni 3b checkpoint moves or is replaced | Update `CHECKPOINT_SLUG` constant in both `modal/modal_meg_tokenize_all.py` AND `../../modal/modal_meg_pack_shards.py`, then re-run Steps 2, 3, 4. New tokens dir slug → old cache stays intact for comparison. |
+822	| New finetune (3c, 3d, …) | Tokenize step writes to a new slug-named dir, leaving existing cache untouched. Pack step&#x27;s `CHECKPOINT_SLUG` constant determines which cache feeds the shards. |
+823	| RGB split (`things_manifest.json`) changes | Re-run Step 3 only — no GPU re-cost. Cache is split-invariant. |
+824	| Bridge file regenerated | Re-run Step 3. Step 2 is bridge-aware at filter time, so the cache may also need rebuild if the bridge gained/lost triggers. |
+825	
+826	### 13.6 The audit (mandatory after any change to the pipeline)
+827	
+828	[`../../modal/modal_meg_pipeline_audit.py::audit`](../../modal/modal_meg_pipeline_audit.py)
+829	runs 28 cross-layer checks in 4 categories. Last run: **2026-05-23, 28/28 pass**:
+830	
+831	- **Layer 1 — Structural (9 checks):** file presence, JSON schema, shard count
+832	  vs manifest.
+833	- **Layer 2 — Cross-artifact consistency (6 checks):** bridge ⊆ catalog,
+834	  cache triggers ⊆ bridge, MEG image_ids ⊆ matching RGB shard,
+835	  train ∩ val = ∅ (both RGB and MEG), cache total == shard total.
+836	- **Layer 3 — Data integrity (5 checks):** every filename parses, every
+837	  tensor is `(16,8,4) int16`, all values in `[0, 512)`, no duplicate
+838	  `(image_id, subject, trial_idx)` anywhere, 200-sample cache↔shard
+839	  byte-identical round trip.
+840	- **Layer 4 — THINGS-MEG protocol (8 checks):** total 98,592 trials,
+841	  per-subject 24,648, distribution `[(1, 88992), (12, 800)]` (exp singletons
+842	  + test 12-repeats), all 512 codes used on all 4 RVQ layers.
+843	
+844	Treat any FAIL as stop-the-world.
+845	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-50-31-931Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-50-31-931Z" class="timestamp-link"><time datetime="2026-06-01T05:50:31.931Z" data-timestamp="2026-06-01T05:50:31.931Z">2026-06-01T05:50:31.931Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-50-59-495Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-50-59-495Z" class="timestamp-link"><time datetime="2026-06-01T05:50:59.495Z" data-timestamp="2026-06-01T05:50:59.495Z">2026-06-01T05:50:59.495Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01AVM5fZVoUhGa4gVzxYKjK8">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">data_and_results.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data_and_results.md</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content"># MEG Tokenization — Data &amp; Results (lean)
+
+Stripped-down reference: just the verified data spec and headline numbers.
+For rationale, phase plans, and registration details see [CLAUDE.md](CLAUDE.md).
+
+## 1. THINGS-MEG data (verified 2026-05-22)
+
+- **Volume**: `project` (not `neural-fm-data`)
+- **Path**: `/project/data/things-meg/preprocessed/`
+- **Files**: `preprocessed_P{1..4}-epo.fif` (+ MNE `-N.fif` continuations), ~33 GB
+
+| Field | Value |
+|---|---|
+| `sfreq` | 200 Hz (downsampled from 1200 Hz) |
+| `n_channels` | 271, all `mag` (CTF 275 → 271 after drop) |
+| `n_epochs / subj` | 27,048 (identical across P1–P4) |
+| `tmin, tmax` | −0.100 s, +1.300 s |
+| `timepoints` | 281 |
+| `unique trigger codes` | 22,449 (image-level, NOT 1854 concept-level) |
+| Per-trial shape | `(271, 281)` |
+
+Subjects: 4 (P1–P4). Pooled training by default.
+
+## 2. Token cache + shards (2026-05-23, shipped)
+
+BrainOmni 3b finetuned checkpoint → on-Volume artifacts:
+
+```
+/project/data/things-meg/
+  labels/meg_trigger_to_image_id.json    # 22,448 triggers → image_ids
+  tokens/brainomni/V512_rvq4_win512_sf256_3b/
+    config.json
+    P{1..4}.npz                          # tokens (24648,16,8,4) int16
+
+/project/data/train/things/tok_meg/shard_NNN.tar   # 23 shards, 83,456 entries
+/project/data/val/things/tok_meg/shard_NNN.tar     #  4 shards, 15,136 entries
+```
+
+Per-tar entry: `&lt;image_id&gt;_&lt;subject&gt;_t&lt;trial_idx&gt;.meg.npy`, `(16,8,4) int16`.
+
+| Stimulus type | Images | Reps/subj | Trials total | Trials/subj |
+|---|---|---|---|---|
+| exp | 22,248 | 1 | 88,992 | 22,248 |
+| test | 200 | 12 | 9,600 | 2,400 |
+| **Total** | **22,448** | — | **98,592** | **24,648** |
+
+Catch trials filtered at tokenize time. Audit: **28/28 pass**.
+
+## 3. Results — §5 harness (n=3000 test, seed=0)
+
+### 3.1 Reconstruction (§5.1)
+
+| Metric | μ-transform (V=256) | BrainOmni 3a zero-shot | BrainOmni 3b finetuned |
+|---|---|---|---|
+| MSE ↓ | **0.999** | 4.35 | 1.20 |
+| Channel Pearson ↑ | **0.998** | 0.345 | 0.870 |
+| PSD MSE ↓ | 1.01×10⁹ | 1.88×10⁸ | **6.13×10⁷** |
+
+μ-transform&#39;s near-identity score is misleading — it&#39;s a near-invertible
+per-sample codec (271×281 → 271×281 ints). BrainOmni compresses 76k → 512.
+
+### 3.2 Codebook (§5.2)
+
+| Metric | μ-transform (V=256) | BrainOmni 3a/3b (V=512) |
+|---|---|---|
+| Codes used | 256/256 | 512/512 |
+| Utilization | 100% | 100% |
+| Perplexity | 194 | 443 → **494** (3b) |
+| Entropy (nats) | 5.27 | 6.09 → **6.20** (3b) |
+
+### 3.3 Linear probe (§5.3) — **gate metric**
+
+THINGS 27-way superordinate (chance = 3.70%), 5-fold CV, ~5,032 trials
+with valid labels. `bal_acc` = balanced accuracy (per-class recall averaged).
+
+**BrainOmni 3b:**
+
+| Probe | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted CE | 3.76% ± 0.07 | 3.71% ± 0.01 | **6.14% ± 0.44** | 3.70% ± 0.00 |
+| Linear, class-weighted | 3.35% ± 0.91 | 3.42% ± 0.38 | **5.16% ± 0.21** | 3.64% ± 0.73 |
+| 2-layer MLP, weighted | 3.18% ± 0.97 | 2.94% ± 0.78 | **4.31% ± 0.49** | 3.09% ± 0.82 |
+
+**μ-transform (V=256, BoC, linear class-weighted):**
+
+| Metric | tokens | raw | random |
+|---|---|---|---|
+| bal_acc | 3.57% ± 0.47 | **5.16% ± 0.21** | 4.22% ± 0.78 |
+
+Raw MEG carries signal (~5–7σ over chance). Both tokenizers&#39; tokens at chance.
+`tokens_rvq0 ≈ tokens_all` — residual RVQ layers add no task signal.
+
+### 3.4 Sequence structure (§5.4)
+
+| Metric | μ-transform | BrainOmni 3a | BrainOmni 3b |
+|---|---|---|---|
+| Entropy gap % ↑ | **22.9%** | 9.7% | 5.6% |
+| Mean run length | 1.06 | ~1.00 | ~1.00 |
+| frac runs ≥ 2 | **1.0** | 0.58 | 0.63 |
+
+## 4. Verdict
+
+| Criterion | μ-transform | BrainOmni 3b |
+|---|---|---|
+| Tokens / trial | ~76,151 | **512** |
+| 4M context cost | Very high | **Practical** |
+| Reconstruction | Excellent | Good |
+| Linear object info | None | None |
+| Trained on THINGS | Calibration only | Yes (adapt finetune) |
+
+Both pass §5.1 + §5.2; both **FAIL §5.3**. Next: image-averaged probe →
+averaged-signal finetune → Stage 2 (Cho2026 / EphysTokenizer).
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-51-00-517Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-51-00-517Z" class="timestamp-link"><time datetime="2026-06-01T05:51:00.517Z" data-timestamp="2026-06-01T05:51:00.517Z">2026-06-01T05:51:00.517Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data_and_results.md (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-51-04-438Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-51-04-438Z" class="timestamp-link"><time datetime="2026-06-01T05:51:04.438Z" data-timestamp="2026-06-01T05:51:04.438Z">2026-06-01T05:51:04.438Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Wrote <a href="neural_tokenizers/meg/data_and_results.md">neural_tokenizers/meg/data_and_results.md</a> — ~110 lines vs 844 in CLAUDE.md. Keeps: §3 verified data spec, §13 cache/shard counts, §9 results tables (recon / codebook / probe / sequence) + verdict. Drops: phase rationale, 4M registration design, file layout, automation notes, open decisions.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T05-52-18-074Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T05-52-18-074Z" class="timestamp-link"><time datetime="2026-06-01T05:52:18.074Z" data-timestamp="2026-06-01T05:52:18.074Z">2026-06-01T05:52:18.074Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>No, I meant make a leaner form of the MG tokenization MD file in the notes folder and basically just be very clear about experiment one and experiment two you don't need to include experiment 1.5 and include all the data on the tables and maybe you can bold anything that is importantbut try to include less text and just create like a shorter form of that document you can delete whatever you just made it useless</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-21-810Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-21-810Z" class="timestamp-link"><time datetime="2026-06-01T05:52:21.810Z" data-timestamp="2026-06-01T05:52:21.810Z">2026-06-01T05:52:21.810Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-22-871Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-22-871Z" class="timestamp-link"><time datetime="2026-06-01T05:52:22.871Z" data-timestamp="2026-06-01T05:52:22.871Z">2026-06-01T05:52:22.871Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01VpHdcWtb5crSaJCizkfdaJ">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Delete file, check notes dir</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">rm /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data_and_results.md &amp;&amp; ls /Users/Siddharth/neural-foundation-model/notes/ 2&gt;/dev/null || echo &#34;no notes dir&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-52-22-900Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-52-22-900Z" class="timestamp-link"><time datetime="2026-06-01T05:52:22.900Z" data-timestamp="2026-06-01T05:52:22.900Z">2026-06-01T05:52:22.900Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>4m_neural_modality_design.md
+eeg_tokenization.md
+linear_probe_design.md
+meg_tokenization.md</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-25-756Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-25-756Z" class="timestamp-link"><time datetime="2026-06-01T05:52:25.756Z" data-timestamp="2026-06-01T05:52:25.756Z">2026-06-01T05:52:25.756Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MZDZH6TvYdVgRmy63ofHk9">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check existing notes file</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">wc -l /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-52-25-784Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-52-25-784Z" class="timestamp-link"><time datetime="2026-06-01T05:52:25.784Z" data-timestamp="2026-06-01T05:52:25.784Z">2026-06-01T05:52:25.784Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>     412 /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-27-982Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-27-982Z" class="timestamp-link"><time datetime="2026-06-01T05:52:27.982Z" data-timestamp="2026-06-01T05:52:27.982Z">2026-06-01T05:52:27.982Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-28-501Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-28-501Z" class="timestamp-link"><time datetime="2026-06-01T05:52:28.501Z" data-timestamp="2026-06-01T05:52:28.501Z">2026-06-01T05:52:28.501Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01FMJaSkwXqr59TnnBxvAfYv"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md&#34;,
+  &#34;limit&#34;: 50
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-52-28-510Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-52-28-510Z" class="timestamp-link"><time datetime="2026-06-01T05:52:28.510Z" data-timestamp="2026-06-01T05:52:28.510Z">2026-06-01T05:52:28.510Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG tokenization — diagnostics and findings
+2	
+3	Brief reference for what we&#x27;ve measured on the BrainOmni 3b tokenizer, how the eval was hardened against false positives/negatives, and the experimental grid that backs the verdict. See [neural_tokenizers/meg/CLAUDE.md §9](../neural_tokenizers/meg/CLAUDE.md) for the production leaderboard; [linear_probe_design.md](linear_probe_design.md) for probe rationale.
+4	
+5	## Final conclusion (read this first)
+6	
+7	### What the tokens decode — best probe per task, with the raw ceiling alongside
+8	
+9	A tokenizer&#x27;s job is to **preserve** raw signal in a discrete form. The question is &quot;do tokens match raw, both above random?&quot; — not &quot;do tokens beat raw&quot; (rare and not required).
+10	
+11	All cells: balanced accuracy mean ± SEM (= fold_std / √5). σ-vs-random uses SEM. Best probe head per task.
+12	
+13	| Task (chance) | Experiment | tokens (best probe) | raw (ceiling) | random (floor) | tokens vs raw | tokens σ-vs-random |
+14	|---|---|---|---|---|---|---|
+15	| **Subject** (25%) | 1 — 3b_nonavg | **97.4 ± 0.2** (CNN) | **98.0 ± 0.2** (CNN) | 25.5 ± 0.3 | -0.6pp (preserved) | **~+200σ** |
+16	| **Cat27** (3.70%) | 1 — 3b_nonavg | 3.55 ± 0.24 (CNN) | 6.14 ± 0.20 (Linear unweighted) | 3.70 ± 0.00 | -2.6pp (partial loss) | -0.6σ (chance) |
+17	| **Cat27** (3.70%) | 1.5 — avg eval | 4.09 ± 0.46 (CNN bal_acc) | 4.78 ± 0.66 (CNN bal_acc) | 4.40 ± 0.56 (CNN) | -0.7pp (≈parity) | -0.4σ (chance) |
+18	| **Cat27** (3.70%) | 2 — 3b_avgcross | **4.65 ± 0.59** (CNN bal_acc) | **4.78 ± 0.66** (CNN bal_acc) | 3.65 ± 0.55 | -0.1pp (preserved) | **+1.2σ (borderline)** |
+19	| **Animacy** (50%) | 1 — 3b_nonavg | 52.6 ± 0.72 (Linear rvq0) | 57.9 ± 0.94 (MLP) | 49.9 ± 1.34 | -5pp (partial loss) | +1.5σ (suggestive) |
+20	| **Animacy** (50%) | 1.5 — avg eval | 50.6 ± 0.76 (CNN) | **58.9 ± 2.37** (CNN) | 49.8 ± 0.80 | -8pp (partial loss) | +0.7σ (chance) |
+21	| **Animacy** (50%) | 2 — 3b_avgcross | 52.2 ± 0.76 (CNN) | **58.9 ± 2.37** (CNN) | 50.9 ± 1.12 | -7pp (partial loss) | +1.0σ (borderline) |
+22	
+23	### Two clean reads of the table
+24	
+25	**1. Raw is the ceiling. The ceiling is low for category-discriminative tasks.**
+26	
+27	- Subject ID: raw CNN hits **98%** — head position + sensor profiles are massively decodable from MEG.
+28	- Animacy: raw CNN hits **~58-59%** — Dixen 2024 reported 57-61% cross-subject on THINGS-EEG, so we&#x27;re at the published ceiling.
+29	- Category27: raw bal_acc tops out at **~5-6%** (linear) or **~4.8%** (CNN). Above 3.7% chance but only by ~1pp absolute. This is intrinsic to the data with linear/CNN probes — not a tokenizer artifact.
+30	
+31	**2. Tokens preserve what raw has, modulo a partial loss on animacy.**
+32	
+33	- **Subject (Exp 1):** tokens 97.4% vs raw 98.0% → essentially full preservation, both ~+200σ.
+34	- **Cat27 (Exp 2):** tokens 4.65% vs raw 4.78% → full preservation of the small signal raw has; both ~+1.2σ above random.
+35	- **Animacy:** tokens 50-53% vs raw 57-59% → **loses ~5-8pp of the animacy lift raw has**. Notable partial loss across all three experiments.
+36	
+37	### Which to ship for 4M
+38	
+39	**Experiment 1 (`3b_nonavg`)** remains the answer, but the reasoning now updates:
+40	
+41	| Reason | Detail |
+42	|---|---|
+43	| Subject preservation | Only 3b_nonavg keeps subject decodable (97% CNN). Cross-subject averaging in 2 + 1.5 destroys it. |
+44	| Animacy loss is small | 3b_nonavg loses ~5pp on animacy (52.6 vs 57.9); 1.5 / 2 lose ~7-8pp. **1 loses the least.** |
+45	| Cat27 is at the noise floor regardless | All three experiments give tokens 3.5-4.7% bal_acc vs raw ceiling 4.8-6.1%. Choosing among them on this metric is essentially arbitrary; the tokenizer is not what&#x27;s failing here. |
+46	| Train-eval distribution match | 3b_nonavg sees single trials at both train and inference time. 4M will see single trials in production. |
+47	
+48	### The cat27 caveat is structural, not about which experiment
+49	
+50	Object category is barely linearly/CNN-decodable from raw THINGS-MEG (~5% bal_acc, ~+1σ above chance). Any reconstruction-only tokenizer is bounded by this ceiling. None of 1 / 1.5 / 2 changes the ceiling because the bottleneck is the **probe + data**, not the tokenizer. To push past it we need either a different probe (deeper architecture, attention) or a different objective (contrastive / supervised) — not a different averaging regime.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-31-801Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-31-801Z" class="timestamp-link"><time datetime="2026-06-01T05:52:31.801Z" data-timestamp="2026-06-01T05:52:31.801Z">2026-06-01T05:52:31.801Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-32-945Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-32-945Z" class="timestamp-link"><time datetime="2026-06-01T05:52:32.945Z" data-timestamp="2026-06-01T05:52:32.945Z">2026-06-01T05:52:32.945Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01P6sHTV7S7quRpfAPECnYdW"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md&#34;,
+  &#34;offset&#34;: 50,
+  &#34;limit&#34;: 362
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-52-33-116Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-52-33-116Z" class="timestamp-link"><time datetime="2026-06-01T05:52:33.116Z" data-timestamp="2026-06-01T05:52:33.116Z">2026-06-01T05:52:33.116Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>50	Object category is barely linearly/CNN-decodable from raw THINGS-MEG (~5% bal_acc, ~+1σ above chance). Any reconstruction-only tokenizer is bounded by this ceiling. None of 1 / 1.5 / 2 changes the ceiling because the bottleneck is the **probe + data**, not the tokenizer. To push past it we need either a different probe (deeper architecture, attention) or a different objective (contrastive / supervised) — not a different averaging regime.
+51	
+52	### Corrected stats note
+53	
+54	Earlier in this doc I called the Exp 1.5 / Exp 2 CNN cat27 cells &quot;&lt;1σ noise floor.&quot; That used fold-std as the denominator, which is wrong for comparing means across k=5 folds. SEM-based σ is √5× tighter, putting the Exp 2 CNN cat27 cells at +1.2σ on bal_acc (borderline-significant) — not noise. The substantive ship-3b_nonavg recommendation doesn&#x27;t change because Exp 1 wins on subject + animacy, but the Exp 2 cat27 cell is honestly &quot;tokens preserve a borderline-significant signal&quot; rather than &quot;tokens at noise.&quot;
+55	
+56	### Which checkpoint to ship into 4M
+57	
+58	**Ship Experiment 1&#x27;s `3b_nonavg` checkpoint.** Reasoning:
+59	
+60	1. **Only 3b_nonavg preserves subject identity** — 97% CNN decode, 62% even with a linear head. Cross-subject averaging in 2 (and inference-time averaging in 1.5) eliminates this by construction. If 4M ever wants to condition on subject or generate subject-specific MEG, only 3b_nonavg&#x27;s tokens can do it.
+61	2. **None of 1, 1.5, 2 preserve category** — so there is no reason to take 2 over 1; switching costs us subject signal and gains nothing on category. 1.5 is a diagnostic, not a deployable checkpoint (it requires inference-time averaging that doesn&#x27;t match how 4M will receive single trials in production).
+62	3. **Train-eval distribution matches in 1** — 3b_nonavg is trained on single trials and 4M will see single trials at inference. 1.5 has a train-eval mismatch; 2&#x27;s &quot;averaged single image&quot; distribution is unrealistic for production single-trial input.
+63	
+64	**But ship it with the caveat documented.** 3b_nonavg&#x27;s tokens are **not category-discriminative**. If 4M needs object-level semantic alignment from MEG (e.g., MEG → image generation or classification), this tokenizer alone won&#x27;t deliver it.
+65	
+66	### What none of the three solves
+67	
+68	Object category does not survive any of the three reconstruction-only regimes. The objective is the bottleneck, not the data quality:
+69	
+70	- **Averaging the input (1.5)**: improves raw decoding marginally; tokens unchanged.
+71	- **Averaging the training data (2)**: same conclusion; cross-subject averaging additionally eliminates subject signal.
+72	- **Bigger probe (CNN)**: surfaces ~1pp lifts that exist in raw too — not a tokenizer claim.
+73	
+74	The next intervention has to change the **objective**, not the input distribution. Concretely:
+75	
+76	- **Auxiliary supervised / contrastive loss during BrainOmni finetune** — give the tokenizer a gradient signal that&#x27;s specifically about discriminability (e.g., InfoNCE pairing same-image trials, or supervised cross-entropy on superordinate labels). This is the most direct path.
+77	- **Stage 2 (Cho2026 / EphysTokenizer)** — different architectural family; revisit if the auxiliary-loss path on BrainOmni fails. Won&#x27;t fix the objective issue if it&#x27;s just a different reconstruction-only stack — but it has a smaller compression ratio and may behave differently.
+78	
+79	---
+80	
+81	## TL;DR (one-paragraph version)
+82	
+83	**BrainOmni 3b&#x27;s tokens preserve SUBJECT identity richly but lose OBJECT CATEGORY structure entirely.** Same tokens, three probe families. CNN → tokens decode subject at **97%** (vs 25% chance, near-perfect) but category at **3.6%** (vs 3.7% chance, at floor). The story isn&#x27;t &quot;tokens are bad&quot; — it&#x27;s selective: bits got spent on the signal that dominates variance (subject-level / sensor-level features), the small-amplitude category signal got dropped.
+84	
+85	Raw MEG behaves the same way (98% subject vs 4.2% category with CNN) — the asymmetry is intrinsic to the data, not the tokenizer. Tokens preserve roughly the subject-level information present in raw; they don&#x27;t preserve category info, but raw barely has it linearly decodable either.
+86	
+87	## What we are running and why
+88	
+89	Three tasks × three probe architectures × four feature sets. We compare two BrainOmni checkpoints to test whether averaging trials at training time changes the picture.
+90	
+91	| Axis | Levels |
+92	|---|---|
+93	| **Task** (`probe_label_space`) | `category27` (the gate) / `animacy` (easy 2-way) / `subject` (pipeline sanity) |
+94	| **Probe head** (`probe_classifier`) | `linear` / `mlp` / `cnn` (new — temporal+latent-spatial CNN; see §&quot;CNN probe head&quot;) |
+95	| **Feature set** | `raw` (signal upper bound) / `random` (lower bound) / `tokens_all` / `tokens_rvq0` |
+96	| **Checkpoint** | **`3b_nonavg`** (current — finetuned on single trials) / **`3b_avg`** (pending — finetuned on image-averaged trials) |
+97	
+98	All evals: full ~10k test split, 5-fold CV, **class-weighted CE**, balanced accuracy as the headline metric. Chance is 1/n_classes for every task (the whole point of balanced acc).
+99	
+100	Run pattern, fully parameterized:
+101	
+102	```bash
+103	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+104	    --tokenizer brainomni \
+105	    --calibration &lt;checkpoint config.json&gt; \
+106	    --n-test 0 --seed 0 \
+107	    --probe-classifier {linear|mlp|cnn} \
+108	    --probe-label-space {category27|animacy|subject}
+109	```
+110	
+111	Results land at `&lt;checkpoint&gt;/evals/eval_ntest=full_s0[_&lt;classifier&gt;][_&lt;label_space&gt;].json`.
+112	
+113	---
+114	
+115	## CNN probe head — design
+116	
+117	The flat MLP probe has no inductive bias for the structure that THINGS-MEG decoding actually exploits (Cichy / Hebart papers: channel-topographic patterns over time). A 2-layer MLP on flattened tokens may simply lack the right shape; per Dixen 2024 even on EEG, EEGNet/Conformer-style temporal convolutions massively outperform flat heads at this SNR.
+118	
+119	The new `cnn` head exploits the token tensor&#x27;s natural structure rather than flattening it:
+120	
+121	- **For BrainOmni tokens** of shape `(B, 16 latents, 8 time, D=512 embed)`: a small **2-D CNN** with conv over `(latent × time)` and `D` as channels. Two conv blocks with batch-norm + ReLU + global average pooling → linear classifier. ~150k params.
+122	- **For raw MEG** of shape `(B, 271 channels, 281 time)`: a small **1-D CNN** over time, channels as input dims. Two strided conv blocks → global average pooling → linear. ~50k params.
+123	- **For random tokens**: same shape transform as `tokens` (random codes → `tokens_to_embedding` → CNN). Tests &quot;what does the CNN do with uninformative tokens of the right shape?&quot;.
+124	- **For μ-transform-style position-preserving tokens** `(B, 1, channels × time)`: reshape to `(B, channels, time)` then use the 1-D CNN — equivalent to applying the raw-MEG CNN to the dequantized signal.
+125	
+126	Rationale: small enough to not overfit on ~4k training trials per fold, while giving the probe the same inductive bias (temporal smoothness + latent-position locality) that real MEG decoders use.
+127	
+128	---
+129	
+130	## Experiment 1 — BrainOmni 3b_nonavg (current, single-trial finetune)
+131	
+132	Chance: 27-way = 3.70%, animacy 2-way = 50%, subject 4-way = 25%.
+133	
+134	### 1a — Category27 (the gate). Chance = 3.70% (top-1); 5/27 ≈ 18.5% (top-5 under uniform classes — the `random` column is the true imbalanced floor).
+135	
+136	Cell format: `top-1 / top-5` (top-1 is bal-acc for &quot;weighted&quot; rows, raw top-1 for the unweighted row).
+137	
+138	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+139	|---|---|---|---|---|
+140	| Linear, unweighted | 3.76% ± 0.07 / — | 3.71% ± 0.01 / — | **6.14% ± 0.44** / — | 3.70% ± 0.00 / — |
+141	| Linear, weighted | 3.35% ± 0.91 / 16.85% ± 0.80 | 3.42% ± 0.38 / 16.53% ± 0.82 | **5.16% ± 0.21 / 32.11% ± 2.28** | 3.64% ± 0.73 / 18.96% ± 1.15 |
+142	| MLP, weighted | 3.18% ± 0.97 / 15.44% ± 1.25 | 2.94% ± 0.78 / 15.22% ± 0.78 | **4.31% ± 0.49 / 31.38% ± 1.90** | 3.09% ± 0.82 / 20.37% ± 1.00 |
+143	| **CNN, weighted** | 3.55% ± 0.54 / **28.84% ± 1.13** | 3.77% ± 0.53 / **29.73% ± 1.79** | **4.19% ± 0.87** / 32.27% ± 1.46 | 3.61% ± 0.52 / 27.64% ± 1.50 |
+144	
+145	All four probe regimes agree on the headline: tokens at chance under top-1 / bal-acc, raw between 4.2% and 6.1% (small but real). CNN&#x27;s inductive bias does not rescue tokens on the strict metric — the fine-grained category info isn&#x27;t there.
+146	
+147	**One footnote-worthy detail on top-5.** Under the CNN probe specifically, tokens_all top-5 (28.8%) and tokens_rvq0 top-5 (29.7%) sit ~1–2pp above the random top-5 floor (27.6%), while linear/MLP put tokens *below* random on top-5. This is the only knob in the Exp 1 grid where tokens beat random anywhere. Most likely interpretation: CNN&#x27;s temporal-spatial bias surfaces a faint *coarse* category neighborhood in the tokens — enough to bump top-5 by a percentage point, but well within fold variance (CNN top-5 std ≈ 1.5pp on random) and nowhere near raw&#x27;s lift (+5pp). Worth noting; not worth re-deciding the verdict on. Unweighted top-5 unavailable: the row&#x27;s data is from an older run whose JSON is no longer extant; we kept its top-1 numbers in the table but cannot reconstruct its top-5.
+148	
+149	&gt; &quot;—&quot; means the underlying JSON is no longer available (older class-unweighted probe run that has since been overwritten — only its top-1 numbers survived in the table). Re-running would cost ~$0.50; we haven&#x27;t because nothing hinges on it.
+150	
+151	### 1b — Subject ID (pipeline sanity). Chance = 25%. (Top-5 omitted: mechanically 100% since n_classes=4 &lt; k=5.)
+152	
+153	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+154	|---|---|---|---|---|
+155	| Linear, weighted | 62.6% ± 1.0 | 45.1% ± 0.7 | 93.9% ± 0.9 | 25.2% ± 0.9 |
+156	| MLP, weighted | 69.3% ± 1.0 | 52.2% ± 1.1 | 95.4% ± 0.4 | 25.4% ± 1.3 |
+157	| **CNN, weighted** | **97.4% ± 0.4** | **92.1% ± 0.5** | **98.0% ± 0.5** | 25.5% ± 0.7 |
+158	
+159	CNN nearly closes the raw→tokens gap. **97% subject decoding from tokens** says the tokens carry rich structural/spatial info; the §5.3 linear gate was simply the wrong probe for that signal. Each architecture step (linear → MLP → CNN) buys more — clean monotone improvement, exactly what you expect when more inductive bias surfaces existing signal.
+160	
+161	### 1c — Animacy (easy 2-way, sensitivity check). Chance = 50%. (Top-5 omitted: mechanically 100% since n_classes=2 &lt; k=5.)
+162	
+163	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+164	|---|---|---|---|---|
+165	| Linear, weighted | 51.1% ± 1.8 | 52.6% ± 1.6 | **57.8% ± 2.5** | 50.0% ± 2.2 |
+166	| MLP, weighted | 50.8% ± 2.0 | 51.4% ± 0.8 | **57.9% ± 2.1** | 49.9% ± 3.0 |
+167	| **CNN, weighted** | 51.6% ± 2.0 | 51.2% ± 1.3 | 52.1% ± 1.3 | 49.5% ± 0.6 |
+168	
+169	Tokens at chance across all classifiers. Raw at 52-58% (consistent with Dixen 2024 cross-subject ceiling of 57-61% for binary living/non-living). CNN slightly hurts raw on animacy — likely 2-class label-imbalance noise interacting with CNN regularization; not investigated further since tokens are at chance regardless.
+170	
+171	### 1d — Model-free retrieval (§5.5), 3b_nonavg
+172	
+173	Zero trainable parameters. Cosine on `tokens_to_embedding` features, Jaccard on token sets, both reported. Each row is one task; retrieval numbers are independent of the classifier head (same JSON across linear/MLP/CNN runs of the same task).
+174	
+175	| Task (n) | tokens (cosine) prec@1 / @5 | tokens (Jaccard) prec@1 / @5 | raw prec@1 / @5 | random prec@1 / @5 |
+176	|---|---|---|---|---|
+177	| Category27 (~5032, chance 3.70%) | 3.71% / 3.59% | 3.38% / 3.81% | 3.76% / 3.94% | 4.11% / 3.54% |
+178	| Animacy (~5032, chance 50%) | 50.5% / 50.3% | 51.1% / 50.5% | 50.2% / 50.6% | 49.7% / 49.3% |
+179	| Subject (~10k, chance 25%) | **50.3% / 47.5%** | **37.7% / 36.7%** | **65.9% / 61.5%** | 24.7% / 24.9% |
+180	
+181	Retrieval confirms the classifier-probe picture, with zero trainable parameters:
+182	
+183	- **Subject** lifts massively above chance in token retrieval (cosine 50.3%, Jaccard 37.7%, both vs 25% chance) — the token-set geometry directly clusters trials by subject. Same conclusion as the §5.3 probe but achieved without any training.
+184	- **Category and animacy** retrieval are at chance across all feature sets. Notably **raw retrieval is also at chance** for these tasks at n≈5k, even though the linear probe finds ~6% bal_acc on raw — telling us k-NN is too weak to surface the small linear signal that&#x27;s still there, but the *relative* tokens-vs-raw comparison is preserved (both at floor).
+185	
+186	The Subject-task gap between retrieval and the trained classifier (50% retrieval vs 97% CNN) is what we expect: retrieval reads off whatever&#x27;s natively close in feature space; a trained probe additionally rotates/scales features to amplify the discriminative directions. CNN&#x27;s 97% on subject is real signal *plus* learned exploitation; retrieval&#x27;s 50% on subject is real signal *alone*. The fact that retrieval is above chance is the key — confirms the signal *is* in the geometry, the classifier isn&#x27;t fabricating it.
+187	
+188	---
+189	
+190	## Experiment 1.5 — BrainOmni 3b_nonavg, image-averaged INPUT (diagnostic, no retrain)
+191	
+192	The cheap diagnostic from `meg/CLAUDE.md` §9: take the **existing 3b_nonavg** checkpoint and feed it **image-averaged trials at eval time**. No retraining — just a different input distribution at inference. Answers: is per-trial noise the bottleneck for category, or did the reconstruction objective itself drop the signal?
+193	
+194	Eval pipeline: full ~10k test split (10,036 trials) → average by `image_id` across subjects + within-subject reps → 2,245 unique averaged signals → tokenizer forward → 5-fold CV probe. Codebook stats unchanged (same 512-code vocab, perplexity ~493).
+195	
+196	&gt; **A note on reconstruction MSE under averaging.** Time-domain MSE drops 1.07 → 0.29, but this is **not** a 3.6× improvement in the tokenizer&#x27;s reconstruction quality — it&#x27;s mostly the **target&#x27;s noise floor falling**. BrainOmni&#x27;s preprocess per-trial-per-channel z-scores both single and averaged inputs to unit variance, but the *composition* of that variance differs: in a single z-scored trial ~90% of variance is per-trial noise; in an N-rep average that fraction shrinks by 1/N before z-scoring. The bottleneck drops noise either way; with less noise in the target there&#x27;s less for the tokenizer to &quot;miss.&quot; The honest cross-regime metric is **per-channel Pearson r**, which barely moves: 0.870 (Exp 1) → 0.859 (Exp 1.5). So the right reading is &quot;averaging gives the *probe* a cleaner target,&quot; not &quot;the tokenizer reconstructs better&quot; — and the probe results below confirm that the *tokens* see none of that benefit. (General rule: MSE is comparable across checkpoints under fixed input regime, NOT across input regimes or across tokenizer families.)
+197	
+198	Run pattern (already wired via `--averaging cross_subject`):
+199	
+200	```bash
+201	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+202	    --tokenizer brainomni \
+203	    --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+204	    --n-test 0 --seed 0 \
+205	    --probe-classifier {linear|mlp|cnn} \
+206	    --probe-label-space {category27|animacy} \
+207	    --averaging cross_subject
+208	```
+209	
+210	Subject ID is **omitted by design** — cross-subject averaging eliminates the subject variable; the script rejects `probe_label_space=subject` when averaging is active.
+211	
+212	### 1.5a — Category27 (averaged input). Chance = 3.70% (top-1); 5/27 ≈ 18.5% (top-5 uniform). n=1,126 averaged trials with valid labels.
+213	
+214	Cell format: `top-1 / top-5`. Unlike Exp 1, **both** rows here come from the same class-weighted training run — the &quot;Linear, unweighted&quot; row reports the raw top-1 metric, the &quot;Linear, weighted&quot; row reports balanced accuracy. They share the same top-5 column by construction.
+215	
+216	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+217	|---|---|---|---|---|
+218	| Linear, unweighted | 3.55% ± 0.89 / 18.30% ± 3.75 | 3.11% ± 1.41 / 18.21% ± 4.85 | **10.30% ± 1.36 / 35.88% ± 1.77** | 4.44% ± 1.86 / 21.94% ± 3.94 |
+219	| Linear, weighted | 3.35% ± 0.90 / 18.30% ± 3.75 | 3.88% ± 2.74 / 18.21% ± 4.85 | **6.01% ± 2.37 / 35.88% ± 1.77** | 4.02% ± 2.24 / 21.94% ± 3.94 |
+220	| MLP, weighted | 4.44% ± 1.21 / 17.67% ± 1.95 | 4.01% ± 2.55 / 15.45% ± 2.32 | **4.51% ± 0.78** / 30.01% ± 3.17 | 4.17% ± 1.55 / **33.13% ± 1.51** |
+221	| **CNN, weighted** | 4.09% ± 1.03 / **30.82% ± 3.77** | 4.05% ± 0.66 / **29.58% ± 3.43** | **4.78% ± 1.47** / 30.46% ± 2.29 | 4.40% ± 1.25 / 28.41% ± 3.63 |
+222	
+223	Tokens still at chance across all four probe regimes under top-1 / bal-acc. Raw lifts more under averaging than it did in Experiment 1 (linear unweighted top-1: 6.14% → **10.30%**; raw top-5: 32.11% → 35.88%) — confirming the SNR boost reaches raw features, but **the tokens do not benefit at the strict metric**. tokens_all and tokens_rvq0 sit inside the random bracket on every weighted row.
+224	
+225	Two top-5 oddities worth noting (neither changes the verdict):
+226	- **CNN tokens beat random on top-5 again** (tokens_all 30.82% vs random 28.41%; tokens_rvq0 29.58% vs random 28.41%) — same direction as Exp 1.4 [[1a]], slightly larger gap, but fold std (~3.7pp) still covers it. Faint coarse-category signal, not a contradiction of the chance verdict.
+227	- **MLP raw top-5 (30.01%) is *below* MLP random top-5 (33.13%)** on the averaged set. Most plausible read: with only 1,126 averaged samples and 5-fold CV (~225 per fold), the MLP overfits the random features into a confident top-5-most-common-classes prediction; on raw features it spreads probability mass too widely. A probe-architecture artifact, not a tokenizer claim.
+228	
+229	### 1.5b — Subject ID. **N/A** — cross-subject averaging eliminates the subject variable by construction.
+230	
+231	### 1.5c — Animacy (averaged input). Chance = 50%. (Top-5 omitted: mechanically 100% since n_classes=2 &lt; k=5.)
+232	
+233	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+234	|---|---|---|---|---|
+235	| Linear, unweighted | 55.3% ± 2.9 | 51.1% ± 2.8 | **79.5% ± 2.2** | 64.5% ± 4.1 |
+236	| Linear, weighted | 49.3% ± 1.4 | 45.0% ± 3.7 | **61.1% ± 3.4** | 48.2% ± 4.3 |
+237	| MLP, weighted | 50.3% ± 1.8 | 46.8% ± 2.8 | **63.8% ± 2.1** | 50.8% ± 3.1 |
+238	| **CNN, weighted** | 50.6% ± 1.7 | 51.4% ± 2.5 | **58.9% ± 5.3** | 49.8% ± 1.8 |
+239	
+240	Same pattern: tokens sit at random under every weighted probe; raw lifts to 59–80%. Unweighted top-1 numbers inflate because the averaged set&#x27;s animacy distribution is imbalanced (more inanimate images survive the superordinate filter) — class-weighted balanced accuracy is the honest column.
+241	
+242	### 1.5d — Model-free retrieval (§5.5), 3b_nonavg with averaged input
+243	
+244	Same retrieval probe as [[1d]] but on the averaged-input regime. Zero trainable parameters; cosine on `tokens_to_embedding` features, Jaccard on token sets. Subject task N/A under cross-subject averaging.
+245	
+246	| Task (n) | tokens (cosine) prec@1 / @5 | tokens (Jaccard) prec@1 / @5 | raw prec@1 / @5 | random prec@1 / @5 |
+247	|---|---|---|---|---|
+248	| Category27 (~1126, chance 3.70%) | 3.25% / 3.28% | 4.47% / 3.91% | 4.24% / 4.37% | 3.72% / 3.84% |
+249	| Animacy (~2245, chance 50%) | 48.4% / 49.3% | 50.5% / 50.4% | 50.7% / 51.4% | 51.2% / 49.9% |
+250	
+251	**Tokens retrieval is at chance on both tasks under averaged input** — same regime as 3b_nonavg single-trial [[1d]] and as the averaged-trained 3b_avgcross [[2d]]. Bag-of-tokens geometry doesn&#x27;t cluster averaged trials by category or animacy any better than randomly-drawn token bags do.
+252	
+253	Raw retrieval is *also* at chance on both tasks at this n (1,126 / 2,245). Same caveat as 2d: k-NN with cosine similarity on the 76k-dim flattened raw signal is too weak to surface the small linear signal that the §5.3 classifier still finds at 6.0% (category) and 61.1% (animacy). So retrieval is a strong &quot;tokens at floor&quot; signal but not a strict ceiling proof for raw at this sample count.
+254	
+255	**What retrieval adds beyond §5.3 here.** Per the gate from the user&#x27;s framing: if retrieval at chance, no classifier will work. Tokens are at chance under retrieval on category and animacy in BOTH input regimes (single-trial 1d and averaged 1.5d) — independent confirmation that the §5.3 MLP/CNN failure on those tasks is &quot;the signal isn&#x27;t in the geometry,&quot; not &quot;the probe was too weak.&quot; Subject is the control: there, tokens lift to 50.3% prec@1 (vs 25% chance) in 1d, confirming retrieval *can* find token signal when it exists.
+256	
+257	### Headline reading of Experiment 1.5
+258	
+259	**Averaging the input does not rescue category/animacy in 3b_nonavg&#x27;s tokens.** Reconstruction quality improves (MSE −73%), the raw-feature probe improves correspondingly, but the tokens still carry no decodable category or animacy signal at any probe complexity. This rules out &quot;single-trial noise was the bottleneck&quot; as the explanation — the bottleneck is the tokenizer&#x27;s **reconstruction objective**, which budgets bits to variance (subject-level / sensor-level) and not to discrimination. Per the decision tree in `meg/CLAUDE.md` §9, this argues against spending a finetune run on averaged trials (Experiment 2 below) and toward the architectural intervention: contrastive / supervised finetune, or moving to Stage 2 (Cho2026 / EphysTokenizer).
+260	
+261	JSONs: `brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0[_&lt;clf&gt;][_&lt;label&gt;]_avgcross_subject.json`.
+262	
+263	---
+264	
+265	## Experiment 2 — BrainOmni 3b_avgcross (finetuned on cross-subject-averaged trials)
+266	
+267	**Checkpoint:** `V512_rvq4_win512_sf256_3b_avgcross` (`adapt` mode, lr 3e-5, batch 32, 10 epochs, patience-based early stopping with `patience=2 min_epochs=3`). Train: 17,959 averaged trials (was 88,340 single trials); val: 2,245 (was 9,816). Final epoch: 10 (no early-stop; train and val tracking closely, best val 1.4691 at epoch 9 vs 3b_nonavg&#x27;s 1.401).
+268	
+269	**Eval pipeline:** same `--averaging cross_subject` flag → ~10k test trials → 2,245 averaged signals → tokenizer (`3b_avgcross` weights) → 5-fold CV probe + §5.5 retrieval. n=1,126 with valid superordinate labels for category27; n=2,245 for animacy.
+270	
+271	**Probe coverage so far:** linear (cheapest), CNN (right inductive bias for temporal-spatial structure). MLP intentionally skipped — the §5.5 retrieval probe is at chance for tokens on both tasks (see §2d below), and CNN was added explicitly to test whether the right inductive bias can find faint signal that retrieval misses. If retrieval fails AND CNN fails, MLP between them has no plausible mechanism to find anything new.
+272	
+273	### 2a — Category27 (averaged input + averaged-trained tokenizer). Chance = 3.70%.
+274	
+275	Cell format: `top-1 / top-5 / bal_acc` (mean ± std across 5 folds).
+276	
+277	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+278	|---|---|---|---|---|
+279	| Linear, weighted | 3.37±1.68 / 17.58±3.15 / 2.88±1.80 | 3.11±0.71 / 17.50±1.85 / 3.24±1.32 | **10.30±1.36 / 35.88±1.77 / 6.01±2.37** | 4.44±1.86 / 21.94±3.94 / 4.02±2.24 |
+280	| MLP, weighted | not run — retrieval rules out | not run | not run | not run |
+281	| **CNN, weighted** | 9.32±1.85 / 30.64±3.88 / **4.65±1.31** | 8.52±2.17 / 30.20±3.58 / 4.07±0.82 | 9.06±1.38 / 30.46±2.29 / 4.78±1.47 | 7.73±2.50 / 27.89±1.98 / 3.65±1.24 |
+282	
+283	### 2b — Subject ID. **N/A** — cross-subject averaging eliminates the subject variable by construction.
+284	
+285	### 2c — Animacy (averaged input + averaged-trained tokenizer). Chance = 50%. (Top-5 omitted: mechanically 100% for 2-class.)
+286	
+287	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+288	|---|---|---|---|---|
+289	| Linear, weighted (top-1) | 54.1±4.4 | 54.2±4.2 | **79.5±2.2** | 64.5±4.1 |
+290	| Linear, weighted (bal_acc) | 48.5±4.6 | 50.9±7.3 | **61.1±3.4** | 48.2±4.3 |
+291	| MLP, weighted | not run — retrieval rules out | not run | not run | not run |
+292	| **CNN, weighted (top-1)** | 81.4±2.1 | 78.5±1.2 | 76.7±3.8 | 83.0±1.4 |
+293	| **CNN, weighted (bal_acc)** | **52.2±1.7** | 51.4±0.3 | **58.9±5.3** | 50.9±2.5 |
+294	
+295	### 2d — Model-free retrieval (§5.5), 3b_avgcross
+296	
+297	Bag-of-tokens / cosine on `tokens_to_embedding` features / Jaccard on token sets. Zero trainable parameters; tests **feature geometry directly**.
+298	
+299	| Task | tokens (cosine) prec@1 / @5 | tokens (Jaccard) prec@1 / @5 | raw prec@1 / @5 | random prec@1 / @5 |
+300	|---|---|---|---|---|
+301	| Category27 (chance 3.70%) | 3.98% / 3.72% | 4.51% / — | **4.24% / 4.37%** | 3.72% / 3.84% |
+302	| Animacy (chance 50%) | 48.6% / 50.7% | 48.6% / 49.4% | 50.7% / 51.4% | 51.2% / 49.9% |
+303	
+304	**Tokens retrieval is at chance on both tasks.** Same regime as 3b_nonavg&#x27;s retrieval, same regime as 1.5&#x27;s retrieval. The token-set geometry separates trials at the rate of a random shuffle.
+305	
+306	Raw retrieval is *also* at chance on both tasks under cross-subject averaging — which is informative: it tells us **the model-free probe is too weak on this n** (1,126 / 2,245 samples after dropping unmapped). Compare against the classifier numbers: linear raw lifts to 6.01% (category) and 61.1% (animacy) — so signal *is* in raw, the linear head with class-weighted CE picks it up where k-NN cannot. This caveats the retrieval test: it&#x27;s a strong signal that tokens are at floor, but not a strict ceiling proof for raw at this sample count.
+307	
+308	### Headline reading of Experiment 2
+309	
+310	bal_acc means; chance = 3.70% for category27, 50% for animacy.
+311	
+312	| Task | tokens (linear) | tokens (CNN) | tokens (retrieval) | raw (best probe) | Decodable from tokens? |
+313	|---|---|---|---|---|---|
+314	| Category27 | 2.9% (at chance) | 4.65 ± 1.31% (1pp lift, ~1σ) | 4.0% prec@1 (at chance) | 6.0% (linear, above chance) | ❌ marginal — within fold std |
+315	| Animacy | 48.5% (at chance) | **52.2 ± 1.7%** (2pp lift) | 48.6% prec@1 (at chance) | 61.1% (linear, above chance) | ⚠️ small lift — see below |
+316	
+317	**Finetuning on averaged trials does not meaningfully rescue category or animacy in the tokens.** Two small lifts under CNN do appear (cat 4.65% vs random 3.65%; animacy 52.2% vs random 50.9%) but both are within ~1σ of fold variance and don&#x27;t change the verdict — they&#x27;re consistent with the small top-5 footnote we already saw in Exp 1a. Compare against subject in Exp 1 where CNN tokens hit **97% vs 25% chance** when real signal exists; the contrast tells you what a *real* CNN-rescued signal looks like in this harness vs the noise-floor wiggle we see here.
+318	
+319	Combined with Experiment 1.5 (same diagnosis from a no-retrain diagnostic), the evidence is consistent and convergent: the **reconstruction objective is the bottleneck**, not the per-trial noise level of the input. The averaged-input regime (1.5) and the averaged-training regime (2) both fail to make tokens carry category info — even when paired with the right-inductive-bias CNN probe.
+320	
+321	Decision: do not iterate further on reconstruction-only finetuning. Move to one of:
+322	
+323	1. **Auxiliary supervised / contrastive loss during BrainOmni finetune** — gives the tokenizer a gradient signal that&#x27;s specifically about discrimination, not just variance.
+324	2. **Stage 2 (Cho2026 / EphysTokenizer adapter)** — different architectural family; revisit if (1) doesn&#x27;t work.
+325	
+326	JSONs: `brainomni/runs/V512_rvq4_win512_sf256_3b_avgcross/evals/eval_ntest=full_s0[_&lt;clf&gt;][_&lt;label&gt;]_avgcross_subject.json`.
+327	
+328	---
+329	
+330	### Headline reading of Experiment 1
+331	
+332	| Task | Best on tokens | Best on raw | Tokens vs raw | Decodable from tokens? |
+333	|---|---|---|---|---|
+334	| Subject (4-way) | **97.4% (CNN)** | 98.0% (CNN) | -0.6pp | ✅ **YES — near-perfect** |
+335	| Animacy (2-way) | 52.6% (Linear rvq0) | 57.9% (MLP) | -5.3pp | ⚠️ marginal (within fold noise) |
+336	| Category27 (27-way) | 3.8% (CNN rvq0) | 6.1% (Linear) | -2.3pp | ❌ **NO — at chance** |
+337	
+338	**The selective failure is the key result.** The tokenizer preserves whatever signal dominates variance (subject identity is large; category-discriminative spatial-temporal microstructure is small) and drops what doesn&#x27;t fit in the 1,152-bit-per-trial budget. CNN proves it isn&#x27;t a probe-architecture limitation — when signal exists in the tokens, CNN finds it (97% subject); when it doesn&#x27;t (category), no inductive bias rescues it.
+339	
+340	This is the most informed verdict yet on whether 3b_nonavg&#x27;s tokens are 4M-ready: they are if 4M needs subject/recording-level features; they are not if 4M needs to discriminate object category from this modality alone.
+341	
+342	## The harness — five axes (eval contract)
+343	
+344	| Axis | What it answers | Source |
+345	|---|---|---|
+346	| §5.1 reconstruction | Does encode→decode round-trip preserve the waveform? | `evaluation/reconstruction.py` |
+347	| §5.2 codebook | Is the vocab used (no dead codes / collapse)? | `evaluation/codebook.py` |
+348	| §5.3 linear probe | Are tokens **linearly decodable** to a class label? | `evaluation/probe.py` |
+349	| §5.4 sequence | Is the token *sequence* learnable (entropy gap, runs)? | `evaluation/sequence.py` |
+350	| §5.5 retrieval | Same as §5.3 but **model-free** — does feature geometry separate classes? | `evaluation/retrieval.py` |
+351	
+352	## §5.3 probe hardening (timeline)
+353	
+354	| Iteration | What we added | Why |
+355	|---|---|---|
+356	| v0 | Linear head, top-1 + top-5, single split | Baseline §5.3 contract |
+357	| v1 | Label space → THINGS **27-way superordinate** (was 1854-way concept) | 2.6 trials/class is statistically dead; 27-way → ~185/class |
+358	| v2 | **5-fold CV**, mean ± std | Single-split was un-error-barred |
+359	| v3 | **Class-weighted CE** | Unweighted CE on imbalanced labels collapses to majority prediction |
+360	| v4 | **Balanced accuracy** as the headline metric | Top-1 floor with imbalance is `max(class_freq)`, not 1/n_classes |
+361	| v5 | **2-layer MLP** option (`probe_classifier=&quot;mlp&quot;`) | Catches &quot;info is there but nonlinear&quot; |
+362	| v6 | **Per-RVQ-layer probing** (`tokens_rvq0` vs `tokens_all`) | Asks whether coarse layer alone carries info |
+363	| v7 | **Position-preserving `tokens_to_embedding`** for μ-transform | BoC was discarding the position μ-transform faithfully preserves |
+364	| v8 | **3 label spaces** (`category27`/`animacy`/`subject`) | Subject is pipeline sanity check (Dixen 2024 trick); animacy is sensitivity check |
+365	| v9 | **§5.5 retrieval axis** (cosine prec@K + Jaccard) | Zero-trainable probe: separates &quot;tokens bad&quot; from &quot;classifier bad&quot; |
+366	| **v10** | **CNN probe head** (`probe_classifier=&quot;cnn&quot;`) | Right inductive bias for temporal-spatial structure; Dixen 2024 shows architecture matters at this SNR |
+367	
+368	## What broke when, and how we caught it
+369	
+370	| Sanity flag | Cause | Diagnostic |
+371	|---|---|---|
+372	| `top1_random = 12.4%` on 27-way labels | Unweighted CE collapses to majority prediction | Class-weighted CE drops top1_random to 3.7% |
+373	| `raw &lt; tokens` under top-1 | 76k-dim raw features overfit on ~4k training samples | Balanced accuracy correctly puts raw above tokens |
+374	| `bal_acc_tokens ≈ random` everywhere | &quot;Tokens bad&quot; or &quot;probe broken&quot;? | Subject-ID probe shows tokens at 62%, random at 25% → probe works, tokens lose category specifically |
+375	| μ-transform tokens at chance despite near-lossless reconstruction | BoC featurization discards position | Position-preserving `tokens_to_embedding` |
+376	| &quot;Reconstruction-only&quot; framing for BrainOmni | Misread the trainer | Actual loss has 5 terms: time + per-channel-correlation + commitment + FFT amplitude + 0.5 × FFT phase |
+377	
+378	## Testing strategy
+379	
+380	| Layer | Examples | File |
+381	|---|---|---|
+382	| Unit — label mappings | `test_super_mapping_encode_drops_multi_membership_concepts`, `test_animacy_encode_binary_output` | `meg/test_data.py` |
+383	| Unit — probe internals | `test_class_weights_match_sklearn_formula`, `test_probe_class_weighted_prevents_majority_collapse`, `test_build_head_mlp_2layer_with_dropout`, `test_build_head_cnn_*` (pending) | `test_tokenizer.py` |
+384	| Unit — featurization | `test_tokens_to_embedding_preserves_position_as_bin_centers` (μ-transform), `test_decode_rvq_indices_layer_selection` (BrainOmni) | `meg/mu_transform/test_mu_transform.py`, `meg/brainomni/test_brainomni.py` |
+385	| Unit — retrieval | `test_retrieval_random_at_balanced_chance`, `test_retrieval_jaccard_skipped_for_saturated_codes` | `test_retrieval.py` |
+386	| Integration | `test_evaluate_runs_all_axes` (full harness on stub) | `test_tokenizer.py` |
+387	| Integration (Modal) | `modal_meg_eval.py::run` with `--probe-classifier` and `--probe-label-space` flags | `meg/modal/modal_meg_eval.py` |
+388	
+389	## Cross-checks backing every verdict
+390	
+391	1. **Pipeline sanity** — subject decodes at 62% (vs 25% chance) → pipeline works.
+392	2. **Multiple probe families** — linear, MLP, model-free retrieval (and now CNN) all consulted.
+393	3. **Multiple training regimes** — unweighted, class-weighted, both metric variants agreed before we moved on.
+394	4. **Cross-tokenizer agreement** — both μ-transform and BrainOmni fail §5.3 on category; both pass §5.1 reconstruction. Common factor: large compression ratio + global reconstruction objective.
+395	5. **Bracketing brackets stable** — raw and random brackets are stable across configurations.
+396	
+397	## Open follow-ups
+398	
+399	| Item | Why |
+400	|---|---|
+401	| Finetune BrainOmni on image-averaged trials → 3b_avg, repeat the §1 grid | Tests whether per-trial noise was the bottleneck for category. The CNN result above shows the tokens have *room* for subject-level signal but spent the bit budget on subject not category; averaging may shift the budget. (Experiment 2 in this doc.) |
+402	| Re-run μ-transform with new position-preserving `tokens_to_embedding` × the §1 grid | μ-transform is near-lossless. Expected: tokens ≈ raw for all three tasks. Validates the position-preserving featurization on real data. |
+403	| Document corrected 5-term loss (including FFT) in `meg/CLAUDE.md §9` | Old text said &quot;reconstruction-only&quot; — wrong. The loss already has FFT amplitude + phase. |
+404	| Consider a category-aware finetune objective (contrastive / supervised) | Reconstruction loss budgets bits to variance, not to discrimination. If averaged trials don&#x27;t fix category, this is the architectural intervention. |
+405	
+406	## Pointers
+407	
+408	- Production leaderboard: [`neural_tokenizers/meg/CLAUDE.md §9`](../neural_tokenizers/meg/CLAUDE.md)
+409	- Probe design rationale: [`linear_probe_design.md`](linear_probe_design.md)
+410	- 4M-modality plan: [`4m_neural_modality_design.md`](4m_neural_modality_design.md)
+411	- Probe source: [`neural_tokenizers/evaluation/probe.py`](../neural_tokenizers/evaluation/probe.py), [`evaluation/retrieval.py`](../neural_tokenizers/evaluation/retrieval.py)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-52-39-204Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-52-39-204Z" class="timestamp-link"><time datetime="2026-06-01T05:52:39.204Z" data-timestamp="2026-06-01T05:52:39.204Z">2026-06-01T05:52:39.204Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-53-10-967Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-53-10-967Z" class="timestamp-link"><time datetime="2026-06-01T05:53:10.967Z" data-timestamp="2026-06-01T05:53:10.967Z">2026-06-01T05:53:10.967Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01LJEQNoVvz7vXD76MuzGPCp">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">meg_tokenization_lean.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content"># MEG tokenization — lean
+
+Compressed reference for BrainOmni 3b probe results. Full doc:
+[meg_tokenization.md](meg_tokenization.md).
+
+## Setup
+
+- Checkpoint: BrainOmni `V512_rvq4_win512_sf256_3b` (RVQ, V=512, 4 layers, 512 tokens/trial)
+- Tasks: **category27** (chance 3.70%), **animacy** (50%), **subject** (25%)
+- Probes: linear / MLP / **CNN**, all 5-fold CV, class-weighted CE, balanced accuracy
+- Features: `tokens_all` / `tokens_rvq0` / `raw` (ceiling) / `random` (floor)
+
+## Final verdict
+
+**Ship Experiment 1 (`3b_nonavg`).** Tokens preserve subject identity (97% CNN) and most of animacy (~5pp gap). Cat27 is at chance for both experiments because **raw MEG itself is only ~5% bal_acc** on cat27 — the tokenizer isn&#39;t the bottleneck, the probe + data are.
+
+| Task (chance) | Exp 1 tokens | Exp 2 tokens | Raw ceiling | Decodable? |
+|---|---|---|---|---|
+| Subject (25%) | **97.4 ± 0.2 (CNN)** | N/A (avg destroys it) | 98.0 ± 0.2 | ✅ preserved |
+| Animacy (50%) | 52.6 ± 0.7 | 52.2 ± 0.8 | 58.9 ± 2.4 | ⚠️ partial loss (~5pp) |
+| Cat27 (3.70%) | 3.55 ± 0.24 | **4.65 ± 0.59 (CNN)** | 6.14 ± 0.20 | ❌ at floor |
+
+---
+
+## Experiment 1 — `3b_nonavg` (single-trial finetune)
+
+Train: 88,340 single trials. Best val 1.401.
+
+### 1a — Category27 (chance 3.70%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, unweighted | 3.76 ± 0.07 | 3.71 ± 0.01 | **6.14 ± 0.44** | 3.70 ± 0.00 |
+| Linear, weighted | 3.35 ± 0.91 | 3.42 ± 0.38 | **5.16 ± 0.21** | 3.64 ± 0.73 |
+| MLP, weighted | 3.18 ± 0.97 | 2.94 ± 0.78 | **4.31 ± 0.49** | 3.09 ± 0.82 |
+| **CNN, weighted** | 3.55 ± 0.54 | 3.77 ± 0.53 | **4.19 ± 0.87** | 3.61 ± 0.52 |
+
+**Tokens at chance across all probes.** Raw barely lifts (~5%).
+
+### 1b — Subject (chance 25%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 62.6 ± 1.0 | 45.1 ± 0.7 | 93.9 ± 0.9 | 25.2 ± 0.9 |
+| MLP, weighted | 69.3 ± 1.0 | 52.2 ± 1.1 | 95.4 ± 0.4 | 25.4 ± 1.3 |
+| **CNN, weighted** | **97.4 ± 0.4** | **92.1 ± 0.5** | **98.0 ± 0.5** | 25.5 ± 0.7 |
+
+**Tokens nearly match raw under CNN.** Monotone linear → MLP → CNN.
+
+### 1c — Animacy (chance 50%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted | 51.1 ± 1.8 | 52.6 ± 1.6 | **57.8 ± 2.5** | 50.0 ± 2.2 |
+| MLP, weighted | 50.8 ± 2.0 | 51.4 ± 0.8 | **57.9 ± 2.1** | 49.9 ± 3.0 |
+| **CNN, weighted** | 51.6 ± 2.0 | 51.2 ± 1.3 | 52.1 ± 1.3 | 49.5 ± 0.6 |
+
+**Tokens at chance; raw lifts ~5–8pp.**
+
+### 1d — Retrieval (zero trainable params)
+
+| Task | tokens cos @1/@5 | tokens Jacc @1/@5 | raw @1/@5 | random @1/@5 |
+|---|---|---|---|---|
+| Cat27 | 3.71 / 3.59 | 3.38 / 3.81 | 3.76 / 3.94 | 4.11 / 3.54 |
+| Animacy | 50.5 / 50.3 | 51.1 / 50.5 | 50.2 / 50.6 | 49.7 / 49.3 |
+| Subject | **50.3 / 47.5** | **37.7 / 36.7** | **65.9 / 61.5** | 24.7 / 24.9 |
+
+**Subject geometry lifts without training; cat/animacy at chance.**
+
+---
+
+## Experiment 2 — `3b_avgcross` (cross-subject-averaged finetune)
+
+Train: 17,959 averaged trials. Best val 1.469. Subject task N/A by construction.
+
+### 2a — Category27 (chance 3.70%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | 2.88 ± 1.80 | 3.24 ± 1.32 | **6.01 ± 2.37** | 4.02 ± 2.24 |
+| **CNN, weighted (bal_acc)** | **4.65 ± 1.31** | 4.07 ± 0.82 | **4.78 ± 1.47** | 3.65 ± 1.24 |
+
+**CNN tokens 4.65 vs raw 4.78 — essentially matched, ~+1σ above random.**
+
+### 2c — Animacy (chance 50%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | 48.5 ± 4.6 | 50.9 ± 7.3 | **61.1 ± 3.4** | 48.2 ± 4.3 |
+| **CNN, weighted (bal_acc)** | **52.2 ± 1.7** | 51.4 ± 0.3 | **58.9 ± 5.3** | 50.9 ± 2.5 |
+
+**Tokens ~2pp above random; raw ~7pp above. Partial loss persists.**
+
+### 2d — Retrieval
+
+| Task | tokens cos @1/@5 | tokens Jacc @1/@5 | raw @1/@5 | random @1/@5 |
+|---|---|---|---|---|
+| Cat27 | 3.98 / 3.72 | 4.51 / — | **4.24 / 4.37** | 3.72 / 3.84 |
+| Animacy | 48.6 / 50.7 | 48.6 / 49.4 | 50.7 / 51.4 | 51.2 / 49.9 |
+
+**All at chance** — raw retrieval also at chance at n=1,126/2,245 (too weak for the small linear signal).
+
+---
+
+## What the two experiments together say
+
+- **Reconstruction objective is the bottleneck**, not single-trial noise. Both averaged-input diagnostics and the averaged-trained Exp 2 fail to recover cat27.
+- **Variance budget goes to subject/sensor features**, not to fine category structure.
+- **Next intervention**: contrastive/supervised auxiliary loss, OR Stage 2 (Cho2026 / EphysTokenizer). Don&#39;t iterate further on reconstruction-only finetuning.
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T05-53-11-984Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T05-53-11-984Z" class="timestamp-link"><time datetime="2026-06-01T05:53:11.984Z" data-timestamp="2026-06-01T05:53:11.984Z">2026-06-01T05:53:11.984Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T05-53-16-206Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T05-53-16-206Z" class="timestamp-link"><time datetime="2026-06-01T05:53:16.206Z" data-timestamp="2026-06-01T05:53:16.206Z">2026-06-01T05:53:16.206Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Wrote <a href="notes/meg_tokenization_lean.md">notes/meg_tokenization_lean.md</a> — ~95 lines vs 412 in the original. Kept all data tables for Exp 1 (1a–1d) and Exp 2 (2a, 2c, 2d), skipped Exp 1.5 entirely, dropped the harness/timeline/testing/cross-checks sections, and bolded headline numbers + verdict cells.</p></div></div></div>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

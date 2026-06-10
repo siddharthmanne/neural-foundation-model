@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 1</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 1/4</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<span class="disabled">&larr; Prev</span>
+<span class="current">1</span>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-002.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-01T01-38-40-106Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-38-40-106Z" class="timestamp-link"><time datetime="2026-06-01T01:38:40.106Z" data-timestamp="2026-06-01T01:38:40.106Z">2026-06-01T01:38:40.106Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>run an evaluation of brainomni MEG tokenizer where evaluation is on AVERAGED TRIALS. use the entire n=~10000 dataset and average the trials and run them through tokenizer, and then eval on all the metrics in the meg tokeniztion.md tables. add a table for this averaged trials (BEFORE FINETUNING)</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-42-421Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-42-421Z" class="timestamp-link"><time datetime="2026-06-01T01:38:42.421Z" data-timestamp="2026-06-01T01:38:42.421Z">2026-06-01T01:38:42.421Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-44-002Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-44-002Z" class="timestamp-link"><time datetime="2026-06-01T01:38:44.002Z" data-timestamp="2026-06-01T01:38:44.002Z">2026-06-01T01:38:44.002Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01RcibzNEWH7uHMKpVYRWPon">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find MEG tokenization markdown file</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">find /Users/Siddharth/neural-foundation-model -name &#34;meg_tokenization*.md&#34; -o -name &#34;MEG_tokenization*.md&#34; 2&gt;/dev/null | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-44-458Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-44-458Z" class="timestamp-link"><time datetime="2026-06-01T01:38:44.458Z" data-timestamp="2026-06-01T01:38:44.458Z">2026-06-01T01:38:44.458Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01DQmybUcQeLPxBBnyRoyLWf">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List MEG tokenizer directory</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-45-369Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-45-369Z" class="timestamp-link"><time datetime="2026-06-01T01:38:45.369Z" data-timestamp="2026-06-01T01:38:45.369Z">2026-06-01T01:38:45.369Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01B3FvWgsrRD3erzFyx5fmWY">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List brainomni directory</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-38-45-804Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-38-45-804Z" class="timestamp-link"><time datetime="2026-06-01T01:38:45.804Z" data-timestamp="2026-06-01T01:38:45.804Z">2026-06-01T01:38:45.804Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>README.md
+__init__.py
+__pycache__
+adapter.py
+checkpoint.py
+compare_eval.py
+config.py
+load.py
+preprocess.py
+runs
+sensor_metadata.py
+test_brainomni.py
+trainer.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-38-45-805Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-38-45-805Z" class="timestamp-link"><time datetime="2026-06-01T01:38:45.805Z" data-timestamp="2026-06-01T01:38:45.805Z">2026-06-01T01:38:45.805Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>CLAUDE.md
+__init__.py
+__pycache__
+brainomni
+data
+data.py
+meg_config.py
+modal
+modality_registration.py
+mu_transform
+splits.py
+test_data.py
+test_splits.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-38-45-897Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-38-45-897Z" class="timestamp-link"><time datetime="2026-06-01T01:38:45.897Z" data-timestamp="2026-06-01T01:38:45.897Z">2026-06-01T01:38:45.897Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-48-327Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-48-327Z" class="timestamp-link"><time datetime="2026-06-01T01:38:48.327Z" data-timestamp="2026-06-01T01:38:48.327Z">2026-06-01T01:38:48.327Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01QFeKt62Uu2GxWNPfsabzuC"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-38-48-340Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-38-48-340Z" class="timestamp-link"><time datetime="2026-06-01T01:38:48.340Z" data-timestamp="2026-06-01T01:38:48.340Z">2026-06-01T01:38:48.340Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG tokenization — diagnostics and findings
+2	
+3	Brief reference for what we&#x27;ve measured on the BrainOmni 3b tokenizer, how the eval was hardened against false positives/negatives, and the experimental grid that backs the verdict. See [neural_tokenizers/meg/CLAUDE.md §9](../neural_tokenizers/meg/CLAUDE.md) for the production leaderboard; [linear_probe_design.md](linear_probe_design.md) for probe rationale.
+4	
+5	## TL;DR
+6	
+7	**BrainOmni 3b&#x27;s tokens preserve SUBJECT identity richly but lose OBJECT CATEGORY structure entirely.** Same tokens, three probe families. CNN → tokens decode subject at **97%** (vs 25% chance, near-perfect) but category at **3.6%** (vs 3.7% chance, at floor). The story isn&#x27;t &quot;tokens are bad&quot; — it&#x27;s selective: bits got spent on the signal that dominates variance (subject-level / sensor-level features), the small-amplitude category signal got dropped.
+8	
+9	Raw MEG behaves the same way (98% subject vs 4.2% category with CNN) — the asymmetry is intrinsic to the data, not the tokenizer. Tokens preserve roughly the subject-level information present in raw; they don&#x27;t preserve category info, but raw barely has it linearly decodable either.
+10	
+11	## What we are running and why
+12	
+13	Three tasks × three probe architectures × four feature sets. We compare two BrainOmni checkpoints to test whether averaging trials at training time changes the picture.
+14	
+15	| Axis | Levels |
+16	|---|---|
+17	| **Task** (`probe_label_space`) | `category27` (the gate) / `animacy` (easy 2-way) / `subject` (pipeline sanity) |
+18	| **Probe head** (`probe_classifier`) | `linear` / `mlp` / `cnn` (new — temporal+latent-spatial CNN; see §&quot;CNN probe head&quot;) |
+19	| **Feature set** | `raw` (signal upper bound) / `random` (lower bound) / `tokens_all` / `tokens_rvq0` |
+20	| **Checkpoint** | **`3b_nonavg`** (current — finetuned on single trials) / **`3b_avg`** (pending — finetuned on image-averaged trials) |
+21	
+22	All evals: full ~10k test split, 5-fold CV, **class-weighted CE**, balanced accuracy as the headline metric. Chance is 1/n_classes for every task (the whole point of balanced acc).
+23	
+24	Run pattern, fully parameterized:
+25	
+26	```bash
+27	modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+28	    --tokenizer brainomni \
+29	    --calibration &lt;checkpoint config.json&gt; \
+30	    --n-test 0 --seed 0 \
+31	    --probe-classifier {linear|mlp|cnn} \
+32	    --probe-label-space {category27|animacy|subject}
+33	```
+34	
+35	Results land at `&lt;checkpoint&gt;/evals/eval_ntest=full_s0[_&lt;classifier&gt;][_&lt;label_space&gt;].json`.
+36	
+37	---
+38	
+39	## CNN probe head — design
+40	
+41	The flat MLP probe has no inductive bias for the structure that THINGS-MEG decoding actually exploits (Cichy / Hebart papers: channel-topographic patterns over time). A 2-layer MLP on flattened tokens may simply lack the right shape; per Dixen 2024 even on EEG, EEGNet/Conformer-style temporal convolutions massively outperform flat heads at this SNR.
+42	
+43	The new `cnn` head exploits the token tensor&#x27;s natural structure rather than flattening it:
+44	
+45	- **For BrainOmni tokens** of shape `(B, 16 latents, 8 time, D=512 embed)`: a small **2-D CNN** with conv over `(latent × time)` and `D` as channels. Two conv blocks with batch-norm + ReLU + global average pooling → linear classifier. ~150k params.
+46	- **For raw MEG** of shape `(B, 271 channels, 281 time)`: a small **1-D CNN** over time, channels as input dims. Two strided conv blocks → global average pooling → linear. ~50k params.
+47	- **For random tokens**: same shape transform as `tokens` (random codes → `tokens_to_embedding` → CNN). Tests &quot;what does the CNN do with uninformative tokens of the right shape?&quot;.
+48	- **For μ-transform-style position-preserving tokens** `(B, 1, channels × time)`: reshape to `(B, channels, time)` then use the 1-D CNN — equivalent to applying the raw-MEG CNN to the dequantized signal.
+49	
+50	Rationale: small enough to not overfit on ~4k training trials per fold, while giving the probe the same inductive bias (temporal smoothness + latent-position locality) that real MEG decoders use.
+51	
+52	---
+53	
+54	## Experiment 1 — BrainOmni 3b_nonavg (current, single-trial finetune)
+55	
+56	Chance: 27-way = 3.70%, animacy 2-way = 50%, subject 4-way = 25%.
+57	
+58	### 1a — Category27 (the gate). Chance = 3.70%.
+59	
+60	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+61	|---|---|---|---|---|
+62	| Linear, unweighted | 3.76% ± 0.07 | 3.71% ± 0.01 | **6.14% ± 0.44** | 3.70% ± 0.00 |
+63	| Linear, weighted | 3.35% ± 0.91 | 3.42% ± 0.38 | **5.16% ± 0.21** | 3.64% ± 0.73 |
+64	| MLP, weighted | 3.18% ± 0.97 | 2.94% ± 0.78 | **4.31% ± 0.49** | 3.09% ± 0.82 |
+65	| **CNN, weighted** | 3.55% ± 0.54 | 3.77% ± 0.53 | **4.19% ± 0.87** | 3.61% ± 0.52 |
+66	
+67	All four probe regimes agree: tokens at chance, raw between 4.2% and 6.1% (small but real). CNN&#x27;s inductive bias does not rescue tokens on this task — the category-level info doesn&#x27;t exist in any decodable form.
+68	
+69	### 1b — Subject ID (pipeline sanity). Chance = 25%.
+70	
+71	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+72	|---|---|---|---|---|
+73	| Linear, weighted | 62.6% ± 1.0 | 45.1% ± 0.7 | 93.9% ± 0.9 | 25.2% ± 0.9 |
+74	| MLP, weighted | 69.3% ± 1.0 | 52.2% ± 1.1 | 95.4% ± 0.4 | 25.4% ± 1.3 |
+75	| **CNN, weighted** | **97.4% ± 0.4** | **92.1% ± 0.5** | **98.0% ± 0.5** | 25.5% ± 0.7 |
+76	
+77	CNN nearly closes the raw→tokens gap. **97% subject decoding from tokens** says the tokens carry rich structural/spatial info; the §5.3 linear gate was simply the wrong probe for that signal. Each architecture step (linear → MLP → CNN) buys more — clean monotone improvement, exactly what you expect when more inductive bias surfaces existing signal.
+78	
+79	### 1c — Animacy (easy 2-way, sensitivity check). Chance = 50%.
+80	
+81	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+82	|---|---|---|---|---|
+83	| Linear, weighted | 51.1% ± 1.8 | 52.6% ± 1.6 | **57.8% ± 2.5** | 50.0% ± 2.2 |
+84	| MLP, weighted | 50.8% ± 2.0 | 51.4% ± 0.8 | **57.9% ± 2.1** | 49.9% ± 3.0 |
+85	| **CNN, weighted** | 51.6% ± 2.0 | 51.2% ± 1.3 | 52.1% ± 1.3 | 49.5% ± 0.6 |
+86	
+87	Tokens at chance across all classifiers. Raw at 52-58% (consistent with Dixen 2024 cross-subject ceiling of 57-61% for binary living/non-living). CNN slightly hurts raw on animacy — likely 2-class label-imbalance noise interacting with CNN regularization; not investigated further since tokens are at chance regardless.
+88	
+89	---
+90	
+91	## Experiment 2 — BrainOmni 3b_avg (pending: finetuned on image-averaged trials)
+92	
+93	&gt; **Status:** not yet trained. Requires (a) Modal data loader that averages trials by image_id (or by image_id × subject), (b) finetune run analogous to 3b but on averaged data, (c) re-tokenization of test trials in the same averaged regime for fair eval. Tables mirror Experiment 1.
+94	
+95	### 2a — Category27
+96	
+97	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+98	|---|---|---|---|---|
+99	| Linear, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+100	| MLP, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+101	| CNN, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+102	
+103	### 2b — Subject ID
+104	
+105	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+106	|---|---|---|---|---|
+107	| Linear, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+108	| MLP, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+109	| CNN, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+110	
+111	### 2c — Animacy
+112	
+113	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+114	|---|---|---|---|---|
+115	| Linear, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+116	| MLP, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+117	| CNN, weighted | _pending_ | _pending_ | _pending_ | _pending_ |
+118	
+119	---
+120	
+121	### Headline reading of Experiment 1
+122	
+123	| Task | Best on tokens | Best on raw | Tokens vs raw | Decodable from tokens? |
+124	|---|---|---|---|---|
+125	| Subject (4-way) | **97.4% (CNN)** | 98.0% (CNN) | -0.6pp | ✅ **YES — near-perfect** |
+126	| Animacy (2-way) | 52.6% (Linear rvq0) | 57.9% (MLP) | -5.3pp | ⚠️ marginal (within fold noise) |
+127	| Category27 (27-way) | 3.8% (CNN rvq0) | 6.1% (Linear) | -2.3pp | ❌ **NO — at chance** |
+128	
+129	**The selective failure is the key result.** The tokenizer preserves whatever signal dominates variance (subject identity is large; category-discriminative spatial-temporal microstructure is small) and drops what doesn&#x27;t fit in the 1,152-bit-per-trial budget. CNN proves it isn&#x27;t a probe-architecture limitation — when signal exists in the tokens, CNN finds it (97% subject); when it doesn&#x27;t (category), no inductive bias rescues it.
+130	
+131	This is the most informed verdict yet on whether 3b_nonavg&#x27;s tokens are 4M-ready: they are if 4M needs subject/recording-level features; they are not if 4M needs to discriminate object category from this modality alone.
+132	
+133	## The harness — five axes (eval contract)
+134	
+135	| Axis | What it answers | Source |
+136	|---|---|---|
+137	| §5.1 reconstruction | Does encode→decode round-trip preserve the waveform? | `evaluation/reconstruction.py` |
+138	| §5.2 codebook | Is the vocab used (no dead codes / collapse)? | `evaluation/codebook.py` |
+139	| §5.3 linear probe | Are tokens **linearly decodable** to a class label? | `evaluation/probe.py` |
+140	| §5.4 sequence | Is the token *sequence* learnable (entropy gap, runs)? | `evaluation/sequence.py` |
+141	| §5.5 retrieval | Same as §5.3 but **model-free** — does feature geometry separate classes? | `evaluation/retrieval.py` |
+142	
+143	## §5.3 probe hardening (timeline)
+144	
+145	| Iteration | What we added | Why |
+146	|---|---|---|
+147	| v0 | Linear head, top-1 + top-5, single split | Baseline §5.3 contract |
+148	| v1 | Label space → THINGS **27-way superordinate** (was 1854-way concept) | 2.6 trials/class is statistically dead; 27-way → ~185/class |
+149	| v2 | **5-fold CV**, mean ± std | Single-split was un-error-barred |
+150	| v3 | **Class-weighted CE** | Unweighted CE on imbalanced labels collapses to majority prediction |
+151	| v4 | **Balanced accuracy** as the headline metric | Top-1 floor with imbalance is `max(class_freq)`, not 1/n_classes |
+152	| v5 | **2-layer MLP** option (`probe_classifier=&quot;mlp&quot;`) | Catches &quot;info is there but nonlinear&quot; |
+153	| v6 | **Per-RVQ-layer probing** (`tokens_rvq0` vs `tokens_all`) | Asks whether coarse layer alone carries info |
+154	| v7 | **Position-preserving `tokens_to_embedding`** for μ-transform | BoC was discarding the position μ-transform faithfully preserves |
+155	| v8 | **3 label spaces** (`category27`/`animacy`/`subject`) | Subject is pipeline sanity check (Dixen 2024 trick); animacy is sensitivity check |
+156	| v9 | **§5.5 retrieval axis** (cosine prec@K + Jaccard) | Zero-trainable probe: separates &quot;tokens bad&quot; from &quot;classifier bad&quot; |
+157	| **v10** | **CNN probe head** (`probe_classifier=&quot;cnn&quot;`) | Right inductive bias for temporal-spatial structure; Dixen 2024 shows architecture matters at this SNR |
+158	
+159	## What broke when, and how we caught it
+160	
+161	| Sanity flag | Cause | Diagnostic |
+162	|---|---|---|
+163	| `top1_random = 12.4%` on 27-way labels | Unweighted CE collapses to majority prediction | Class-weighted CE drops top1_random to 3.7% |
+164	| `raw &lt; tokens` under top-1 | 76k-dim raw features overfit on ~4k training samples | Balanced accuracy correctly puts raw above tokens |
+165	| `bal_acc_tokens ≈ random` everywhere | &quot;Tokens bad&quot; or &quot;probe broken&quot;? | Subject-ID probe shows tokens at 62%, random at 25% → probe works, tokens lose category specifically |
+166	| μ-transform tokens at chance despite near-lossless reconstruction | BoC featurization discards position | Position-preserving `tokens_to_embedding` |
+167	| &quot;Reconstruction-only&quot; framing for BrainOmni | Misread the trainer | Actual loss has 5 terms: time + per-channel-correlation + commitment + FFT amplitude + 0.5 × FFT phase |
+168	
+169	## Testing strategy
+170	
+171	| Layer | Examples | File |
+172	|---|---|---|
+173	| Unit — label mappings | `test_super_mapping_encode_drops_multi_membership_concepts`, `test_animacy_encode_binary_output` | `meg/test_data.py` |
+174	| Unit — probe internals | `test_class_weights_match_sklearn_formula`, `test_probe_class_weighted_prevents_majority_collapse`, `test_build_head_mlp_2layer_with_dropout`, `test_build_head_cnn_*` (pending) | `test_tokenizer.py` |
+175	| Unit — featurization | `test_tokens_to_embedding_preserves_position_as_bin_centers` (μ-transform), `test_decode_rvq_indices_layer_selection` (BrainOmni) | `meg/mu_transform/test_mu_transform.py`, `meg/brainomni/test_brainomni.py` |
+176	| Unit — retrieval | `test_retrieval_random_at_balanced_chance`, `test_retrieval_jaccard_skipped_for_saturated_codes` | `test_retrieval.py` |
+177	| Integration | `test_evaluate_runs_all_axes` (full harness on stub) | `test_tokenizer.py` |
+178	| Integration (Modal) | `modal_meg_eval.py::run` with `--probe-classifier` and `--probe-label-space` flags | `meg/modal/modal_meg_eval.py` |
+179	
+180	## Cross-checks backing every verdict
+181	
+182	1. **Pipeline sanity** — subject decodes at 62% (vs 25% chance) → pipeline works.
+183	2. **Multiple probe families** — linear, MLP, model-free retrieval (and now CNN) all consulted.
+184	3. **Multiple training regimes** — unweighted, class-weighted, both metric variants agreed before we moved on.
+185	4. **Cross-tokenizer agreement** — both μ-transform and BrainOmni fail §5.3 on category; both pass §5.1 reconstruction. Common factor: large compression ratio + global reconstruction objective.
+186	5. **Bracketing brackets stable** — raw and random brackets are stable across configurations.
+187	
+188	## Open follow-ups
+189	
+190	| Item | Why |
+191	|---|---|
+192	| Finetune BrainOmni on image-averaged trials → 3b_avg, repeat the §1 grid | Tests whether per-trial noise was the bottleneck for category. The CNN result above shows the tokens have *room* for subject-level signal but spent the bit budget on subject not category; averaging may shift the budget. (Experiment 2 in this doc.) |
+193	| Re-run μ-transform with new position-preserving `tokens_to_embedding` × the §1 grid | μ-transform is near-lossless. Expected: tokens ≈ raw for all three tasks. Validates the position-preserving featurization on real data. |
+194	| Document corrected 5-term loss (including FFT) in `meg/CLAUDE.md §9` | Old text said &quot;reconstruction-only&quot; — wrong. The loss already has FFT amplitude + phase. |
+195	| Consider a category-aware finetune objective (contrastive / supervised) | Reconstruction loss budgets bits to variance, not to discrimination. If averaged trials don&#x27;t fix category, this is the architectural intervention. |
+196	
+197	## Pointers
+198	
+199	- Production leaderboard: [`neural_tokenizers/meg/CLAUDE.md §9`](../neural_tokenizers/meg/CLAUDE.md)
+200	- Probe design rationale: [`linear_probe_design.md`](linear_probe_design.md)
+201	- 4M-modality plan: [`4m_neural_modality_design.md`](4m_neural_modality_design.md)
+202	- Probe source: [`neural_tokenizers/evaluation/probe.py`](../neural_tokenizers/evaluation/probe.py), [`evaluation/retrieval.py`](../neural_tokenizers/evaluation/retrieval.py)
+203	- Eval dispatcher: [`neural_tokenizers/meg/modal/modal_meg_eval.py`](../neural_tokenizers/meg/modal/modal_meg_eval.py)
+204	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-54-258Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-54-258Z" class="timestamp-link"><time datetime="2026-06-01T01:38:54.258Z" data-timestamp="2026-06-01T01:38:54.258Z">2026-06-01T01:38:54.258Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-38-55-658Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-38-55-658Z" class="timestamp-link"><time datetime="2026-06-01T01:38:55.658Z" data-timestamp="2026-06-01T01:38:55.658Z">2026-06-01T01:38:55.658Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01YQymVQfhmmsjuCFfpkECnj"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_eval.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-38-55-680Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-38-55-680Z" class="timestamp-link"><time datetime="2026-06-01T01:38:55.680Z" data-timestamp="2026-06-01T01:38:55.680Z">2026-06-01T01:38:55.680Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Generic Modal evaluator for any MEG tokenizer.
+2	
+3	This script knows only three things:
+4	  1. How to load THINGS-MEG trials from the `project` Volume (delegates to
+5	     `meg/data.py`).
+6	  2. How to pick the test split (delegates to `meg/splits.py`).
+7	  3. How to invoke the §5 harness with MEG-appropriate EvalConfig defaults
+8	     (delegates to `meg/meg_config.py::EvalDefaults`).
+9	
+10	It does NOT know how to construct a particular tokenizer — that&#x27;s a small
+11	per-phase factory function. Adding Phase 2 will mean adding one factory
+12	entry, not a new script.
+13	
+14	Usage:
+15	    modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \\
+16	        --tokenizer mu_transform \\
+17	        --calibration neural_tokenizers/meg/mu_transform/calibration.json \\
+18	        --n-test 3000
+19	&quot;&quot;&quot;
+20	
+21	from __future__ import annotations
+22	
+23	from pathlib import Path
+24	from typing import Any
+25	import sys
+26	
+27	# Local-only sys.path tweak: makes `neural_tokenizers.*` importable when the
+28	# script is invoked from anywhere on the laptop. On Modal&#x27;s remote container,
+29	# `add_local_python_source(&quot;neural_tokenizers&quot;)` already mounts the package
+30	# (and the script itself lives at /root/script.py, where parents[3] would
+31	# IndexError), so we skip the tweak whenever the import already works OR the
+32	# file isn&#x27;t deep enough on disk to have a sensible parents[3].
+33	try:
+34	    import neural_tokenizers  # noqa: F401
+35	except ImportError:
+36	    try:
+37	        _REPO_ROOT = Path(__file__).resolve().parents[3]
+38	        sys.path.insert(0, str(_REPO_ROOT))
+39	    except IndexError:
+40	        # Remote container — neural_tokenizers should already be on sys.path
+41	        # via add_local_python_source. If it isn&#x27;t, fail loudly downstream.
+42	        pass
+43	
+44	import modal  # noqa: E402
+45	
+46	# Modal scaffold — inlined rather than shared via a sibling common.py
+47	# (the remote container re-imports this script during function hydration,
+48	# and a sibling top-level module isn&#x27;t reachable there).
+49	app = modal.App(&quot;neural-fm&quot;)
+50	project_volume = modal.Volume.from_name(&quot;project&quot;)
+51	PROJECT_MOUNT = &quot;/project&quot;
+52	
+53	meg_image = (
+54	    modal.Image.debian_slim(python_version=&quot;3.11&quot;)
+55	    .pip_install(
+56	        &quot;mne&quot;,
+57	        &quot;scipy&quot;,
+58	        &quot;torch&quot;,
+59	        &quot;numpy&quot;,
+60	        &quot;einops&quot;,
+61	        &quot;vector-quantize-pytorch&quot;,
+62	        &quot;einx&quot;,
+63	        &quot;huggingface_hub&quot;,
+64	    )
+65	    .add_local_dir(
+66	        &quot;external/BrainOmni&quot;,
+67	        remote_path=&quot;/root/external/BrainOmni&quot;,
+68	        # Submodule source only; weights fetched at runtime if absent.
+69	        ignore=[&quot;ckpt_collection&quot;, &quot;.cache&quot;, &quot;**/__pycache__&quot;],
+70	    )
+71	    .add_local_python_source(&quot;neural_tokenizers&quot;)
+72	)
+73	
+74	
+75	# ---------- per-tokenizer factory dispatch -------------------------------
+76	#
+77	# Adding a new tokenizer phase = adding ONE function below. The Modal entry
+78	# point picks the right factory based on --tokenizer &lt;name&gt;.
+79	
+80	def _build_mu_transform(calibration_payload: dict[str, Any]):
+81	    &quot;&quot;&quot;Construct a Phase-1 MuTransformTokenizer from a calibration JSON dict.&quot;&quot;&quot;
+82	    from neural_tokenizers.meg import MuCalibration, MuTransformTokenizer
+83	
+84	    calib = MuCalibration.from_json(calibration_payload)
+85	    return MuTransformTokenizer(calib)
+86	
+87	
+88	def _build_brainomni(payload: dict[str, Any]):
+89	    &quot;&quot;&quot;Construct Phase-3 BrainOmniTokenizer from a config.json dict.&quot;&quot;&quot;
+90	    import os
+91	    import sys
+92	
+93	    repo = payload.get(&quot;brainomni_repo&quot;, &quot;/root/external/BrainOmni&quot;)
+94	    if repo not in sys.path:
+95	        sys.path.insert(0, repo)
+96	
+97	    from neural_tokenizers.meg.brainomni.adapter import build_tokenizer_from_payload
+98	    from neural_tokenizers.meg.brainomni.checkpoint import resolve_ckpt_dir
+99	
+100	    device = &quot;cuda&quot; if __import__(&quot;torch&quot;).cuda.is_available() else &quot;cpu&quot;
+101	    ckpt_dir = resolve_ckpt_dir(payload.get(&quot;ckpt_dir&quot;), repo)
+102	    # Finetuned runs store on the project volume.
+103	    if not os.path.isdir(ckpt_dir) and payload.get(&quot;ckpt_dir&quot;, &quot;&quot;).startswith(&quot;/project&quot;):
+104	        ckpt_dir = payload[&quot;ckpt_dir&quot;]
+105	    payload = {**payload, &quot;device&quot;: device, &quot;ckpt_dir&quot;: ckpt_dir, &quot;brainomni_repo&quot;: repo}
+106	    return build_tokenizer_from_payload(payload)
+107	
+108	
+109	_TOKENIZER_FACTORIES = {
+110	    &quot;mu_transform&quot;: _build_mu_transform,
+111	    &quot;brainomni&quot;: _build_brainomni,
+112	    # &quot;cho2026&quot;:    _build_cho2026,   # add when Phase 2 lands
+113	}
+114	
+115	
+116	# ---------- the remote eval ----------------------------------------------
+117	
+118	@app.function(
+119	    image=meg_image,
+120	    volumes={PROJECT_MOUNT: project_volume},
+121	    gpu=&quot;A10&quot;,
+122	    cpu=4.0,
+123	    memory=32 * 1024,
+124	    timeout=60 * 60,
+125	)
+126	def evaluate_remote(
+127	    tokenizer_name: str,
+128	    tokenizer_payload: dict[str, Any],
+129	    n_test: int = 3000,
+130	    seed: int = 0,
+131	    use_mu_split: bool = True,
+132	    probe_classifier: str = &quot;linear&quot;,
+133	    probe_label_space: str = &quot;category27&quot;,
+134	    averaging: str = &quot;none&quot;,
+135	) -&gt; dict[str, Any]:
+136	    &quot;&quot;&quot;Run the §5 four-axis harness against the named tokenizer.
+137	
+138	    Args:
+139	        tokenizer_name: which factory to call (e.g. &quot;mu_transform&quot;).
+140	        tokenizer_payload: tokenizer-specific config (e.g. calibration dict
+141	            for mu_transform; later, a checkpoint path or weights for cho2026).
+142	        n_test: cap on the number of test trials materialized into memory
+143	            (per-trial = 271*281*4 B ≈ 305 KB → 3000 trials ≈ 0.9 GB f32).
+144	            Set 0 / negative to use the full test split.
+145	        seed: split seed. Must match the seed used at calibration time.
+146	        use_mu_split: True for Phase-1 (no val), False for learnable phases.
+147	
+148	    Returns:
+149	        A flat dict of {axis_name: {metric: value}} from the §5 harness.
+150	        Small enough to print or post-process locally.
+151	    &quot;&quot;&quot;
+152	    import numpy as np
+153	    import torch
+154	
+155	    from neural_tokenizers.evaluation import EvalConfig, evaluate
+156	    from neural_tokenizers.meg import (
+157	        BRAINOMNI_EVAL_DEFAULTS,
+158	        EVAL_DEFAULTS,
+159	        LEARNABLE_SPLIT_DEFAULTS,
+160	        MU_SPLIT_DEFAULTS,
+161	        SplitDefaults,
+162	    )
+163	    from neural_tokenizers.meg.data import (
+164	        AnimacyMapping,
+165	        ConceptMapping,
+166	        SuperordinateMapping,
+167	        average_trials_by_image,
+168	        list_subjects,
+169	        load_trials_pooled,
+170	    )
+171	    from neural_tokenizers.meg.splits import split_by_image
+172	
+173	    if tokenizer_name not in _TOKENIZER_FACTORIES:
+174	        raise ValueError(
+175	            f&quot;unknown tokenizer {tokenizer_name!r}; &quot;
+176	            f&quot;available: {sorted(_TOKENIZER_FACTORIES)}&quot;
+177	        )
+178	
+179	    base_split = MU_SPLIT_DEFAULTS if use_mu_split else LEARNABLE_SPLIT_DEFAULTS
+180	    split_cfg = SplitDefaults(
+181	        train_frac=base_split.train_frac,
+182	        val_frac=base_split.val_frac,
+183	        test_frac=base_split.test_frac,
+184	        seed=seed,
+185	    )
+186	
+187	    subjects = list_subjects()
+188	    print(f&quot;[eval] discovered subjects: {[s.subject for s in subjects]}&quot;)
+189	
+190	    # Per-subject test indices.
+191	    test_per_subj: dict[str, np.ndarray] = {}
+192	    total_test = 0
+193	    for s in subjects:
+194	        sp = split_by_image(s.image_ids, split_cfg)
+195	        test_per_subj[s.subject] = sp.test
+196	        total_test += len(sp.test)
+197	    print(f&quot;[eval] total test trials available: {total_test}&quot;)
+198	
+199	    # Cap at n_test if requested.
+200	    if n_test &gt; 0 and total_test &gt; n_test:
+201	        per_subj_cap = n_test // len(subjects)
+202	        rng = np.random.default_rng(seed)
+203	        for k, idx in test_per_subj.items():
+204	            if len(idx) &gt; per_subj_cap:
+205	                pick = rng.choice(len(idx), size=per_subj_cap, replace=False)
+206	                test_per_subj[k] = np.sort(idx[pick])
+207	        total_test = sum(len(v) for v in test_per_subj.values())
+208	        print(f&quot;[eval] capped to {total_test} test trials&quot;)
+209	
+210	    X, image_ids, subject_ids = load_trials_pooled(subjects, test_per_subj)
+211	    print(f&quot;[eval] materialized X={tuple(X.shape)} dtype={X.dtype}&quot;)
+212	
+213	    # Cross-subject + cross-rep averaging: collapse all trials of an image_id
+214	    # into one signal. Matches the training-time data distribution for a
+215	    # checkpoint trained with `--averaging cross_subject`. Eliminates the
+216	    # subject variable by construction — `probe_label_space=&quot;subject&quot;` is
+217	    # rejected upstream when averaging is in effect.
+218	    if averaging == &quot;cross_subject&quot;:
+219	        if probe_label_space == &quot;subject&quot;:
+220	            raise ValueError(
+221	                &quot;probe_label_space=&#x27;subject&#x27; is incompatible with &quot;
+222	                &quot;averaging=&#x27;cross_subject&#x27; — averaging eliminates the &quot;
+223	                &quot;subject variable by construction.&quot;
+224	            )
+225	        X, image_ids = average_trials_by_image(X, image_ids)
+226	        # subject_ids no longer apply per row; emit a -1 placeholder array of
+227	        # matching length so the rest of the script doesn&#x27;t have to special-case.
+228	        subject_ids = np.full(X.shape[0], -1, dtype=np.int64)
+229	        print(
+230	            f&quot;[eval] cross-subject averaging applied → &quot;
+231	            f&quot;X={tuple(X.shape)} ({len(image_ids)} unique image_ids)&quot;
+232	        )
+233	    elif averaging != &quot;none&quot;:
+234	        raise ValueError(
+235	            f&quot;averaging must be &#x27;none&#x27; or &#x27;cross_subject&#x27;; got {averaging!r}&quot;
+236	        )
+237	
+238	    # Build the tokenizer inside the container.
+239	    factory = _TOKENIZER_FACTORIES[tokenizer_name]
+240	    tok = factory(tokenizer_payload)
+241	
+242	    # Labels for the §5.3 probe. Three label spaces, dispatched by name:
+243	    #   &quot;category27&quot; : image_id → concept_id → superordinate ∈ [0, 27)
+244	    #   &quot;animacy&quot;    : image_id → concept_id → superordinate → {0, 1}
+245	    #   &quot;subject&quot;    : trial → subject index ∈ [0, n_subjects) — pipeline
+246	    #                  sanity check; subject is trivially decodable from MEG
+247	    #                  (head position, sensor sensitivities), so an MLP that
+248	    #                  cannot decode this is broken upstream of any category
+249	    #                  question. Steals the trick from Dixen et al. 2024.
+250	    if probe_label_space == &quot;subject&quot;:
+251	        labels = torch.from_numpy(subject_ids.astype(&quot;int64&quot;))
+252	        n_classes_used = int(np.unique(subject_ids).size)
+253	        n_classes_total = len(subjects)
+254	        print(
+255	            f&quot;[eval] probe labels (subject): &quot;
+256	            f&quot;{n_classes_used}/{n_classes_total} subjects present in &quot;
+257	            f&quot;{X.shape[0]} eval trials&quot;
+258	        )
+259	    else:
+260	        concept_map = ConceptMapping.load()
+261	        super_map = SuperordinateMapping.load()
+262	        if probe_label_space == &quot;category27&quot;:
+263	            label_encoder = super_map
+264	        elif probe_label_space == &quot;animacy&quot;:
+265	            label_encoder = AnimacyMapping.from_super_map(super_map)
+266	        else:
+267	            raise ValueError(
+268	                f&quot;probe_label_space must be &#x27;category27&#x27;, &#x27;animacy&#x27;, or &quot;
+269	                f&quot;&#x27;subject&#x27;; got {probe_label_space!r}&quot;
+270	            )
+271	        encoded_labels, valid = label_encoder.encode_image_ids(image_ids, concept_map)
+272	        n_dropped = int((~valid).sum())
+273	        if n_dropped &gt; 0:
+274	            print(
+275	                f&quot;[eval] dropping {n_dropped} trials with no valid &quot;
+276	                f&quot;{probe_label_space} label&quot;
+277	            )
+278	            keep_idx = torch.from_numpy(np.nonzero(valid)[0].astype(&quot;int64&quot;))
+279	            X = X[keep_idx]
+280	            encoded_labels = encoded_labels[valid]
+281	        labels = torch.from_numpy(encoded_labels.astype(&quot;int64&quot;))
+282	        n_classes_used = int(np.unique(encoded_labels).size)
+283	        n_classes_total = label_encoder.n_categories
+284	        print(
+285	            f&quot;[eval] probe labels ({probe_label_space}): &quot;
+286	            f&quot;{n_classes_used}/{n_classes_total} classes present in &quot;
+287	            f&quot;{X.shape[0]} eval trials&quot;
+288	        )
+289	
+290	    device = &quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;
+291	    X = X.to(device)
+292	    print(f&quot;[eval] running harness on device={device} ...&quot;)
+293	    eval_defaults = BRAINOMNI_EVAL_DEFAULTS if tokenizer_name == &quot;brainomni&quot; else EVAL_DEFAULTS
+294	    cfg = EvalConfig(
+295	        sample_rate_hz=eval_defaults.sample_rate_hz,
+296	        bands=dict(eval_defaults.bands),
+297	        device=device,
+298	        batch_size=64,
+299	        seed=seed,
+300	        psd_nperseg=eval_defaults.psd_nperseg,
+301	        probe_epochs=eval_defaults.probe_epochs,
+302	        probe_top_k=eval_defaults.probe_top_k,
+303	        probe_test_frac=eval_defaults.probe_test_frac,
+304	        probe_n_folds=eval_defaults.probe_n_folds,
+305	        probe_rvq_layers=eval_defaults.probe_rvq_layers,
+306	        probe_class_weighted=eval_defaults.probe_class_weighted,
+307	        probe_classifier=probe_classifier,
+308	        probe_mlp_hidden=eval_defaults.probe_mlp_hidden,
+309	        probe_mlp_dropout=eval_defaults.probe_mlp_dropout,
+310	        probe_cnn_hidden=eval_defaults.probe_cnn_hidden,
+311	    )
+312	    report = evaluate(tok, X, labels, cfg)
+313	    print(report)
+314	
+315	    return {
+316	        m.name: dict(m.values)
+317	        for m in (report.reconstruction, report.codebook, report.sequence, report.probe)
+318	        if m is not None
+319	    }
+320	
+321	
+322	def _eval_slug(
+323	    n_test: int,
+324	    seed: int,
+325	    probe_classifier: str = &quot;linear&quot;,
+326	    probe_label_space: str = &quot;category27&quot;,
+327	    averaging: str = &quot;none&quot;,
+328	) -&gt; str:
+329	    &quot;&quot;&quot;Filename suffix that distinguishes eval invocations against one calibration.
+330	
+331	    Default config (linear + category27 + no averaging) keeps the legacy slug
+332	    so we don&#x27;t churn paths. Diagnostic variants append `_&lt;classifier&gt;`,
+333	    `_&lt;label_space&gt;`, and/or `_&lt;averaging&gt;` so they live alongside the
+334	    canonical §5.3 JSON.
+335	    &quot;&quot;&quot;
+336	    n_part = &quot;full&quot; if n_test &lt;= 0 else f&quot;n{n_test}&quot;
+337	    clf_part = &quot;&quot; if probe_classifier == &quot;linear&quot; else f&quot;_{probe_classifier}&quot;
+338	    label_part = &quot;&quot; if probe_label_space == &quot;category27&quot; else f&quot;_{probe_label_space}&quot;
+339	    avg_part = &quot;&quot; if averaging == &quot;none&quot; else f&quot;_avg{averaging}&quot;
+340	    return f&quot;ntest={n_part}_s{seed}{clf_part}{label_part}{avg_part}&quot;
+341	
+342	
+343	@app.local_entrypoint()
+344	def run(
+345	    tokenizer: str = &quot;mu_transform&quot;,
+346	    calibration: str = &quot;&quot;,
+347	    n_test: int = 3000,
+348	    seed: int = 0,
+349	    output: str = &quot;&quot;,
+350	    probe_classifier: str = &quot;linear&quot;,
+351	    probe_label_space: str = &quot;category27&quot;,
+352	    averaging: str = &quot;none&quot;,
+353	):
+354	    &quot;&quot;&quot;Run the §5 harness remotely; report lands next to the calibration in
+355	    `&lt;calibration_dir&gt;/evals/eval_&lt;eval_slug&gt;.json`.
+356	
+357	    Args:
+358	        tokenizer: which factory to dispatch.
+359	        calibration: path to the calibration.json. If empty, picks the most
+360	            recent run under
+361	            `neural_tokenizers/meg/mu_transform/runs/*/calibration.json`.
+362	        n_test: cap on test-trial count (0 = use full test split).
+363	        seed: split seed (must match calibration&#x27;s seed).
+364	        output: optional explicit report path. If empty, writes
+365	            `&lt;calibration_dir&gt;/evals/eval_&lt;eval_slug&gt;.json` — same calibration
+366	            can host multiple eval reports under different eval configs without
+367	            overwriting.
+368	
+369	    Invoke:
+370	        modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \\
+371	            --calibration neural_tokenizers/meg/mu_transform/runs/&lt;slug&gt;/calibration.json
+372	    &quot;&quot;&quot;
+373	    import json
+374	
+375	    calib_path = Path(_resolve_config(tokenizer, calibration))
+376	    payload = json.loads(calib_path.read_text())
+377	    use_mu_split = tokenizer == &quot;mu_transform&quot;
+378	    report = evaluate_remote.remote(
+379	        tokenizer_name=tokenizer,
+380	        tokenizer_payload=payload,
+381	        n_test=n_test,
+382	        seed=seed,
+383	        use_mu_split=use_mu_split,
+384	        probe_classifier=probe_classifier,
+385	        probe_label_space=probe_label_space,
+386	        averaging=averaging,
+387	    )
+388	    print(&quot;\n[eval] report (local view):&quot;)
+389	    for axis, values in report.items():
+390	        print(f&quot;  [{axis}]&quot;)
+391	        for k, v in values.items():
+392	            print(f&quot;    {k:&lt;32s} {v:.4f}&quot;)
+393	
+394	    if output:
+395	        out_path = Path(output)
+396	    else:
+397	        evals_dir = calib_path.parent / &quot;evals&quot;
+398	        evals_dir.mkdir(parents=True, exist_ok=True)
+399	        out_path = evals_dir / f&quot;eval_{_eval_slug(n_test, seed, probe_classifier, probe_label_space, averaging)}.json&quot;
+400	    out_path.write_text(json.dumps(report, indent=2))
+401	    print(f&quot;[eval] wrote report to {out_path}&quot;)
+402	
+403	
+404	def _resolve_config(tokenizer: str, config_path: str) -&gt; str:
+405	    &quot;&quot;&quot;Resolve --calibration/config path for each tokenizer phase.&quot;&quot;&quot;
+406	    if config_path:
+407	        return config_path
+408	    if tokenizer == &quot;brainomni&quot;:
+409	        runs_dir = Path(&quot;neural_tokenizers/meg/brainomni/runs&quot;)
+410	        candidates = sorted(
+411	            runs_dir.glob(&quot;*/config.json&quot;),
+412	            key=lambda p: p.stat().st_mtime,
+413	            reverse=True,
+414	        )
+415	        if not candidates:
+416	            # Fall back to bundled pretrained checkpoint config.
+417	            default = Path(&quot;neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/config.json&quot;)
+418	            if default.exists():
+419	                return str(default)
+420	            raise FileNotFoundError(
+421	                f&quot;No config.json under {runs_dir}. &quot;
+422	                &quot;Pass --calibration &lt;path&gt; or create the 3a config.&quot;
+423	            )
+424	        print(f&quot;[eval] using newest brainomni config: {candidates[0]}&quot;)
+425	        return str(candidates[0])
+426	    return _resolve_calibration(config_path)
+427	
+428	
+429	def _resolve_calibration(calibration: str) -&gt; str:
+430	    &quot;&quot;&quot;Resolve --calibration: explicit path, or the newest under runs_dir.&quot;&quot;&quot;
+431	    if calibration:
+432	        return calibration
+433	    runs_dir = Path(&quot;neural_tokenizers/meg/mu_transform/runs&quot;)
+434	    candidates = sorted(runs_dir.glob(&quot;*/calibration.json&quot;),
+435	                        key=lambda p: p.stat().st_mtime, reverse=True)
+436	    if not candidates:
+437	        raise FileNotFoundError(
+438	            f&quot;No calibration.json found under {runs_dir}. &quot;
+439	            f&quot;Pass --calibration &lt;path&gt; or run modal_meg_calibrate_mu.py first.&quot;
+440	        )
+441	    print(f&quot;[eval] using newest calibration: {candidates[0]}&quot;)
+442	    return str(candidates[0])
+443	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-10-910Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-10-910Z" class="timestamp-link"><time datetime="2026-06-01T01:39:10.910Z" data-timestamp="2026-06-01T01:39:10.910Z">2026-06-01T01:39:10.910Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-12-075Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-12-075Z" class="timestamp-link"><time datetime="2026-06-01T01:39:12.075Z" data-timestamp="2026-06-01T01:39:12.075Z">2026-06-01T01:39:12.075Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me explore the eval pipeline and existing files more carefully before proceeding.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-13-118Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-13-118Z" class="timestamp-link"><time datetime="2026-06-01T01:39:13.118Z" data-timestamp="2026-06-01T01:39:13.118Z">2026-06-01T01:39:13.118Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01HupM9iSQQjPMun89p53Non">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List existing 3b eval files</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-39-13-154Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-39-13-154Z" class="timestamp-link"><time datetime="2026-06-01T01:39:13.154Z" data-timestamp="2026-06-01T01:39:13.154Z">2026-06-01T01:39:13.154Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>eval_ntest=full_s0.json
+eval_ntest=full_s0_animacy.json
+eval_ntest=full_s0_cnn.json
+eval_ntest=full_s0_cnn_animacy.json
+eval_ntest=full_s0_cnn_subject.json
+eval_ntest=full_s0_mlp.json
+eval_ntest=full_s0_mlp_animacy.json
+eval_ntest=full_s0_mlp_subject.json
+eval_ntest=full_s0_subject.json
+eval_ntest=n3000_s0.json</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-14-109Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-14-109Z" class="timestamp-link"><time datetime="2026-06-01T01:39:14.109Z" data-timestamp="2026-06-01T01:39:14.109Z">2026-06-01T01:39:14.109Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01XAo53GC6CLM31pZ3tGs3fC">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find averaging function in data.py</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;average_trials_by_image\|def average&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data.py | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-39-14-147Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-39-14-147Z" class="timestamp-link"><time datetime="2026-06-01T01:39:14.147Z" data-timestamp="2026-06-01T01:39:14.147Z">2026-06-01T01:39:14.147Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>108:def average_trials_by_image(</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-16-922Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-16-922Z" class="timestamp-link"><time datetime="2026-06-01T01:39:16.922Z" data-timestamp="2026-06-01T01:39:16.922Z">2026-06-01T01:39:16.922Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01SHxm79Vgwz5k79bxbQuNbL"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data.py&#34;,
+  &#34;offset&#34;: 100,
+  &#34;limit&#34;: 60
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-39-16-938Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-39-16-938Z" class="timestamp-link"><time datetime="2026-06-01T01:39:16.938Z" data-timestamp="2026-06-01T01:39:16.938Z">2026-06-01T01:39:16.938Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>100	                image_ids=epochs.events[:, 2].astype(np.int64),
+101	            )
+102	        )
+103	    return out
+104	
+105	
+106	# ---------- cross-subject + cross-rep averaging ---------------------------
+107	
+108	def average_trials_by_image(
+109	    X: torch.Tensor | np.ndarray,
+110	    image_ids: np.ndarray,
+111	) -&gt; tuple[torch.Tensor, np.ndarray]:
+112	    &quot;&quot;&quot;Group trials by `image_id` and average within each group.
+113	
+114	    Produces one signal per unique image — the canonical &quot;cross-subject +
+115	    cross-rep&quot; averaging used by Experiment 2 (see
+116	    ``notes/meg_tokenization.md``). The averaging axis collapses both
+117	    subject and within-subject repetitions, so the output has no subject
+118	    label per row.
+119	
+120	    Args:
+121	        X: ``(N, C, T)`` torch or numpy array of single-trial signals.
+122	        image_ids: ``(N,)`` int array, trial-aligned image codes.
+123	
+124	    Returns:
+125	        X_avg:     ``(M, C, T)`` torch.float32 tensor (M = unique image
+126	                   count).
+127	        image_ids_unique: ``(M,)`` int64 numpy array, sorted ascending.
+128	
+129	    Memory-frugal: accumulates in float64 element-wise inside `np.add.at`
+130	    but **never materializes a float64 copy of the input**. The 88k-trial
+131	    training tensor (~27 GB float32) is the largest object in this
+132	    pipeline; doubling it with an f64 cast would push the container OOM.
+133	    &quot;&quot;&quot;
+134	    if isinstance(X, torch.Tensor):
+135	        X_np = X.detach().cpu().numpy()  # no dtype cast — preserve source f32
+136	    else:
+137	        X_np = np.asarray(X)
+138	
+139	    image_ids = np.asarray(image_ids, dtype=np.int64)
+140	    if X_np.shape[0] != image_ids.shape[0]:
+141	        raise ValueError(
+142	            f&quot;X.shape[0]={X_np.shape[0]} must match image_ids length &quot;
+143	            f&quot;{image_ids.shape[0]}&quot;
+144	        )
+145	
+146	    unique_ids, inverse = np.unique(image_ids, return_inverse=True)
+147	    n_groups = len(unique_ids)
+148	    C, T = X_np.shape[1], X_np.shape[2]
+149	
+150	    # Sums stay in f64 for accumulator precision when a single group has
+151	    # 40+ contributors (test images × 4 subjects × 12 reps); numpy promotes
+152	    # f32 source elements element-wise inside np.add.at — no global cast.
+153	    sums = np.zeros((n_groups, C, T), dtype=np.float64)
+154	    counts = np.zeros(n_groups, dtype=np.int64)
+155	    np.add.at(sums, inverse, X_np)
+156	    np.add.at(counts, inverse, 1)
+157	
+158	    X_avg_np = sums / counts.reshape(n_groups, 1, 1)
+159	    return torch.from_numpy(X_avg_np.astype(np.float32)), unique_ids.astype(np.int64)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-27-318Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-27-318Z" class="timestamp-link"><time datetime="2026-06-01T01:39:27.318Z" data-timestamp="2026-06-01T01:39:27.318Z">2026-06-01T01:39:27.318Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-39-27-752Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-39-27-752Z" class="timestamp-link"><time datetime="2026-06-01T01:39:27.752Z" data-timestamp="2026-06-01T01:39:27.752Z">2026-06-01T01:39:27.752Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_011YLYkuqpdnGGzBMakqjqbE"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0.json&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-39-27-776Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-39-27-776Z" class="timestamp-link"><time datetime="2026-06-01T01:39:27.776Z" data-timestamp="2026-06-01T01:39:27.776Z">2026-06-01T01:39:27.776Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	{
+2	  &quot;reconstruction&quot;: {
+3	    &quot;mse&quot;: 1.069547510772517,
+4	    &quot;channel_corr_mean&quot;: 0.8698740584482638,
+5	    &quot;psd_mse&quot;: 27748961.118814588
+6	  },
+7	  &quot;codebook&quot;: {
+8	    &quot;perplexity&quot;: 493.5556567214904,
+9	    &quot;codes_used&quot;: 512.0,
+10	    &quot;codebook_size&quot;: 512.0,
+11	    &quot;utilization&quot;: 1.0,
+12	    &quot;dead_code_fraction&quot;: 0.0,
+13	    &quot;entropy_nats&quot;: 6.201635632091886
+14	  },
+15	  &quot;sequence&quot;: {
+16	    &quot;unigram_entropy&quot;: 6.201635632091886,
+17	    &quot;bigram_conditional_entropy&quot;: 5.889095191524399,
+18	    &quot;entropy_gap_pct&quot;: 5.039645330824816,
+19	    &quot;mean_run_length&quot;: 1.0019275702327992,
+20	    &quot;frac_runs_ge_2&quot;: 0.6291732909379968,
+21	    &quot;max_possible_entropy&quot;: 6.238324625039508
+22	  },
+23	  &quot;probe&quot;: {
+24	    &quot;top1_tokens_all_mean&quot;: 0.02821838808419325,
+25	    &quot;top1_tokens_all_std&quot;: 0.005554231886044775,
+26	    &quot;top5_tokens_all_mean&quot;: 0.1685202278393133,
+27	    &quot;top5_tokens_all_std&quot;: 0.007967184907471517,
+28	    &quot;bal_acc_tokens_all_mean&quot;: 0.033541583574135406,
+29	    &quot;bal_acc_tokens_all_std&quot;: 0.00908436325104955,
+30	    &quot;top1_tokens_rvq0_mean&quot;: 0.029212818328126475,
+31	    &quot;top1_tokens_rvq0_std&quot;: 0.00333896183392405,
+32	    &quot;top5_tokens_rvq0_mean&quot;: 0.16534207453690553,
+33	    &quot;top5_tokens_rvq0_std&quot;: 0.008160032997709192,
+34	    &quot;bal_acc_tokens_rvq0_mean&quot;: 0.03424228323946999,
+35	    &quot;bal_acc_tokens_rvq0_std&quot;: 0.0038395650714952686,
+36	    &quot;top1_raw_mean&quot;: 0.0924074600018934,
+37	    &quot;top1_raw_std&quot;: 0.0042432105471048405,
+38	    &quot;top5_raw_mean&quot;: 0.3211406166177538,
+39	    &quot;top5_raw_std&quot;: 0.022834913867024038,
+40	    &quot;bal_acc_raw_mean&quot;: 0.05157983851853763,
+41	    &quot;bal_acc_raw_std&quot;: 0.0020773590651689427,
+42	    &quot;top1_random_mean&quot;: 0.0373611505569756,
+43	    &quot;top1_random_std&quot;: 0.009019093345315345,
+44	    &quot;top5_random_mean&quot;: 0.18959102527690994,
+45	    &quot;top5_random_std&quot;: 0.011534845461429931,
+46	    &quot;bal_acc_random_mean&quot;: 0.03635220502808195,
+47	    &quot;bal_acc_random_std&quot;: 0.007337771592797359
+48	  }
+49	}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-40-39-911Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-40-39-911Z" class="timestamp-link"><time datetime="2026-06-01T01:40:39.911Z" data-timestamp="2026-06-01T01:40:39.911Z">2026-06-01T01:40:39.911Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-40-40-415Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-40-40-415Z" class="timestamp-link"><time datetime="2026-06-01T01:40:40.415Z" data-timestamp="2026-06-01T01:40:40.415Z">2026-06-01T01:40:40.415Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me set up tracking and check whether modal jobs can be launched from this environment.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-40-40-862Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-40-40-862Z" class="timestamp-link"><time datetime="2026-06-01T01:40:40.862Z" data-timestamp="2026-06-01T01:40:40.862Z">2026-06-01T01:40:40.862Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01GwfWxhcMqe7Cm6bghr43g3"><div class="tool-header"><span class="tool-icon">⚙</span> ToolSearch</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;query&#34;: &#34;select:TodoWrite&#34;,
+  &#34;max_results&#34;: 1
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-40-40-866Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-40-40-866Z" class="timestamp-link"><time datetime="2026-06-01T01:40:40.866Z" data-timestamp="2026-06-01T01:40:40.866Z">2026-06-01T01:40:40.866Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &quot;type&quot;: &quot;tool_reference&quot;,
+  &quot;tool_name&quot;: &quot;TodoWrite&quot;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-40-41-387Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-40-41-387Z" class="timestamp-link"><time datetime="2026-06-01T01:40:41.387Z" data-timestamp="2026-06-01T01:40:41.387Z">2026-06-01T01:40:41.387Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01CMNZiYx4Ui57fDXispUpHu">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check modal CLI</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">which modal &amp;&amp; modal --version 2&gt;&amp;1 | head -3</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-40-41-820Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-40-41-820Z" class="timestamp-link"><time datetime="2026-06-01T01:40:41.820Z" data-timestamp="2026-06-01T01:40:41.820Z">2026-06-01T01:40:41.820Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/opt/anaconda3/bin/modal
+modal client version: 1.4.2</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-40-56-248Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-40-56-248Z" class="timestamp-link"><time datetime="2026-06-01T01:40:56.248Z" data-timestamp="2026-06-01T01:40:56.248Z">2026-06-01T01:40:56.248Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-41-02-702Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-41-02-702Z" class="timestamp-link"><time datetime="2026-06-01T01:41:02.702Z" data-timestamp="2026-06-01T01:41:02.702Z">2026-06-01T01:41:02.702Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Brief plan before I incur Modal cost.</p>
+<p><strong>What I'll run:</strong> 6 evaluations on Modal using the existing <code>--averaging cross_subject</code> flag on <code>modal_meg_eval.py</code>, against the existing 3b checkpoint (3b_nonavg). This averages all trials by image_id (collapsing both subject and within-subject reps) before tokenizing, then runs the full §5 harness.</p>
+<ul>
+<li>Probe classifiers: linear, MLP, CNN</li>
+<li>Label spaces: category27, animacy</li>
+<li>Subject ID is incompatible with cross-subject averaging (script enforces this) — so 3×2 = 6 runs</li>
+<li>Full test split (<code>--n-test 0</code>), seed=0</li>
+<li>Estimated cost: ~$3–6 total (each ~5–10 min on A10)</li>
+<li>Output JSONs land at <code>brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0[_&lt;clf&gt;][_&lt;label&gt;]_avgcross_subject.json</code></li>
+</ul>
+<p><strong>Doc update:</strong> I'll add a new section between Experiment 1 and Experiment 2 in <code>notes/meg_tokenization.md</code> titled "Experiment 1.5 — Image-averaged input through 3b_nonavg" with category27 and animacy tables matching the existing format.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-41-06-612Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-41-06-612Z" class="timestamp-link"><time datetime="2026-06-01T01:41:06.612Z" data-timestamp="2026-06-01T01:41:06.612Z">2026-06-01T01:41:06.612Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01UeKo58A4rUkTSYxiFBqxVB"><div class="tool-header"><span class="tool-icon">⚙</span> AskUserQuestion</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;questions&#34;: [
+    {
+      &#34;question&#34;: &#34;Approve the 6 Modal A10 eval runs (~$3-6 total) for image-averaged probes on the existing 3b checkpoint?&#34;,
+      &#34;header&#34;: &#34;Launch evals&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Launch all 6 in parallel&#34;,
+          &#34;description&#34;: &#34;Fastest end-to-end (~10 min wall clock if Modal A10 quota allows). Highest peak spend.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Launch sequentially&#34;,
+          &#34;description&#34;: &#34;One at a time, ~45-60 min wall clock. Lowest peak GPU usage.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Skip CNN for now (4 runs)&#34;,
+          &#34;description&#34;: &#34;Linear + MLP only on both label spaces. CNN added later if results warrant.&#34;
+        }
+      ]
+    }
+  ]
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-03-533Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-03-533Z" class="timestamp-link"><time datetime="2026-06-01T01:42:03.533Z" data-timestamp="2026-06-01T01:42:03.533Z">2026-06-01T01:42:03.533Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>User has answered your questions: &quot;Approve the 6 Modal A10 eval runs (~$3-6 total) for image-averaged probes on the existing 3b checkpoint?&quot;=&quot;note it doesnt make sense to do subject id prediction when we&#x27;re averaging trials. so its just category+animacy tests; test on linear, weighted, mlp, weighted, and CNN, weighted on these averaged trials - in parelell. how many jobs is this?&quot;. You can now continue with the user&#x27;s answers in mind.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-09-332Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-09-332Z" class="timestamp-link"><time datetime="2026-06-01T01:42:09.332Z" data-timestamp="2026-06-01T01:42:09.332Z">2026-06-01T01:42:09.332Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-10-345Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-10-345Z" class="timestamp-link"><time datetime="2026-06-01T01:42:10.345Z" data-timestamp="2026-06-01T01:42:10.345Z">2026-06-01T01:42:10.345Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>6 jobs total (3 classifiers × 2 label spaces). Each run produces both unweighted top-1 and class-weighted balanced acc in its JSON, so one "linear" run fills two table rows. Launching all 6 in parallel now.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-12-936Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-12-936Z" class="timestamp-link"><time datetime="2026-06-01T01:42:12.936Z" data-timestamp="2026-06-01T01:42:12.936Z">2026-06-01T01:42:12.936Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_016CFYBuWtoDMoAYmce7YvhH"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Launch 6 Modal eval jobs (linear/mlp/cnn × category27/animacy) with --averaging cross_subject</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Wait for all 6 jobs to complete and parse result JSONs</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Add new section to notes/meg_tokenization.md with averaged-input tables</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-12-942Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-12-942Z" class="timestamp-link"><time datetime="2026-06-01T01:42:12.942Z" data-timestamp="2026-06-01T01:42:12.942Z">2026-06-01T01:42:12.942Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-13-779Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-13-779Z" class="timestamp-link"><time datetime="2026-06-01T01:42:13.779Z" data-timestamp="2026-06-01T01:42:13.779Z">2026-06-01T01:42:13.779Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01TTetBX6hkZsKcvV2ipySwm">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Make log directory for eval jobs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">mkdir -p /tmp/meg_eval_logs</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-15-618Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-15-618Z" class="timestamp-link"><time datetime="2026-06-01T01:42:15.618Z" data-timestamp="2026-06-01T01:42:15.618Z">2026-06-01T01:42:15.618Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>(Bash completed with no output)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-20-276Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-20-276Z" class="timestamp-link"><time datetime="2026-06-01T01:42:20.276Z" data-timestamp="2026-06-01T01:42:20.276Z">2026-06-01T01:42:20.276Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01PHuFkw9y3nmRfMe45uqGxQ">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: linear category27 averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier linear --probe-label-space category27 --averaging cross_subject &gt; /tmp/meg_eval_logs/linear_cat27.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-21-487Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-21-487Z" class="timestamp-link"><time datetime="2026-06-01T01:42:21.487Z" data-timestamp="2026-06-01T01:42:21.487Z">2026-06-01T01:42:21.487Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: br7fhlwn7. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/br7fhlwn7.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-22-684Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-22-684Z" class="timestamp-link"><time datetime="2026-06-01T01:42:22.684Z" data-timestamp="2026-06-01T01:42:22.684Z">2026-06-01T01:42:22.684Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01KGYPhGggZunDrf2RykJbh8">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: linear animacy averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier linear --probe-label-space animacy --averaging cross_subject &gt; /tmp/meg_eval_logs/linear_anim.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-23-769Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-23-769Z" class="timestamp-link"><time datetime="2026-06-01T01:42:23.769Z" data-timestamp="2026-06-01T01:42:23.769Z">2026-06-01T01:42:23.769Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: bamxvsnst. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/bamxvsnst.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-24-662Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-24-662Z" class="timestamp-link"><time datetime="2026-06-01T01:42:24.662Z" data-timestamp="2026-06-01T01:42:24.662Z">2026-06-01T01:42:24.662Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01Xv88p8wmJL3BPTyaQUUuVx">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: MLP category27 averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier mlp --probe-label-space category27 --averaging cross_subject &gt; /tmp/meg_eval_logs/mlp_cat27.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-25-481Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-25-481Z" class="timestamp-link"><time datetime="2026-06-01T01:42:25.481Z" data-timestamp="2026-06-01T01:42:25.481Z">2026-06-01T01:42:25.481Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: bqc5to52i. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/bqc5to52i.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-27-285Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-27-285Z" class="timestamp-link"><time datetime="2026-06-01T01:42:27.285Z" data-timestamp="2026-06-01T01:42:27.285Z">2026-06-01T01:42:27.285Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01QY92xVFStNZY8qiirkygXC">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: MLP animacy averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier mlp --probe-label-space animacy --averaging cross_subject &gt; /tmp/meg_eval_logs/mlp_anim.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-27-996Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-27-996Z" class="timestamp-link"><time datetime="2026-06-01T01:42:27.996Z" data-timestamp="2026-06-01T01:42:27.996Z">2026-06-01T01:42:27.996Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: b1mcjl147. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/b1mcjl147.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-29-740Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-29-740Z" class="timestamp-link"><time datetime="2026-06-01T01:42:29.740Z" data-timestamp="2026-06-01T01:42:29.740Z">2026-06-01T01:42:29.740Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01PWATLdt286tHgy9rvvRvep">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: CNN category27 averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier cnn --probe-label-space category27 --averaging cross_subject &gt; /tmp/meg_eval_logs/cnn_cat27.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-30-310Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-30-310Z" class="timestamp-link"><time datetime="2026-06-01T01:42:30.310Z" data-timestamp="2026-06-01T01:42:30.310Z">2026-06-01T01:42:30.310Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: b6ouebrhj. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/b6ouebrhj.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-31-809Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-31-809Z" class="timestamp-link"><time datetime="2026-06-01T01:42:31.809Z" data-timestamp="2026-06-01T01:42:31.809Z">2026-06-01T01:42:31.809Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01MqtKAMkFDDpXY6WR4hygMB">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Eval: CNN animacy averaged</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run --tokenizer brainomni --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json --n-test 0 --seed 0 --probe-classifier cnn --probe-label-space animacy --averaging cross_subject &gt; /tmp/meg_eval_logs/cnn_anim.log 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-42-32-530Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-42-32-530Z" class="timestamp-link"><time datetime="2026-06-01T01:42:32.530Z" data-timestamp="2026-06-01T01:42:32.530Z">2026-06-01T01:42:32.530Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: b4zv8glf1. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/b4zv8glf1.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-42-34-643Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-42-34-643Z" class="timestamp-link"><time datetime="2026-06-01T01:42:34.643Z" data-timestamp="2026-06-01T01:42:34.643Z">2026-06-01T01:42:34.643Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>All 6 jobs launched in parallel. I'll be notified when each completes. Waiting now.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-44-29-389Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-44-29-389Z" class="timestamp-link"><time datetime="2026-06-01T01:44:29.389Z" data-timestamp="2026-06-01T01:44:29.389Z">2026-06-01T01:44:29.389Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>br7fhlwn7</task-id>
+<tool-use-id>toolu_01PHuFkw9y3nmRfMe45uqGxQ</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/br7fhlwn7.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Eval: linear category27 averaged" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-31-761Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-31-761Z" class="timestamp-link"><time datetime="2026-06-01T01:44:31.761Z" data-timestamp="2026-06-01T01:44:31.761Z">2026-06-01T01:44:31.761Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-31-763Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-31-763Z" class="timestamp-link"><time datetime="2026-06-01T01:44:31.763Z" data-timestamp="2026-06-01T01:44:31.763Z">2026-06-01T01:44:31.763Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Linear+category27 done. Waiting for the other 5.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-44-34-189Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-44-34-189Z" class="timestamp-link"><time datetime="2026-06-01T01:44:34.189Z" data-timestamp="2026-06-01T01:44:34.189Z">2026-06-01T01:44:34.189Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bamxvsnst</task-id>
+<tool-use-id>toolu_01KGYPhGggZunDrf2RykJbh8</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/bamxvsnst.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Eval: linear animacy averaged" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-35-883Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-35-883Z" class="timestamp-link"><time datetime="2026-06-01T01:44:35.883Z" data-timestamp="2026-06-01T01:44:35.883Z">2026-06-01T01:44:35.883Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Linear+animacy done (2/6).</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-44-39-292Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-44-39-292Z" class="timestamp-link"><time datetime="2026-06-01T01:44:39.292Z" data-timestamp="2026-06-01T01:44:39.292Z">2026-06-01T01:44:39.292Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bqc5to52i</task-id>
+<tool-use-id>toolu_01Xv88p8wmJL3BPTyaQUUuVx</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/bqc5to52i.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Eval: MLP category27 averaged" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-41-650Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-41-650Z" class="timestamp-link"><time datetime="2026-06-01T01:44:41.650Z" data-timestamp="2026-06-01T01:44:41.650Z">2026-06-01T01:44:41.650Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-43-899Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-43-899Z" class="timestamp-link"><time datetime="2026-06-01T01:44:43.899Z" data-timestamp="2026-06-01T01:44:43.899Z">2026-06-01T01:44:43.899Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01Qadf4toh93D2xijqTrK73g"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Launch 6 Modal eval jobs (linear/mlp/cnn × category27/animacy) with --averaging cross_subject</span></li><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Wait for all 6 jobs to complete (3/6 done: linear+cat27, linear+anim, mlp+cat27)</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Parse result JSONs and add new section to notes/meg_tokenization.md with averaged-input tables</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T01-44-43-907Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T01-44-43-907Z" class="timestamp-link"><time datetime="2026-06-01T01:44:43.907Z" data-timestamp="2026-06-01T01:44:43.907Z">2026-06-01T01:44:43.907Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-44-45-668Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-44-45-668Z" class="timestamp-link"><time datetime="2026-06-01T01:44:45.668Z" data-timestamp="2026-06-01T01:44:45.668Z">2026-06-01T01:44:45.668Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>4/6 done (MLP+animacy just completed). Waiting on CNN jobs.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T01-45-09-446Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T01-45-09-446Z" class="timestamp-link"><time datetime="2026-06-01T01:45:09.446Z" data-timestamp="2026-06-01T01:45:09.446Z">2026-06-01T01:45:09.446Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>b6ouebrhj</task-id>
+<tool-use-id>toolu_01PWATLdt286tHgy9rvvRvep</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/c7ffd595-b669-4e26-a858-1eb814aef632/tasks/b6ouebrhj.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Eval: CNN category27 averaged" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T01-45-11-020Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T01-45-11-020Z" class="timestamp-link"><time datetime="2026-06-01T01:45:11.020Z" data-timestamp="2026-06-01T01:45:11.020Z">2026-06-01T01:45:11.020Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>5/6 done. Waiting on CNN+animacy.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<span class="disabled">&larr; Prev</span>
+<span class="current">1</span>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-002.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

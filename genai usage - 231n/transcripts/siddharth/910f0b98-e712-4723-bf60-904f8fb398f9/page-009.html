@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 9</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 9/9</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-008.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<span class="current">9</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-01T02-27-36-030Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T02-27-36-030Z" class="timestamp-link"><time datetime="2026-06-01T02:27:36.030Z" data-timestamp="2026-06-01T02:27:36.030Z">2026-06-01T02:27:36.030Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>at the top of the doc give a final conclusion. give the cases where we do better than random, and explain hwether to go with experiment 1, 1.5, or 2 for the final - or if none of them encode enough signal</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-27-58-873Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-27-58-873Z" class="timestamp-link"><time datetime="2026-06-01T02:27:58.873Z" data-timestamp="2026-06-01T02:27:58.873Z">2026-06-01T02:27:58.873Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-28-00-183Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-28-00-183Z" class="timestamp-link"><time datetime="2026-06-01T02:28:00.183Z" data-timestamp="2026-06-01T02:28:00.183Z">2026-06-01T02:28:00.183Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01X7xLLFMvEUiTWcnYchEXfq"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md&#34;,
+  &#34;offset&#34;: 1,
+  &#34;limit&#34;: 15
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-28-00-192Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-28-00-192Z" class="timestamp-link"><time datetime="2026-06-01T02:28:00.192Z" data-timestamp="2026-06-01T02:28:00.192Z">2026-06-01T02:28:00.192Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG tokenization — diagnostics and findings
+2	
+3	Brief reference for what we&#x27;ve measured on the BrainOmni 3b tokenizer, how the eval was hardened against false positives/negatives, and the experimental grid that backs the verdict. See [neural_tokenizers/meg/CLAUDE.md §9](../neural_tokenizers/meg/CLAUDE.md) for the production leaderboard; [linear_probe_design.md](linear_probe_design.md) for probe rationale.
+4	
+5	## TL;DR
+6	
+7	**BrainOmni 3b&#x27;s tokens preserve SUBJECT identity richly but lose OBJECT CATEGORY structure entirely.** Same tokens, three probe families. CNN → tokens decode subject at **97%** (vs 25% chance, near-perfect) but category at **3.6%** (vs 3.7% chance, at floor). The story isn&#x27;t &quot;tokens are bad&quot; — it&#x27;s selective: bits got spent on the signal that dominates variance (subject-level / sensor-level features), the small-amplitude category signal got dropped.
+8	
+9	Raw MEG behaves the same way (98% subject vs 4.2% category with CNN) — the asymmetry is intrinsic to the data, not the tokenizer. Tokens preserve roughly the subject-level information present in raw; they don&#x27;t preserve category info, but raw barely has it linearly decodable either.
+10	
+11	## What we are running and why
+12	
+13	Three tasks × three probe architectures × four feature sets. We compare two BrainOmni checkpoints to test whether averaging trials at training time changes the picture.
+14	
+15	| Axis | Levels |</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-28-32-107Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-28-32-107Z" class="timestamp-link"><time datetime="2026-06-01T02:28:32.107Z" data-timestamp="2026-06-01T02:28:32.107Z">2026-06-01T02:28:32.107Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_019CtQCjB5qdh7ETv5pWwNuK">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content"># MEG tokenization — diagnostics and findings
+
+Brief reference for what we&#39;ve measured on the BrainOmni 3b tokenizer, how the eval was hardened against false positives/negatives, and the experimental grid that backs the verdict. See [neural_tokenizers/meg/CLAUDE.md §9](../neural_tokenizers/meg/CLAUDE.md) for the production leaderboard; [linear_probe_design.md](linear_probe_design.md) for probe rationale.
+
+## TL;DR
+
+**BrainOmni 3b&#39;s tokens preserve SUBJECT identity richly but lose OBJECT CATEGORY structure entirely.** Same tokens, three probe families. CNN → tokens decode subject at **97%** (vs 25% chance, near-perfect) but category at **3.6%** (vs 3.7% chance, at floor). The story isn&#39;t &#34;tokens are bad&#34; — it&#39;s selective: bits got spent on the signal that dominates variance (subject-level / sensor-level features), the small-amplitude category signal got dropped.
+
+Raw MEG behaves the same way (98% subject vs 4.2% category with CNN) — the asymmetry is intrinsic to the data, not the tokenizer. Tokens preserve roughly the subject-level information present in raw; they don&#39;t preserve category info, but raw barely has it linearly decodable either.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content"># MEG tokenization — diagnostics and findings
+
+Brief reference for what we&#39;ve measured on the BrainOmni 3b tokenizer, how the eval was hardened against false positives/negatives, and the experimental grid that backs the verdict. See [neural_tokenizers/meg/CLAUDE.md §9](../neural_tokenizers/meg/CLAUDE.md) for the production leaderboard; [linear_probe_design.md](linear_probe_design.md) for probe rationale.
+
+## Final conclusion (read this first)
+
+### Where tokens beat random — by experiment
+
+bal_acc means; &#34;beat random&#34; = ≥1σ above the random feature baseline in the same probe regime.
+
+| Experiment | Subject (4-way) | Category27 (27-way) | Animacy (2-way) | Notes |
+|---|---|---|---|---|
+| **1** — 3b_nonavg (single-trial train + eval) | **✅ 97.4% CNN (+84σ)** | ❌ at chance, all probes | ❌ at chance, all probes | Subject decodes near-perfectly |
+| **1.5** — 3b_nonavg, averaged eval (no retrain) | N/A (averaging removes subject) | ❌ at chance (CNN top-5 has +1pp wiggle within 1σ) | ❌ at chance | Cleaner reconstruction MSE; tokens don&#39;t benefit |
+| **2** — 3b_avgcross (averaged train + averaged eval) | N/A | ❌ at chance (CNN gives ~1pp lift, &lt;1σ — same lift raw shows) | ❌ at chance | Train-eval distribution matched; still no category |
+
+**Tokens decode well only for subject identity, only in Experiment 1.** No experiment delivers category27 or animacy above the noise floor. The +1pp wiggles in §1.5 and §2 CNN cells are within fold variance, present equally in raw, and are consistent with &#34;the right inductive bias squeezes a tiny shared signal&#34; — *not* with &#34;the tokenizer preserves category.&#34;
+
+### Which checkpoint to ship into 4M
+
+**Ship Experiment 1&#39;s `3b_nonavg` checkpoint.** Reasoning:
+
+1. **Only 3b_nonavg preserves subject identity** — 97% CNN decode, 62% even with a linear head. Cross-subject averaging in 2 (and inference-time averaging in 1.5) eliminates this by construction. If 4M ever wants to condition on subject or generate subject-specific MEG, only 3b_nonavg&#39;s tokens can do it.
+2. **None of 1, 1.5, 2 preserve category** — so there is no reason to take 2 over 1; switching costs us subject signal and gains nothing on category. 1.5 is a diagnostic, not a deployable checkpoint (it requires inference-time averaging that doesn&#39;t match how 4M will receive single trials in production).
+3. **Train-eval distribution matches in 1** — 3b_nonavg is trained on single trials and 4M will see single trials at inference. 1.5 has a train-eval mismatch; 2&#39;s &#34;averaged single image&#34; distribution is unrealistic for production single-trial input.
+
+**But ship it with the caveat documented.** 3b_nonavg&#39;s tokens are **not category-discriminative**. If 4M needs object-level semantic alignment from MEG (e.g., MEG → image generation or classification), this tokenizer alone won&#39;t deliver it.
+
+### What none of the three solves
+
+Object category does not survive any of the three reconstruction-only regimes. The objective is the bottleneck, not the data quality:
+
+- **Averaging the input (1.5)**: improves raw decoding marginally; tokens unchanged.
+- **Averaging the training data (2)**: same conclusion; cross-subject averaging additionally eliminates subject signal.
+- **Bigger probe (CNN)**: surfaces ~1pp lifts that exist in raw too — not a tokenizer claim.
+
+The next intervention has to change the **objective**, not the input distribution. Concretely:
+
+- **Auxiliary supervised / contrastive loss during BrainOmni finetune** — give the tokenizer a gradient signal that&#39;s specifically about discriminability (e.g., InfoNCE pairing same-image trials, or supervised cross-entropy on superordinate labels). This is the most direct path.
+- **Stage 2 (Cho2026 / EphysTokenizer)** — different architectural family; revisit if the auxiliary-loss path on BrainOmni fails. Won&#39;t fix the objective issue if it&#39;s just a different reconstruction-only stack — but it has a smaller compression ratio and may behave differently.
+
+---
+
+## TL;DR (one-paragraph version)
+
+**BrainOmni 3b&#39;s tokens preserve SUBJECT identity richly but lose OBJECT CATEGORY structure entirely.** Same tokens, three probe families. CNN → tokens decode subject at **97%** (vs 25% chance, near-perfect) but category at **3.6%** (vs 3.7% chance, at floor). The story isn&#39;t &#34;tokens are bad&#34; — it&#39;s selective: bits got spent on the signal that dominates variance (subject-level / sensor-level features), the small-amplitude category signal got dropped.
+
+Raw MEG behaves the same way (98% subject vs 4.2% category with CNN) — the asymmetry is intrinsic to the data, not the tokenizer. Tokens preserve roughly the subject-level information present in raw; they don&#39;t preserve category info, but raw barely has it linearly decodable either.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-28-33-128Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-28-33-128Z" class="timestamp-link"><time datetime="2026-06-01T02:28:33.128Z" data-timestamp="2026-06-01T02:28:33.128Z">2026-06-01T02:28:33.128Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-28-44-051Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-28-44-051Z" class="timestamp-link"><time datetime="2026-06-01T02:28:44.051Z" data-timestamp="2026-06-01T02:28:44.051Z">2026-06-01T02:28:44.051Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check info-level — domain terms (<code>nonavg</code>, <code>avgcross</code>, <code>Animacy</code>, <code>Ephys</code>, etc.) are correct. No action.</p>
+<h2>Final conclusion section added to top of <a href="notes/meg_tokenization.md">notes/meg_tokenization.md</a></h2>
+<p>The new section sits right after the title and before the existing TL;DR. It contains:</p>
+<h3>1. Where tokens beat random — by experiment (table)</h3>
+<table>
+<thead>
+<tr>
+<th>Experiment</th>
+<th>Subject</th>
+<th>Category27</th>
+<th>Animacy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (3b_nonavg)</td>
+<td>✅ 97.4% CNN (+84σ)</td>
+<td>❌ chance</td>
+<td>❌ chance</td>
+</tr>
+<tr>
+<td>1.5 (avg eval)</td>
+<td>N/A</td>
+<td>❌ chance</td>
+<td>❌ chance</td>
+</tr>
+<tr>
+<td>2 (3b_avgcross)</td>
+<td>N/A</td>
+<td>❌ chance</td>
+<td>❌ chance</td>
+</tr>
+</tbody>
+</table>
+<p>The +1pp CNN wiggles in §1.5 and §2 are flagged as within fold variance (not signal).</p>
+<h3>2. Recommendation: ship Experiment 1's <code>3b_nonavg</code></h3>
+<p>Three reasons, in order of importance:
+1. Only 3b_nonavg preserves subject identity (97% CNN, 62% linear). 1.5 and 2 destroy this by construction.
+2. None of the three preserves category — so there's no reason to trade subject for nothing.
+3. Train-eval distribution matches in 1 (single trials in, single trials out — what 4M will see at inference).</p>
+<h3>3. Caveat: tokens are NOT category-discriminative under any of the three regimes</h3>
+<p>If 4M needs object-level semantic alignment from MEG (e.g., MEG → image classification), this tokenizer alone won't deliver it. The next intervention has to change the <strong>objective</strong> (not the input distribution):</p>
+<ul>
+<li><strong>Auxiliary supervised / contrastive loss during finetune</strong> — most direct path</li>
+<li><strong>Stage 2 (Cho2026 / EphysTokenizer)</strong> — different architectural family</li>
+</ul>
+<p>The existing one-paragraph TL;DR is preserved below the new section for the original quick read.</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T02-29-48-175Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T02-29-48-175Z" class="timestamp-link"><time datetime="2026-06-01T02:29:48.175Z" data-timestamp="2026-06-01T02:29:48.175Z">2026-06-01T02:29:48.175Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>but does the cnn results for category not statistically signfiicant enough to add to the conclusion? why or why not</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-30-15-517Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-30-15-517Z" class="timestamp-link"><time datetime="2026-06-01T02:30:15.517Z" data-timestamp="2026-06-01T02:30:15.517Z">2026-06-01T02:30:15.517Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-30-36-146Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-30-36-146Z" class="timestamp-link"><time datetime="2026-06-01T02:30:36.146Z" data-timestamp="2026-06-01T02:30:36.146Z">2026-06-01T02:30:36.146Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Good question to push on — there are three statistical frames here and the answer depends on which one we apply.</p>
+<h2>Frame 1: Strict significance test (individual gap)</h2>
+<p>Every Cat27 CNN gap is <strong>under 1σ</strong> of fold variance:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>tokens_all gap</th>
+<th>σ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>top-1</td>
+<td>+1.60pp</td>
+<td>+0.51σ</td>
+</tr>
+<tr>
+<td>top-5</td>
+<td>+2.75pp</td>
+<td>+0.63σ</td>
+</tr>
+<tr>
+<td>bal_acc</td>
+<td>+1.00pp</td>
+<td>+0.55σ</td>
+</tr>
+</tbody>
+</table>
+<p>Standard ML/stats convention: ≥2σ = significant, ≥1σ = suggestive, &lt;1σ = noise. By this rule, <strong>nothing in §2 CNN cat27 passes even the suggestive bar.</strong> Excluding from "beat random" claims is the right call.</p>
+<h2>Frame 2: Multiple-metrics-same-direction (joint evidence)</h2>
+<p>You could argue: 3 metrics × 3 feature sets (tokens_all, tokens_rvq0, raw) all show the same direction (positive vs random). If these were independent, the joint probability of pure noise is small. But they're <strong>highly correlated</strong> — same training data, same fold splits, same probe architecture. The effective number of independent tests is closer to 2-3, not 9. Even with that correction, the directional consistency is suggestive enough to be worth documenting as a footnote (which we did in the §1a CNN footnote) but not enough to overturn Frame 1.</p>
+<h2>Frame 3: Tokens-vs-raw — the actual gate question (this is the killer)</h2>
+<p>Even if the lift IS real, <strong>it's present in raw too</strong>. The whole point of the §5.3 probe is to ask "do the <em>tokens</em> carry signal beyond what's in raw?" Let me lay it out:</p>
+<table>
+<thead>
+<tr>
+<th>Cat27 CNN</th>
+<th>bal_acc</th>
+<th>Above random</th>
+<th>Above chance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tokens_all</td>
+<td>4.65%</td>
+<td>+1.00pp</td>
+<td>+0.95pp</td>
+</tr>
+<tr>
+<td><strong>raw</strong></td>
+<td><strong>4.78%</strong></td>
+<td><strong>+1.13pp</strong></td>
+<td><strong>+1.08pp</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Tokens and raw are at parity. There is no tokenizer-specific signal here. If there's a tiny shared category signal CNN can squeeze from both, it's already in the raw MEG; the tokens didn't add anything.</p>
+<p>Contrast with the <strong>subject task</strong> where tokens are also at parity with raw (97 vs 98) but <strong>both are 80σ above random</strong> — that's the signature of "the tokens preserve real signal." Cat27 CNN signature is "barely-above-noise wiggle, equally present in raw, no tokenizer claim."</p>
+<h2>So why I excluded it</h2>
+<p>The conclusion table is "where do tokens beat random in a way that would matter for 4M." Cat27 CNN fails on three counts:</p>
+<ol>
+<li>&lt;1σ in absolute terms</li>
+<li>Even if real, present equally in raw → not a tokenizer property</li>
+<li>The +1pp absolute lift is too small to plausibly help downstream tasks</li>
+</ol>
+<h2>What would change my mind</h2>
+<p>If we re-ran §2 CNN with seed=1, seed=2 and saw the +1pp lift reproduce consistently — that would be stronger evidence than a single 5-fold run. <strong>Two more runs at ~5-10 min each.</strong> Worth doing if you want to chase down whether the wiggle is real.</p>
+<p>Or: if we tried a CNN probe on §1.5's averaged-eval-only and the same +1pp lift appeared there too (averaging seems to be the unlock for this micro-signal), that would suggest something specific to averaged input. Cheap test — that JSON might already exist.</p>
+<h2>Recommendation</h2>
+<p>Add a footnote to the conclusion, <strong>not</strong> a "win" entry. Something like:</p>
+<blockquote>
+<p><strong>Edge case worth noting:</strong> Under CNN + averaged eval (1.5) and CNN + averaged train (2), Cat27 tokens show a +1pp lift over random across top-1, top-5, and bal_acc — but <strong>(a)</strong> each gap is &lt;1σ of fold std, <strong>(b)</strong> raw shows the same lift, and <strong>(c)</strong> the lift is ~100× smaller in σ-units than the subject signal in Exp 1. Treat as "noise floor wiggle CNN can extract from any 271ch×281t signal" rather than "tokens preserve category."</p>
+</blockquote>
+<p>Want me to add that to the conclusion?</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T02-32-28-062Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T02-32-28-062Z" class="timestamp-link"><time datetime="2026-06-01T02:32:28.062Z" data-timestamp="2026-06-01T02:32:28.062Z">2026-06-01T02:32:28.062Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>wait but CNN is 9.32±1.85 / 30.64±3.88 / 4.65±1.31 and random is 7.73±2.50 / 27.89±1.98 / 3.65±1.24. isnt there more than 1 sigma change with the middle stat</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-33-07-773Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-33-07-773Z" class="timestamp-link"><time datetime="2026-06-01T02:33:07.773Z" data-timestamp="2026-06-01T02:33:07.773Z">2026-06-01T02:33:07.773Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-33-29-399Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-33-29-399Z" class="timestamp-link"><time datetime="2026-06-01T02:33:29.399Z" data-timestamp="2026-06-01T02:33:29.399Z">2026-06-01T02:33:29.399Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>You're right to push back — and you've caught a real issue with my σ math. Let me redo this properly.</p>
+<h2>The error: fold-std vs SEM</h2>
+<p>I was treating the fold-std (3.88pp for top-5 tokens) as if it were the uncertainty in the mean. It's not — it's the variability <em>across</em> the 5 folds. The proper uncertainty in the <strong>mean</strong> of 5 estimates is the <strong>standard error of the mean (SEM) = std / √k</strong>.</p>
+<p>When you compare two means (tokens vs random), the right statistic is the gap divided by the <strong>combined SEM</strong>, not by the combined fold-std. With k=5 folds, that's a √5 ≈ 2.24× tighter denominator. Big difference.</p>
+<h2>Recomputing Cat27 CNN with SEM</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>gap</th>
+<th>combined SEM</th>
+<th>proper σ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>top-1</td>
+<td>+1.60pp</td>
+<td>√((1.85² + 2.50²)/5) = 1.39pp</td>
+<td><strong>+1.15σ</strong></td>
+</tr>
+<tr>
+<td>top-5</td>
+<td>+2.75pp</td>
+<td>√((3.88² + 1.98²)/5) = 1.95pp</td>
+<td><strong>+1.41σ</strong> ← your one</td>
+</tr>
+<tr>
+<td>bal_acc</td>
+<td>+1.00pp</td>
+<td>√((1.31² + 1.24²)/5) = 0.81pp</td>
+<td><strong>+1.24σ</strong></td>
+</tr>
+</tbody>
+</table>
+<p>So <strong>+1.4σ on top-5, +1.2σ on bal_acc and top-1</strong>. That's in the "suggestive" range (p ≈ 0.08-0.13 one-tailed), not "noise floor" as I claimed. <strong>My earlier &lt;1σ characterization was wrong.</strong> You're right.</p>
+<h2>So is it a "wins" case now?</h2>
+<p>It's closer to a wins case than I said, but two things still make me hesitant to put it in the conclusion as a clean ✓:</p>
+<p><strong>1. Tokens are at parity with raw, not above it.</strong></p>
+<p>Recomputing raw's σ the same way:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>tokens vs random</th>
+<th>raw vs random</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>top-1</td>
+<td>+1.15σ</td>
+<td>+0.96σ</td>
+</tr>
+<tr>
+<td>top-5</td>
+<td>+1.41σ</td>
+<td>+1.30σ</td>
+</tr>
+<tr>
+<td>bal_acc</td>
+<td>+1.24σ</td>
+<td>+1.41σ</td>
+</tr>
+</tbody>
+</table>
+<p>Tokens are roughly <em>equal</em> to raw in σ-units of lift over random. The §5.3 contract question is "do tokens carry signal that the raw signal contains?" — tokens haven't beaten raw on cat27 in any metric. So even if the +1.4σ on top-5 is a real micro-effect, it's not tokenizer-specific — it's a property of the data + CNN, not the tokenization.</p>
+<p><strong>2. Multiple-comparisons.</strong></p>
+<p>This is one cell of a 4 features × 3 metrics × 2 tasks × 2 checkpoints (Exp 1.5 + Exp 2) = 48-cell grid. Even at +1.4σ (≈ p~0.08 one-tailed), after Bonferroni correction for 48 tests the effective threshold for "real" jumps to ~3σ. The cat27 wiggle wouldn't survive a strict multiple-comparisons-corrected test.</p>
+<p>That said, the <em>consistency</em> across the grid (every CNN cat27 cell shows ~+1σ in the same direction) is its own argument. If this were truly noise, half the cells should go the other way.</p>
+<h2>What I'd update in the conclusion</h2>
+<p>Honest framing for the table: cat27 + CNN deserves more than the <code>❌ chance</code> I gave it. Something like:</p>
+<blockquote>
+<p><strong>Cat27 (CNN, both 1.5 and 2):</strong> tokens <em>and</em> raw both lift ~1.0-1.4σ above random (top-5 tightest at +1.41σ). Suggestive at the per-metric level, but <strong>tokens at parity with raw → not a tokenizer-specific gain</strong>. Useful as evidence that "averaging + right inductive bias" can squeeze a micro-signal from any 271ch×281t MEG window; not useful as evidence the tokens preserve category info.</p>
+</blockquote>
+<h2>What would actually settle this</h2>
+<p>If you want a clean yes/no instead of "suggestive but not tokenizer-specific":</p>
+<ol>
+<li><strong>Re-run with seeds 1 + 2</strong> — adds 2 evals (~10-20 min each). Tightens the SEM by √3. If the +1.4σ holds across seeds, that's strong evidence it's real.</li>
+<li><strong>Test on a 4M-relevant downstream task</strong> — at the end of the day what matters is whether these tokens help 4M, not whether the gap is technically significant. A 1pp linearly-decodable bump might or might not transfer.</li>
+</ol>
+<p>Want me to (a) update the conclusion table to reflect this corrected statistical reading, (b) run the additional seeds to settle it, or (c) both?</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T02-33-53-727Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T02-33-53-727Z" class="timestamp-link"><time datetime="2026-06-01T02:33:53.727Z" data-timestamp="2026-06-01T02:33:53.727Z">2026-06-01T02:33:53.727Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>ok update</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-34-36-679Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-34-36-679Z" class="timestamp-link"><time datetime="2026-06-01T02:34:36.679Z" data-timestamp="2026-06-01T02:34:36.679Z">2026-06-01T02:34:36.679Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-34-37-625Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-34-37-625Z" class="timestamp-link"><time datetime="2026-06-01T02:34:37.625Z" data-timestamp="2026-06-01T02:34:37.625Z">2026-06-01T02:34:37.625Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Updating the conclusion now. The σ values were wrong (fold-std not SEM), and the Cat27 CNN cell deserves a more nuanced reading.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-34-57-552Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-34-57-552Z" class="timestamp-link"><time datetime="2026-06-01T02:34:57.552Z" data-timestamp="2026-06-01T02:34:57.552Z">2026-06-01T02:34:57.552Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_0173LFNfgMFFtaxrdNn6K2CB">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">## Final conclusion (read this first)
+
+### Where tokens beat random — by experiment
+
+bal_acc means; &#34;beat random&#34; = ≥1σ above the random feature baseline in the same probe regime.
+
+| Experiment | Subject (4-way) | Category27 (27-way) | Animacy (2-way) | Notes |
+|---|---|---|---|---|
+| **1** — 3b_nonavg (single-trial train + eval) | **✅ 97.4% CNN (+84σ)** | ❌ at chance, all probes | ❌ at chance, all probes | Subject decodes near-perfectly |
+| **1.5** — 3b_nonavg, averaged eval (no retrain) | N/A (averaging removes subject) | ❌ at chance (CNN top-5 has +1pp wiggle within 1σ) | ❌ at chance | Cleaner reconstruction MSE; tokens don&#39;t benefit |
+| **2** — 3b_avgcross (averaged train + averaged eval) | N/A | ❌ at chance (CNN gives ~1pp lift, &lt;1σ — same lift raw shows) | ❌ at chance | Train-eval distribution matched; still no category |
+
+**Tokens decode well only for subject identity, only in Experiment 1.** No experiment delivers category27 or animacy above the noise floor. The +1pp wiggles in §1.5 and §2 CNN cells are within fold variance, present equally in raw, and are consistent with &#34;the right inductive bias squeezes a tiny shared signal&#34; — *not* with &#34;the tokenizer preserves category.&#34;</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">## Final conclusion (read this first)
+
+### Where tokens beat random — by experiment
+
+Two criteria matter for a &#34;win&#34;: **(a)** gap from random ≥1σ in SEM units (= fold_std / √k for k=5 folds), **and (b)** tokens at parity with or above raw at that same lift (otherwise it&#39;s a signal in the underlying data, not a tokenizer claim).
+
+| Experiment | Subject (4-way) | Category27 (27-way) | Animacy (2-way) | Notes |
+|---|---|---|---|---|
+| **1** — 3b_nonavg (single-trial train + eval) | ✅ **CNN 97.4% vs random 25.5%** → +200σ; matches raw (98.0%) | ❌ all probes at chance | ❌ all probes at chance | Subject decodes near-perfectly |
+| **1.5** — 3b_nonavg, averaged eval (no retrain) | N/A (averaging removes subject) | ⚠️ CNN top-5 only +1.0σ; bal_acc *below* random → likely noise | ❌ at chance | Cleaner reconstruction MSE; tokens don&#39;t benefit |
+| **2** — 3b_avgcross (averaged train + averaged eval) | N/A | ⚠️ CNN top-5 +1.4σ, bal_acc +1.2σ — **but tokens at parity with raw**; not a tokenizer-specific lift | ⚠️ CNN bal_acc +1.0σ — **but raw is +3.0σ**; tokens lose ~7pp vs raw | Train-eval distribution matched; tokens still don&#39;t carry category-discriminative info beyond what raw has |
+
+**Subject identity in Experiment 1 is the only clean win.** Category27 and animacy show suggestive ~1-1.4σ lifts in Exp 2&#39;s CNN cells (and a top-5-only wiggle in Exp 1.5), but those lifts **appear equally in raw** — meaning if the lift is real, it lives in the underlying MEG, not in the tokenization. The tokenizer&#39;s job (§5.3) is to *preserve* signal from raw; matching raw at a small lift is the failure mode &#34;tokens didn&#39;t add value, they just didn&#39;t destroy more than raw already lost.&#34;
+
+**Corrected stats note:** earlier in this doc I described these CNN cells as &#34;&lt;1σ noise floor.&#34; That used fold-std as the denominator, which is wrong for comparing means across k=5 folds. SEM-based σ is ~√5× tighter, putting the Exp 2 CNN cat27 cells into the &#34;suggestive&#34; range (1.2-1.4σ ≈ p~0.08-0.13 one-tailed). The substantive verdict doesn&#39;t change because of point (b) — tokens-at-parity-with-raw — but the right-flank framing is &#34;borderline-significant but not tokenizer-specific&#34; rather than &#34;noise.&#34;</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-34-58-575Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-34-58-575Z" class="timestamp-link"><time datetime="2026-06-01T02:34:58.575Z" data-timestamp="2026-06-01T02:34:58.575Z">2026-06-01T02:34:58.575Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-35-02-431Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-35-02-431Z" class="timestamp-link"><time datetime="2026-06-01T02:35:02.431Z" data-timestamp="2026-06-01T02:35:02.431Z">2026-06-01T02:35:02.431Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-35-07-430Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-35-07-430Z" class="timestamp-link"><time datetime="2026-06-01T02:35:07.430Z" data-timestamp="2026-06-01T02:35:07.430Z">2026-06-01T02:35:07.430Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Info-level spell-check on "animacy" (domain term) — no action.</p>
+<p>Conclusion updated. Summary of what changed:</p>
+<ol>
+<li><strong>Replaced the σ values with SEM-based</strong> (the correct math for comparing 5-fold means) instead of fold-std. This was my earlier error.</li>
+<li><strong>Added two explicit win criteria</strong>: (a) ≥1σ from random AND (b) tokens at parity with raw — otherwise it's not a tokenizer-specific claim.</li>
+<li><strong>Recategorized Cat27 + Animacy in Exp 2</strong> from <code>❌</code> to <code>⚠️</code> — they're now properly flagged as "borderline-significant but not tokenizer-specific" since tokens match raw rather than exceed it.</li>
+<li><strong>Added a "Corrected stats note"</strong> explicitly acknowledging the earlier σ error so future-you knows where the math changed.</li>
+</ol>
+<p>The substantive recommendation (ship 3b_nonavg from Experiment 1) is unchanged — the cleaner stats just make the Cat27 cells look honestly "borderline" rather than dismissively "noise."</p></div></div></div>
+<div class="message user" id="msg-2026-06-01T02-35-44-803Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-01T02-35-44-803Z" class="timestamp-link"><time datetime="2026-06-01T02:35:44.803Z" data-timestamp="2026-06-01T02:35:44.803Z">2026-06-01T02:35:44.803Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>wait its fine if they're at parity with raw, just give the raw stats that are very important as a summary</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-36-15-468Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-36-15-468Z" class="timestamp-link"><time datetime="2026-06-01T02:36:15.468Z" data-timestamp="2026-06-01T02:36:15.468Z">2026-06-01T02:36:15.468Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-36-16-557Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-36-16-557Z" class="timestamp-link"><time datetime="2026-06-01T02:36:16.557Z" data-timestamp="2026-06-01T02:36:16.557Z">2026-06-01T02:36:16.557Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>You're right — tokens-at-parity-with-raw is <em>preservation</em>, which is exactly what a tokenizer is supposed to do. Reframing.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-36-53-567Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-36-53-567Z" class="timestamp-link"><time datetime="2026-06-01T02:36:53.567Z" data-timestamp="2026-06-01T02:36:53.567Z">2026-06-01T02:36:53.567Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_019AaAUucmRVmuh3Di4zHNgg">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">## Final conclusion (read this first)
+
+### Where tokens beat random — by experiment
+
+Two criteria matter for a &#34;win&#34;: **(a)** gap from random ≥1σ in SEM units (= fold_std / √k for k=5 folds), **and (b)** tokens at parity with or above raw at that same lift (otherwise it&#39;s a signal in the underlying data, not a tokenizer claim).
+
+| Experiment | Subject (4-way) | Category27 (27-way) | Animacy (2-way) | Notes |
+|---|---|---|---|---|
+| **1** — 3b_nonavg (single-trial train + eval) | ✅ **CNN 97.4% vs random 25.5%** → +200σ; matches raw (98.0%) | ❌ all probes at chance | ❌ all probes at chance | Subject decodes near-perfectly |
+| **1.5** — 3b_nonavg, averaged eval (no retrain) | N/A (averaging removes subject) | ⚠️ CNN top-5 only +1.0σ; bal_acc *below* random → likely noise | ❌ at chance | Cleaner reconstruction MSE; tokens don&#39;t benefit |
+| **2** — 3b_avgcross (averaged train + averaged eval) | N/A | ⚠️ CNN top-5 +1.4σ, bal_acc +1.2σ — **but tokens at parity with raw**; not a tokenizer-specific lift | ⚠️ CNN bal_acc +1.0σ — **but raw is +3.0σ**; tokens lose ~7pp vs raw | Train-eval distribution matched; tokens still don&#39;t carry category-discriminative info beyond what raw has |
+
+**Subject identity in Experiment 1 is the only clean win.** Category27 and animacy show suggestive ~1-1.4σ lifts in Exp 2&#39;s CNN cells (and a top-5-only wiggle in Exp 1.5), but those lifts **appear equally in raw** — meaning if the lift is real, it lives in the underlying MEG, not in the tokenization. The tokenizer&#39;s job (§5.3) is to *preserve* signal from raw; matching raw at a small lift is the failure mode &#34;tokens didn&#39;t add value, they just didn&#39;t destroy more than raw already lost.&#34;
+
+**Corrected stats note:** earlier in this doc I described these CNN cells as &#34;&lt;1σ noise floor.&#34; That used fold-std as the denominator, which is wrong for comparing means across k=5 folds. SEM-based σ is ~√5× tighter, putting the Exp 2 CNN cat27 cells into the &#34;suggestive&#34; range (1.2-1.4σ ≈ p~0.08-0.13 one-tailed). The substantive verdict doesn&#39;t change because of point (b) — tokens-at-parity-with-raw — but the right-flank framing is &#34;borderline-significant but not tokenizer-specific&#34; rather than &#34;noise.&#34;</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">## Final conclusion (read this first)
+
+### What the tokens decode — best probe per task, with the raw ceiling alongside
+
+A tokenizer&#39;s job is to **preserve** raw signal in a discrete form. The question is &#34;do tokens match raw, both above random?&#34; — not &#34;do tokens beat raw&#34; (rare and not required).
+
+All cells: balanced accuracy mean ± SEM (= fold_std / √5). σ-vs-random uses SEM. Best probe head per task.
+
+| Task (chance) | Experiment | tokens (best probe) | raw (ceiling) | random (floor) | tokens vs raw | tokens σ-vs-random |
+|---|---|---|---|---|---|---|
+| **Subject** (25%) | 1 — 3b_nonavg | **97.4 ± 0.2** (CNN) | **98.0 ± 0.2** (CNN) | 25.5 ± 0.3 | -0.6pp (preserved) | **~+200σ** |
+| **Cat27** (3.70%) | 1 — 3b_nonavg | 3.55 ± 0.24 (CNN) | 6.14 ± 0.20 (Linear unweighted) | 3.70 ± 0.00 | -2.6pp (partial loss) | -0.6σ (chance) |
+| **Cat27** (3.70%) | 1.5 — avg eval | 4.09 ± 0.46 (CNN bal_acc) | 4.78 ± 0.66 (CNN bal_acc) | 4.40 ± 0.56 (CNN) | -0.7pp (≈parity) | -0.4σ (chance) |
+| **Cat27** (3.70%) | 2 — 3b_avgcross | **4.65 ± 0.59** (CNN bal_acc) | **4.78 ± 0.66** (CNN bal_acc) | 3.65 ± 0.55 | -0.1pp (preserved) | **+1.2σ (borderline)** |
+| **Animacy** (50%) | 1 — 3b_nonavg | 52.6 ± 0.72 (Linear rvq0) | 57.9 ± 0.94 (MLP) | 49.9 ± 1.34 | -5pp (partial loss) | +1.5σ (suggestive) |
+| **Animacy** (50%) | 1.5 — avg eval | 50.6 ± 0.76 (CNN) | **58.9 ± 2.37** (CNN) | 49.8 ± 0.80 | -8pp (partial loss) | +0.7σ (chance) |
+| **Animacy** (50%) | 2 — 3b_avgcross | 52.2 ± 0.76 (CNN) | **58.9 ± 2.37** (CNN) | 50.9 ± 1.12 | -7pp (partial loss) | +1.0σ (borderline) |
+
+### Two clean reads of the table
+
+**1. Raw is the ceiling. The ceiling is low for category-discriminative tasks.**
+
+- Subject ID: raw CNN hits **98%** — head position + sensor profiles are massively decodable from MEG.
+- Animacy: raw CNN hits **~58-59%** — Dixen 2024 reported 57-61% cross-subject on THINGS-EEG, so we&#39;re at the published ceiling.
+- Category27: raw bal_acc tops out at **~5-6%** (linear) or **~4.8%** (CNN). Above 3.7% chance but only by ~1pp absolute. This is intrinsic to the data with linear/CNN probes — not a tokenizer artifact.
+
+**2. Tokens preserve what raw has, modulo a partial loss on animacy.**
+
+- **Subject (Exp 1):** tokens 97.4% vs raw 98.0% → essentially full preservation, both ~+200σ.
+- **Cat27 (Exp 2):** tokens 4.65% vs raw 4.78% → full preservation of the small signal raw has; both ~+1.2σ above random.
+- **Animacy:** tokens 50-53% vs raw 57-59% → **loses ~5-8pp of the animacy lift raw has**. Notable partial loss across all three experiments.
+
+### Which to ship for 4M
+
+**Experiment 1 (`3b_nonavg`)** remains the answer, but the reasoning now updates:
+
+| Reason | Detail |
+|---|---|
+| Subject preservation | Only 3b_nonavg keeps subject decodable (97% CNN). Cross-subject averaging in 2 + 1.5 destroys it. |
+| Animacy loss is small | 3b_nonavg loses ~5pp on animacy (52.6 vs 57.9); 1.5 / 2 lose ~7-8pp. **1 loses the least.** |
+| Cat27 is at the noise floor regardless | All three experiments give tokens 3.5-4.7% bal_acc vs raw ceiling 4.8-6.1%. Choosing among them on this metric is essentially arbitrary; the tokenizer is not what&#39;s failing here. |
+| Train-eval distribution match | 3b_nonavg sees single trials at both train and inference time. 4M will see single trials in production. |
+
+### The cat27 caveat is structural, not about which experiment
+
+Object category is barely linearly/CNN-decodable from raw THINGS-MEG (~5% bal_acc, ~+1σ above chance). Any reconstruction-only tokenizer is bounded by this ceiling. None of 1 / 1.5 / 2 changes the ceiling because the bottleneck is the **probe + data**, not the tokenizer. To push past it we need either a different probe (deeper architecture, attention) or a different objective (contrastive / supervised) — not a different averaging regime.
+
+### Corrected stats note
+
+Earlier in this doc I called the Exp 1.5 / Exp 2 CNN cat27 cells &#34;&lt;1σ noise floor.&#34; That used fold-std as the denominator, which is wrong for comparing means across k=5 folds. SEM-based σ is √5× tighter, putting the Exp 2 CNN cat27 cells at +1.2σ on bal_acc (borderline-significant) — not noise. The substantive ship-3b_nonavg recommendation doesn&#39;t change because Exp 1 wins on subject + animacy, but the Exp 2 cat27 cell is honestly &#34;tokens preserve a borderline-significant signal&#34; rather than &#34;tokens at noise.&#34;</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-01T02-36-54-588Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-01T02-36-54-588Z" class="timestamp-link"><time datetime="2026-06-01T02:36:54.588Z" data-timestamp="2026-06-01T02:36:54.588Z">2026-06-01T02:36:54.588Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-01T02-37-07-945Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-01T02-37-07-945Z" class="timestamp-link"><time datetime="2026-06-01T02:37:07.945Z" data-timestamp="2026-06-01T02:37:07.945Z">2026-06-01T02:37:07.945Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check info-level warnings — all on domain terms (<code>nonavg</code>, <code>avgcross</code>, <code>Animacy</code>, <code>Dixen</code>) that are intentional in this doc. No action needed.</p>
+<h2>Summary of conclusion changes</h2>
+<p>Reframed around the right question: <strong>does the tokenizer preserve what raw has?</strong> rather than "do tokens add value beyond raw."</p>
+<p>The new table now reports for each (task × experiment):
+- <strong>tokens (best probe)</strong> — best classifier head per task
+- <strong>raw (ceiling)</strong> — what's achievable from the underlying signal at all
+- <strong>random (floor)</strong> — chance baseline
+- <strong>tokens vs raw</strong> — preservation gap
+- <strong>tokens σ-vs-random</strong> — SEM-based, not fold-std</p>
+<p>Two reads of the table:</p>
+<p><strong>1. Raw shows what's possible.</strong> Subject hits 98% (massively decodable). Animacy hits 58-59% (matches Dixen 2024 ceiling). Cat27 tops out at 5-6% — <strong>this ceiling is intrinsic, not a tokenizer artifact</strong>.</p>
+<p><strong>2. Tokens preserve subject fully, lose ~5-8pp on animacy, match raw at the cat27 noise floor.</strong> In 3b_nonavg specifically: subject 97 vs 98 (preserved), animacy 53 vs 58 (5pp loss), cat27 both ~at chance. 3b_avgcross gives slightly better cat27 preservation (4.65 vs 4.78, both +1.2σ above random — borderline-significant) but loses subject entirely and animacy is similarly partial.</p>
+<p><strong>Recommendation unchanged: ship 3b_nonavg.</strong> Subject preservation is the deciding factor; animacy is least-lost in Exp 1; cat27 is bounded by the data ceiling regardless of which experiment.</p>
+<p>The "cat27 caveat is structural" note explicitly calls out that cat27 is bounded by the probe+data ceiling (~5%), so no averaging regime fixes it. The fix has to be a different probe or a different training objective.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-008.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<span class="current">9</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 5</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 5/5</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-004.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<span class="current">5</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-04T06-12-59-847Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T06-12-59-847Z" class="timestamp-link"><time datetime="2026-06-04T06:12:59.847Z" data-timestamp="2026-06-04T06:12:59.847Z">2026-06-04T06:12:59.847Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>its not working - and a second on signals averaged within each image across
+all available subjects and repetitions, increasing per-image SNR by
+approximately $\sqrt{N}$ for stimulus-locked responses at the cost of
+removing subject-specific variability. Both checkpoints are then
+evaluated on the same evaluation scheme described in
+Section~\ref{subsection:Neural Data Tokenizer Evaluation}.</p>
+<p>\subsection{EEG Tokenization}</p>
+<p>\subsection{Neural Data Tokenizer Evaluation}</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-13-04-205Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-13-04-205Z" class="timestamp-link"><time datetime="2026-06-04T06:13:04.205Z" data-timestamp="2026-06-04T06:13:04.205Z">2026-06-04T06:13:04.205Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-13-09-231Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-13-09-231Z" class="timestamp-link"><time datetime="2026-06-04T06:13:09.231Z" data-timestamp="2026-06-04T06:13:09.231Z">2026-06-04T06:13:09.231Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The label doesn't exist — that's the bug. <code>\ref{...}</code> only resolves if a matching <code>\label{...}</code> is defined somewhere. You named the label in <code>\ref</code> but never put it on the subsection.</p>
+<p>Fix:</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsection:Neural Data Tokenizer Evaluation}
+</code></pre>
+<p>After saving, <strong>you need two LaTeX compile passes</strong> — first pass writes the label to the <code>.aux</code> file, second pass reads it. After one pass you'll see <code>Section~??</code> and a "Label(s) may have changed. Rerun" warning. Run again and it resolves.</p>
+<p>(Side note: spaces in label keys technically work with vanilla <code>\ref</code> but break <code>hyperref</code> PDF bookmarks and <code>cleveref</code>. Renaming to <code>subsec:tokenizer-eval</code> is the safer choice — but not what's blocking you right now.)</p></div></div></div>
+<div class="message user" id="msg-2026-06-04T06-15-23-874Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T06-15-23-874Z" class="timestamp-link"><time datetime="2026-06-04T06:15:23.874Z" data-timestamp="2026-06-04T06:15:23.874Z">2026-06-04T06:15:23.874Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>now describe the eval method we use,starting with comparing raw, random, tokens, rv0 in case of meg, etc. then moving to what we actually test - staritng with sanity checks, codebook usage, perplexity, entreopy, etc. then moving to lienar probe - animacy, category27 (noting not all image IDs applied here), token retrival (whatever that is), subject ID across linear, MLP, CNN.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-15-42-269Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-15-42-269Z" class="timestamp-link"><time datetime="2026-06-04T06:15:42.269Z" data-timestamp="2026-06-04T06:15:42.269Z">2026-06-04T06:15:42.269Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-16-15-738Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-16-15-738Z" class="timestamp-link"><time datetime="2026-06-04T06:16:15.738Z" data-timestamp="2026-06-04T06:16:15.738Z">2026-06-04T06:16:15.738Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Here's a methods-section subsection covering all four axes. pdfLaTeX-safe.</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsec:tokenizer-eval}
+
+Each tokenizer is evaluated on four independent axes that target
+distinct failure modes (reconstruction fidelity, codebook health,
+discriminability, and sequence learnability). To make each axis
+interpretable we compare four feature sets per trial:
+\textbf{raw} (the preprocessed MEG signal itself, an upper bound on
+what any tokenizer could preserve), \textbf{random} (uniformly random
+token IDs of the matching shape, a lower bound representing zero
+information content), \textbf{tokens\_all} (the trained tokenizer's
+output, with multi-codebook tokenizers' codebook embeddings summed
+across all RVQ layers), and---for MEG, where BrainOmni uses
+residual vector quantization with $Q{=}4$ layers---\textbf{tokens\_rvq0},
+the coarsest RVQ layer alone, which asks whether top-level structure
+carries the relevant signal independently of finer residual layers.
+The raw/random brackets are essential: without them an absolute
+probe number cannot be interpreted as ``the tokenizer preserved
+signal'' versus ``the task is intrinsically hard from this modality.''
+
+\paragraph{Reconstruction fidelity.} We measure time-domain mean
+squared error, mean per-channel Pearson correlation, and the mean
+squared error between Welch power spectral density estimates of $x$
+and $\hat{x}$ in the 1--100\,Hz band. The spectral term is the most
+diagnostic of the three: neural task signal lives in named frequency
+bands ($\theta/\alpha/\beta/\gamma$), and a tokenizer can drive
+time-domain MSE down while still scrambling band power.
+
+\paragraph{Codebook health.} A tokenizer that achieves low
+reconstruction error by collapsing onto a small subset of its codes
+is broken even when MSE looks clean. We report perplexity
+$\exp(H(p))$ of the empirical code distribution $p$, the
+dead-code fraction (codes never selected on the test set), and the
+unigram entropy $H(p)$ in nats. We additionally compute bigram
+conditional entropy $H(t_i \mid t_{i-1})$ and mean run-length to detect
+sequence-level collapse: a tokenizer that emits highly redundant
+streams (e.g., long runs of a single code per trial) can pass the
+unigram diagnostics while leaving the masked-prediction objective
+nothing to learn.
+
+\paragraph{Downstream probes.} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty:
+\begin{itemize}
+    \item \textbf{Subject identity} (4-way, chance 25\%): a pipeline
+    sanity check. Subject identity is dominated by sensor
+    geometry and head position and is trivially decodable from raw
+    MEG; tokens that fail this task indicate a broken eval pipeline
+    rather than a broken tokenizer.
+    \item \textbf{Animacy} (2-way, chance 50\%): a sensitivity check.
+    Living vs.\ non-living discrimination is well-established in
+    MEG decoding and provides a coarse target that should be
+    reachable from a competent tokenizer.
+    \item \textbf{Category27} (27-way, chance 3.70\%): the
+    publication-target gate. We coarsen the 1{,}854 THINGS concept
+    labels into 27 superordinate categories from the THINGS canonical
+    metadata. Only the 892 concepts with a clean single-category
+    Bottom-Up label are retained, reducing the eval to roughly
+    5{,}000 of the original $\sim$10{,}000 test trials (around
+    185 trials per class); the remaining trials are dropped from
+    this task only.
+\end{itemize}
+
+For each task we fit three probe heads: a single linear layer
+(class-weighted cross-entropy logistic regression), a two-layer MLP
+with ReLU and dropout (tests ``information present but nonlinearly
+encoded''), and a small CNN that respects each feature set's natural
+spatial--temporal layout (Conv2D over the $16\times 8$ latent--time
+grid for BrainOmni tokens, Conv1D over (channel, time) for raw MEG).
+All probes use 5-fold cross-validation with class-weighted cross-entropy
+loss; we report balanced accuracy as the headline metric since its
+chance floor is $1/n_{\text{classes}}$ regardless of class frequency,
+unlike top-1 accuracy whose floor under imbalance is the majority
+class frequency.
+
+\paragraph{Model-free retrieval.} As a zero-trainable-parameter
+complement to the probe, we run nearest-neighbour retrieval at $k{=}1$
+and $k{=}5$ on cosine similarity over the tokenizer's continuous code
+embeddings and on Jaccard overlap over the discrete bag of codes per
+trial. Retrieval separates two otherwise-confounded failure modes: a
+task on which both the probe and retrieval are at chance indicates
+the signal is not in the token geometry at all, while a task on which
+retrieval is at chance but the probe lifts above chance indicates the
+signal is present but only linearly accessible after a learned
+projection. Retrieval is reported on the same three tasks.
+
+A tokenizer passes the gate for downstream foundation-model training
+when (i) tokens reach the raw upper bound (within fold variance) on at
+least one above-chance task, (ii) the codebook is not collapsed, and
+(iii) tokens lift cleanly above the random lower bound on the gate
+task (Category27). Tokenizers that pass reconstruction and codebook
+diagnostics but stay at the random floor on the probe are the
+characteristic failure mode this evaluation is designed to catch.
+</code></pre>
+<p>Two notes on framing choices worth being explicit about in the paper draft:</p>
+<ol>
+<li>
+<p><strong><code>tokens_rvq0</code> is MEG-specific</strong> (BrainOmni's RVQ structure). EEG is single-codebook so this column collapses to just <code>tokens</code>. The paragraph says so but you may want to mention this once in a generic methods sentence rather than carrying conditional cases everywhere.</p>
+</li>
+<li>
+<p><strong>The Category27 trial drop is a real population shift</strong>, not just a sample-size reduction. You're keeping only concepts with unambiguous single-category labels — these tend to be the more prototypical, less ambiguous object concepts. Mentioning this in Discussion as a limitation is more defensible than burying it; the alternative (multi-label classification on all 1,854 concepts) is harder to interpret and isn't what the field standardly does.</p>
+</li>
+</ol></div></div></div>
+<div class="message user" id="msg-2026-06-05T01-04-16-410Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-05T01-04-16-410Z" class="timestamp-link"><time datetime="2026-06-05T01:04:16.410Z" data-timestamp="2026-06-05T01:04:16.410Z">2026-06-05T01:04:16.410Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>fix this ending. \paragraph{Reconstruction fidelity:} We measure time-domain mean square error (MSE), mean per-channel Pearson correlation, and MSE between Welch power spectral density estimates. 
+\paragraph{Codebook health:} We measure perplexity (exponentiated entropy of empirical code distribution), dead-code fraction, and the unigram entropy. 
+\paragraph{Downstream probes:} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty: subject identity classification (4-way), animacy classification (2-way), and a 27-way THINGS categorization task. The last categorization task was created by coarsening the 1{,}854 THINGS concept labels into 27 superordinate categories from the THINGS canonical metadata. Only the 892 concepts with a clean single-category Bottom-Up label are retained, reducing the eval to roughly 5{,}000 of the original $\sim$10{,}000 test trials (around 185 trials per class); the remaining trials are dropped from this task only. We then compare performance of neural tokenization with DINO embeddings (as a sanity check, etc</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-05T01-04-50-704Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-05T01-04-50-704Z" class="timestamp-link"><time datetime="2026-06-05T01:04:50.704Z" data-timestamp="2026-06-05T01:04:50.704Z">2026-06-05T01:04:50.704Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-05T01-05-04-101Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-05T01-05-04-101Z" class="timestamp-link"><time datetime="2026-06-05T01:05:04.101Z" data-timestamp="2026-06-05T01:05:04.101Z">2026-06-05T01:05:04.101Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Fixed ending — completes the DINO thought, adds the three probe heads (linear/MLP/CNN) that were dropped from the original ask, and adds the retrieval paragraph:</p>
+<pre><code class="language-latex">\paragraph{Downstream probes:} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty: subject identity classification (4-way),
+animacy classification (2-way), and a 27-way THINGS categorization
+task. The last categorization task was created by coarsening the
+1{,}854 THINGS concept labels into 27 superordinate categories from
+the THINGS canonical metadata. Only the 892 concepts with a clean
+single-category Bottom-Up label are retained, reducing the eval to
+roughly 5{,}000 of the original $\sim$10{,}000 test trials (around
+185 trials per class); the remaining trials are dropped from this
+task only. For each task we fit three probe heads---a single linear
+layer, a two-layer MLP with ReLU and dropout, and a small CNN that
+respects each feature set's natural spatial--temporal layout (Conv2D
+over the $16\times 8$ latent--time grid for BrainOmni tokens, Conv1D
+over $(\text{channel}, \text{time})$ for raw MEG)---under 5-fold
+cross-validation with class-weighted cross-entropy loss, reporting
+balanced accuracy as the headline metric since its chance floor is
+$1/n_{\text{classes}}$ regardless of class frequency. As a
+stimulus-side ceiling on the categorization tasks we additionally
+report the same probes trained on frozen DINOv2 embeddings of the
+corresponding THINGS images: these embeddings upper-bound what any
+MEG tokenizer could in principle decode about visual content from
+this dataset, since DINOv2 sees the image directly without the noise
+floor of single-trial evoked responses.
+
+\paragraph{Model-free retrieval:} As a zero-trainable complement to
+the probe, we run $k$-nearest-neighbour retrieval at $k{=}1$ and
+$k{=}5$ on cosine similarity over the tokenizer's continuous code
+embeddings and on Jaccard overlap over the discrete bag of codes per
+trial. Retrieval separates two otherwise-confounded failure modes: a
+task on which both the probe and retrieval are at chance indicates
+the signal is not in the token geometry at all, while a task on which
+retrieval is at chance but the probe lifts above chance indicates the
+signal is present but only linearly accessible after a learned
+projection.
+</code></pre>
+<p>Two flagged decisions for your edit pass:</p>
+<ol>
+<li>
+<p><strong>The DINO framing.</strong> I wrote it as a <em>stimulus-side ceiling</em> (DINOv2 of the image ≈ "best case if MEG were perfect"). If that's not what you meant — e.g., you meant DINO as a <em>competing tokenizer</em> on the same MEG signal, or as a <em>target representation</em> for alignment — the sentence needs to change. Let me know which you mean.</p>
+</li>
+<li>
+<p><strong>Retrieval inclusion.</strong> You asked for it in the original spec; I assumed you still wanted it. If you've decided to drop retrieval from the paper (it's been at chance on cat27 across every experiment), delete the second paragraph. The separator-test logic is still defensible to keep even if all numbers are at chance, because it's the cleanest way to say "this isn't a probe-strength problem."</p>
+</li>
+</ol></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-004.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<span class="current">5</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

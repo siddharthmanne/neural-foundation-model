@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - Index</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>Claude Code transcript</h1>
+            <div id="search-box">
+                <input type="text" id="search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+        <p style="color: var(--text-muted); margin-bottom: 24px;">8 prompts · 79 messages · 24 tool calls · 0 commits · 2 pages</p>
+        
+<div class="index-item"><a href="page-001.html#msg-2026-05-29T20-08-31-130Z"><div class="index-item-header"><span class="index-item-number">#1</span><time datetime="2026-05-29T20:08:31.130Z" data-timestamp="2026-05-29T20:08:31.130Z">2026-05-29T20:08:31.130Z</time></div><div class="index-item-content"><p>I wnat to zoom way into how we did meg tokenization with brainomni tokenizer. what parts did we leave frozen and what parts did we finetune. go step by step and pretend im an amateur in deep learning. explain each step in immense detail of the current architecture of the brainomni and why we decided to finetune one part over another</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>I wnat to zoom way into how we did meg tokenization with brainomni tokenizer. what parts did we leave frozen and what parts did we finetune. go step by step and pretend im an amateur in deep learning. explain each step in immense detail of the current architecture of the brainomni and why we decided to finetune one part over another</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-29T20-09-00-776Z"><div class="index-item-header"><span class="index-item-number">#2</span><time datetime="2026-05-29T20:09:00.776Z" data-timestamp="2026-05-29T20:09:00.776Z">2026-05-29T20:09:00.776Z</time></div><div class="index-item-content"><p>try again</p></div></a><div class="index-item-stats"><span>9 read · 5 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>MEG Tokenization with BrainOmni — Deep Dive</h1>
+<p>Let me start at the highest level and zoom progressively in, then explain the freeze/finetune decision once you understand what the pieces <em>are</em>.</p>
+<hr />
+<h2>1. What "tokenization" even means in this setting</h2>
+<p>4M (the multimodal transformer downstream) only knows how to read <strong>integer ID sequences</strong>. RGB images come in as integer codes, text as WordPiece IDs. To let 4M see MEG, we need a function:</p>
+<pre><code>raw MEG trial  (271 channels × 281 timepoints of floats)  →  some short sequence of integers
+</code></pre>
+<p>And, importantly, we need an <em>inverse</em> — <code>integers → reconstructed MEG</code> — because the only way we can train the tokenizer without labeled "ground truth tokens" is by demanding that the round-trip <code>x → tokens → x_hat</code> stays close to <code>x</code>. This is exactly the autoencoder + bottleneck idea, plus the bottleneck happens to be <strong>discrete</strong> (a finite codebook).</p>
+<p>So a "neural tokenizer" is just a <strong>VQ-style autoencoder</strong>:
+- Encoder squashes the raw signal into a small latent representation
+- Quantizer snaps each latent vector to its nearest entry in a learned <strong>codebook</strong> of <code>V</code> vectors → the index becomes the token
+- Decoder takes those codebook vectors and reconstructs the original signal</p>
+<p>The quality criterion is "tokens that 4M can learn from." That is what §5 of the parent doc tries to measure.</p>
+<hr />
+<h2>2. BrainOmni's BrainTokenizer at a high level</h2>
+<p>BrainOmni (<code>OpenTSLab/BrainOmni</code>) was pretrained on <strong>656 hours of resting-state MEG/EEG</strong> across many sensor geometries. Its tokenizer is called <code>BrainTokenizer</code>. It has four sub-modules; see <a href="external/BrainOmni/braintokenizer/model.py#L15-L66">external/BrainOmni/braintokenizer/model.py:15-66</a> for the constructor.</p>
+<pre><code>BrainTokenizer
+├── sensor_embed     : BrainSensorModule       — &quot;where is each sensor and what kind is it?&quot;
+├── encoder          : BrainTokenizerEncoder   — sensor space → latent neuro space
+│   ├── seanet_encoder  : SEANetEncoder            (1-D conv stack, per channel)
+│   ├── neuros          : nn.Parameter(N_neuro, D) (learnable latent &quot;source&quot; queries)
+│   ├── backwardsolution: cross-attention          (sensors → neuros)
+│   └── k_proj          : Linear
+├── quantizer        : BrainQuantizer          — RVQ over latent neuro features
+│   └── rvq          : 4 residual VQ layers, V=512 codes each
+└── decoder          : BrainTokenizerDecoder   — latent neuro space → sensor space
+    ├── forwardsolution: cross-attention            (neuros → sensors)
+    └── seanet_decoder : SEANetDecoder              (1-D transposed conv stack, per channel)
+</code></pre>
+<p>The conceptual move that makes BrainOmni interesting: instead of trying to model 271 raw MEG channels directly, it <strong>introduces an intermediate "latent neural source" space</strong>. The encoder asks 16 imagined source-like queries to attend over the 271 sensors; the decoder asks the 271 sensors to attend over the 16 latent sources. This is structurally similar to how MEG source-reconstruction works (a small number of "neural sources" projected to many sensors via a mixing matrix) — but the mixing is <em>learned</em> via attention.</p>
+<p>That <code>n_neuro = 16</code> is the secret reason BrainOmni produces such a small token sequence: 271 sensors get compressed into 16 latent channels before tokenization.</p>
+<hr />
+<h2>3. The pieces, one by one</h2>
+<h3>3a. <code>BrainSensorModule</code> (the "sensor embed")</h3>
+<p><a href="external/BrainOmni/model_utils/module.py#L11-L32">external/BrainOmni/model_utils/module.py:11-32</a></p>
+<p>Input: for each sensor <code>c</code>, a 6-D vector <code>pos = [x, y, z, ox, oy, oz]</code> (sensor 3-D position + 3-D orientation) and an integer <code>sensor_type</code> (1 for <code>mag</code>, etc.).</p>
+<p>Output: a per-sensor embedding vector of dim <code>n_dim</code>.</p>
+<p>Why it matters: BrainOmni was pretrained on many MEG/EEG headsets. The sensor-embed lets the model <strong>interpret different sensor layouts at runtime</strong>. THINGS-MEG uses the CTF 271-mag-sensor system, which has its own xyz/orientation — these positions are read from the MNE <code>.fif</code> raw file in our <a href="neural_tokenizers/meg/brainomni/sensor_metadata.py">neural_tokenizers/meg/brainomni/sensor_metadata.py</a> and passed in at every forward.</p>
+<h3>3b. <code>seanet_encoder</code> (the time-domain compressor)</h3>
+<p>SEANet is a 1-D conv stack borrowed from the SoundStream / EnCodec neural-audio-codec line of work. With ratios <code>[8, 4, 2]</code> it downsamples the time axis by <code>8·4·2 = 64×</code>. Applied per-channel (sensors processed independently). On a 512-sample window: <code>512 / 64 = 8</code> temporal latent positions. This is where the <strong><code>T_win = 8</code></strong> in your token shape comes from.</p>
+<p>Crucial property: this is a <strong>dataset-agnostic time-series compressor</strong>. The same convolutional kernels work on resting-state MEG, sleep MEG, task MEG, EEG — they just learn local temporal structure. BrainOmni's 656-hour pretraining poured most of its compute into these kernels.</p>
+<h3>3c. <code>neuros</code> + <code>backwardsolution</code> (the sensor → latent attention)</h3>
+<p>After SEANet, you have <code>(B, C=271, T_win=8, D=n_dim)</code>. Now the encoder needs to fold 271 sensors into a small latent set.</p>
+<p>It uses cross-attention:
+- <strong>Queries</strong>: 16 learnable embeddings (<code>self.neuros</code>, shape <code>(16, D)</code>) — these are the "imagined latent sources." They are the same across all trials and all subjects, and the model gets to learn what each one specializes in.
+- <strong>Keys/Values</strong>: the SEANet features at each timestep, plus the sensor embedding (so the attention layer knows <em>which sensor</em> each key comes from).</p>
+<p>Output: <code>(B, C'=16, T_win=8, D)</code>. The 271-sensor axis is gone; 16 latent channels remain.</p>
+<p>Mental model: each latent neuro is like a learned source-reconstruction filter — it learns to read off something coherent across the 271 sensors. The sensor embedding tells the attention <em>where</em> each measurement was taken, so the same <code>neuros[i]</code> can extract "frontal alpha" from a CTF headset and from a different MEG/EEG layout it has never seen.</p>
+<h3>3d. <code>quantizer.rvq</code> (Residual Vector Quantization)</h3>
+<p><a href="external/BrainOmni/model_utils/module.py#L138-L171">external/BrainOmni/model_utils/module.py:138-171</a></p>
+<p>At this point the per-trial latent is <code>(B, C'=16, T_win=8, D)</code>. RVQ now snaps each latent vector to a sequence of codebook indices.</p>
+<p>Plain VQ: find nearest codebook entry <code>c[i]</code>, token = <code>i</code>, residual <code>r = z - c[i]</code> is thrown away.</p>
+<p><strong>Residual VQ</strong>: chain <code>Q=4</code> quantizers. Each quantizer encodes the <em>residual</em> left over by the previous one. So a single latent vector becomes a tuple of 4 integers <code>(i₁, i₂, i₃, i₄)</code> and is reconstructed by summing <code>c₁[i₁] + c₂[i₂] + c₃[i₃] + c₄[i₄]</code>.</p>
+<p>Why RVQ instead of a giant single codebook? With <code>V=512</code> per layer and <code>Q=4</code> layers you have effectively <code>512⁴ ≈ 6.9 × 10¹⁰</code> representable vectors, but you only train <code>4 × 512 = 2048</code> codebook entries — vastly cheaper than maintaining a <code>~10¹⁰</code>-entry table. Same trick neural audio codecs (SoundStream, EnCodec) use to compress speech.</p>
+<p>The codebooks are updated by <strong>EMA (exponential moving average)</strong> of the inputs that get assigned to each code — not by gradient descent. That's a non-obvious thing to know, and it affects our finetune decisions (see §5).</p>
+<p>Final token tensor: <code>(B, 16, 8, 4)</code> int — that's the 512 integer indices per MEG trial that the docs refer to.</p>
+<h3>3e. Decoder (<code>forwardsolution</code> + <code>seanet_decoder</code>)</h3>
+<p>The decoder mirrors the encoder:
+- <code>forwardsolution</code>: cross-attention with sensor embeddings as queries, latent neuros as keys/values. Maps <code>(B, 16 latent channels, 8 timesteps)</code> → <code>(B, 271 sensor channels, 8 timesteps)</code>.
+- <code>seanet_decoder</code>: transposed conv stack with ratios <code>[8, 4, 2]</code> reversed; upsamples 8 timesteps → 512 timepoints.</p>
+<p>So the round trip is:</p>
+<pre><code>(B, 271, 512)  →  SEANet enc  →  (B, 271, 8, D)
+                ↓ backward cross-attn (271 → 16 via sensor embed)
+              (B, 16, 8, D)
+                ↓ RVQ (4 codebooks × 512 codes)
+              (B, 16, 8, 4) integer indices  ← these are the &quot;tokens&quot;
+                ↓ codebook lookup + sum across 4 layers
+              (B, 16, 8, D)
+                ↓ forward cross-attn (16 → 271 via sensor embed)
+              (B, 271, 8, D)
+                ↓ SEANet dec
+              (B, 271, 512)
+</code></pre>
+<hr />
+<h2>4. What we actually do on THINGS-MEG, end to end</h2>
+<h3>4a. Preprocessing per trial — <a href="neural_tokenizers/meg/brainomni/preprocess.py">neural_tokenizers/meg/brainomni/preprocess.py</a></h3>
+<p>THINGS-MEG trials are <code>(271, 281)</code> at 200 Hz. BrainOmni expects 256 Hz and a multiple-of-64 window length. So:</p>
+<ol>
+<li><strong>Resample 200 → 256 Hz</strong> (<a href="neural_tokenizers/meg/brainomni/preprocess.py#L29-L41">preprocess.py:29-41</a>). 281 samples at 200 Hz → 460 samples at 256 Hz.</li>
+<li><strong>Per-trial per-channel z-score</strong> (<a href="neural_tokenizers/meg/brainomni/preprocess.py#L44-L48">preprocess.py:44-48</a>). Mean and std computed <em>before</em> padding (so the pad zeros do not poison the stats). The stats are stored so we can invert at decode time.</li>
+<li><strong>Zero-pad to 512 samples</strong> (<a href="neural_tokenizers/meg/brainomni/preprocess.py#L51-L68">preprocess.py:51-68</a>). The pad goes on the post-stimulus tail (the part with the least task-relevant information).</li>
+<li><strong>Build a validity mask</strong> (<a href="neural_tokenizers/meg/brainomni/preprocess.py#L71-L82">preprocess.py:71-82</a>) marking real samples (1) vs zero-pad (0). This mask gates the reconstruction loss so we don't penalize the model for "failing to reconstruct" the padded zeros.</li>
+</ol>
+<h3>4b. Forward + loss — <a href="neural_tokenizers/meg/brainomni/trainer.py#L97-L142">neural_tokenizers/meg/brainomni/trainer.py:97-142</a></h3>
+<pre><code>x_unfold = model.unfold(x_pad)                                          # window into (B, C, N=1, L=512)
+sensor_embedding = model.sensor_embed(pos, sensor_type)                 # (B, C, D)
+feature = model.encoder(x_unfold, sensor_embedding)                     # (B, 16, N, T, D)
+feature, indices, commitment_loss = model.quantizer(feature)            # tokens fall out here
+x_rec = model.decoder(feature, sensor_embedding)                        # (B, C, N, L)
+x_tgt = model.norm_target(x_unfold)                                     # what the recon should match
+</code></pre>
+<p>The composite loss (matches BrainOmni's pretraining recipe):</p>
+<pre><code>L = time_loss(masked MSE)
+  + exp(-pcc)                  # encourages high Pearson correlation
+  + commitment_loss            # standard VQ &quot;encoder, commit to your codebook&quot; term
+  + amp_loss                   # FFT amplitude MSE
+  + 0.5 * phase_loss           # FFT phase MSE
+</code></pre>
+<p>The two frequency-domain terms are critical for MEG — band power is what carries task signal (cf. parent §5.1). Time MSE alone would let the model rebuild the slow baseline and ignore the high-frequency evoked transients.</p>
+<hr />
+<h2>5. The freeze / finetune decision — what's trainable and <em>why</em></h2>
+<p>This is in <a href="neural_tokenizers/meg/brainomni/trainer.py#L42-L59">neural_tokenizers/meg/brainomni/trainer.py:42-59</a>. Three modes are defined; we ran <strong><code>adapt</code></strong>.</p>
+<h3>What <code>adapt</code> does</h3>
+<pre><code class="language-python">for p in model.parameters(): p.requires_grad = True          # start: all trainable
+for p in model.encoder.seanet_encoder.parameters():          # FREEZE the time-domain conv stack
+    p.requires_grad = False
+for p in model.decoder.seanet_decoder.parameters():          # FREEZE its transpose
+    p.requires_grad = False
+</code></pre>
+<p>So we <strong>freeze</strong>:
+- <code>encoder.seanet_encoder</code> — the 1-D conv stack
+- <code>decoder.seanet_decoder</code> — its transpose</p>
+<p>And we <strong>train</strong>:
+- <code>sensor_embed</code> — the per-sensor position/type embedding
+- <code>encoder.neuros</code> — the 16 learnable latent-source queries
+- <code>encoder.backwardsolution</code> — the sensors → neuros cross-attention
+- <code>encoder.k_proj</code>
+- <code>decoder.forwardsolution</code> — the neuros → sensors cross-attention
+- <code>quantizer.rvq</code> — the codebooks (gradient + EMA)</p>
+<p>This works out to roughly <strong>959k trainable / 5.05M total ≈ 19% of weights</strong> (<a href="neural_tokenizers/meg/CLAUDE.md#L303-L308">meg/CLAUDE.md:303-308</a>).</p>
+<h3>Why this particular split — the system-level reasoning</h3>
+<p>The decision falls out of asking <em>what is genuinely new about THINGS-MEG, and what is shared with the pretraining distribution?</em></p>
+<p><strong>What is shared (so reuse the pretrained weights):</strong></p>
+<p>The SEANet conv stack learns <strong>local temporal structure</strong> of MEG/EEG voltages. The local temporal statistics of a 256-Hz MEG trace are roughly the same whether the subject is resting or seeing a picture — same Nyquist, same dominant oscillations (delta/theta/alpha/beta), same noise characteristics. BrainOmni saw 656 hours of MEG/EEG to learn these convolutions; we have ~42 hours of THINGS-MEG. Letting our small finetune dataset rewrite these kernels would (a) waste pretraining compute and (b) risk <strong>catastrophic forgetting</strong> — the model overfits THINGS and loses the generic temporal structure that was the whole point of using BrainOmni. So we freeze them.</p>
+<p><strong>What is NOT shared (so we have to train these):</strong></p>
+<ol>
+<li>
+<p><strong>Sensor layout</strong>. THINGS-MEG is CTF 271-mag. BrainOmni pretrained on a different mix of headsets. The 6-D sensor positions/orientations are physically different. The sensor-embed must adapt to read out the new geometry. Train it.</p>
+</li>
+<li>
+<p><strong>Latent neuros + cross-attention</strong>. The cross-attention modules are the <em>interface</em> between the (frozen) per-channel SEANet features and the (frozen) per-channel SEANet decoder. They are the only modules that "see" the relationship between the 271 sensors. The pretraining cross-attention learned to combine signals from a different head layout — it has to relearn how to combine THINGS-MEG's 271 sensors into 16 latents. Train them.</p>
+</li>
+<li>
+<p><strong>RVQ codebooks</strong>. The pretrained codebooks were optimized for <em>resting-state</em> MEG features. THINGS-MEG is <strong>event-related</strong> — stimulus-locked evoked responses look statistically different from spontaneous oscillations. The codebooks must redistribute their entries over the new feature distribution. Train them (and EMA-update them).</p>
+</li>
+</ol>
+<p>In other words: we freeze what is <strong>physics-level / signal-level invariant</strong> and we finetune what is <strong>dataset-, layout-, and task-distribution-specific</strong>. That is the right cut for transfer learning with a small target dataset and a strong pretrained backbone.</p>
+<h3>Why not <code>full</code> or <code>rvq_only</code></h3>
+<ul>
+<li><code>full</code>: trains all 5.05M params. With only ~88k trials, this is fast catastrophic-forgetting territory — the pretrained SEANet kernels would drift to overfit THINGS evoked responses, and zero-shot transfer to other MEG datasets later would be gone. Higher overfit risk per <a href="neural_tokenizers/meg/brainomni/trainer.py#L25">trainer.py:25</a>.</li>
+<li><code>rvq_only</code>: trains nothing via gradient — only EMA-updates the codebooks. This is a <em>diagnostic</em> mode: it tells you "if I let only the codebook adapt to THINGS, do reconstruction numbers improve?" It is a sanity check, not the production recipe.</li>
+</ul>
+<p>Empirically <code>adapt</code> won: best val loss <strong>~1.401</strong> vs zero-shot <strong>~4.35 MSE</strong> (<a href="neural_tokenizers/meg/CLAUDE.md#L521-L530">meg/CLAUDE.md:521-530</a>). Channel Pearson went from 0.345 (zero-shot) to 0.870 (after <code>adapt</code>).</p>
+<h3>Optimizer groups — a smaller but important detail</h3>
+<p><a href="neural_tokenizers/meg/brainomni/trainer.py#L62-L84">trainer.py:62-84</a> splits the trainable params into three AdamW groups:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Examples</th>
+<th>LR</th>
+<th>Weight decay</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>normal</code></td>
+<td>cross-attn linear layers</td>
+<td><code>lr</code> (3e-5)</td>
+<td><code>1e-2</code></td>
+</tr>
+<tr>
+<td><code>no_decay</code></td>
+<td>RMSNorm weights, sensor-type embedding</td>
+<td><code>lr</code> (3e-5)</td>
+<td><code>0.0</code></td>
+</tr>
+<tr>
+<td><code>codebook</code></td>
+<td><code>quantizer.*</code></td>
+<td><code>codebook_lr</code> (3e-5)</td>
+<td><code>0.0</code></td>
+</tr>
+</tbody>
+</table>
+<p>Why split: norms and embeddings should not be regularized toward zero (would push the model toward trivial outputs); codebooks have their own EMA dynamics so weight decay on them fights the EMA update. This is standard for VQ-style models and is copied from BrainOmni's own pretraining recipe (<a href="external/BrainOmni/braintokenizer/model.py#L84-L102">model.py:84-102</a>).</p>
+<hr />
+<h2>6. The "why this architecture for 4M" bit</h2>
+<p>Worth saying once: the reason BrainOmni won over μ-transform for the 4M production cache despite the linear probe being chance is <strong>token-count economics</strong>. μ-transform produces ~76,151 tokens per trial (one per (channel, sample)). BrainOmni produces 512. 4M's transformer cost is quadratic in sequence length, so 76k tokens per MEG trial is infeasible as a regular sequence; 512 is. The architecture's <code>16 latent × 8 time × 4 RVQ = 512</code> is by design tuned to the right order of magnitude for a multimodal transformer to consume.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>That's the full picture: BrainOmni is a SEANet-encoded, attention-bottlenecked, RVQ-quantized autoencoder; we freeze the SEANet kernels because they encode signal-level priors that transfer cleanly across MEG datasets, and we train the sensor embedding, the cross-attention bridge, and the codebooks because those are where the dataset-, layout-, and task-distribution differences live.</p>
+<p>Would you like me to drop a <code>notes/brainomni_meg_tokenization.md</code> distilling this — particularly the freeze/train rationale and the SEANet/attention/RVQ block diagram — so you can refer back when the same transfer-learning pattern shows up for EEG?</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-29T20-23-17-128Z"><div class="index-item-header"><span class="index-item-number">#3</span><time datetime="2026-05-29T20:23:17.128Z" data-timestamp="2026-05-29T20:23:17.128Z">2026-05-29T20:23:17.128Z</time></div><div class="index-item-content"><p>Tell me about the sets of weights more clearly - do seannet encoder and decoder; cross attention layers share weights?</p></div></a><div class="index-item-stats"><span>1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>Weight-sharing structure in BrainTokenizer</h1>
+<p>Short answer: <strong>no, nothing meaningful is tied</strong>. The SEANet encoder and decoder are two distinct modules with separately allocated weights. The two cross-attention layers are two different classes with <em>different parameter shapes</em> — they couldn't share even if you wanted them to. The one thing that IS shared between the encoder and decoder paths is the sensor embedding module, but that's because it's instantiated once at the top level and called from both sides — it's not weight-tying, it's "same module used twice."</p>
+<p>Let me lay out exactly which <code>nn.Parameter</code> tensors live where.</p>
+<hr />
+<h2>The full weight inventory</h2>
+<p>Every module is constructed once in <code>BrainTokenizer.__init__</code> (<a href="external/BrainOmni/braintokenizer/model.py#L34-L66">model.py:34-66</a>). PyTorch allocates fresh parameter tensors per construction. The three sub-modules below are independent.</p>
+<pre><code>BrainTokenizer
+├── self.sensor_embed     ← single BrainSensorModule instance
+├── self.encoder          ← BrainTokenizerEncoder instance
+├── self.quantizer        ← BrainQuantizer instance  (just wraps an RVQ)
+└── self.decoder          ← BrainTokenizerDecoder instance
+</code></pre>
+<h3><code>self.sensor_embed</code>  — <a href="external/BrainOmni/model_utils/module.py#L11-L31">module.py:11-31</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter tensor</th>
+<th>Shape</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sensor_embedding_layer.weight</code></td>
+<td><code>(3, D)</code></td>
+<td>Embedding for sensor <em>type</em> (mag / grad / eeg)</td>
+</tr>
+<tr>
+<td><code>pos_embedding_layer.0.weight/bias</code></td>
+<td><code>(D/2, 6), (D/2)</code></td>
+<td>MLP layer 1 on 6-D position+orientation</td>
+</tr>
+<tr>
+<td><code>pos_embedding_layer.2.weight/bias</code></td>
+<td><code>(D, D/2), (D)</code></td>
+<td>MLP layer 2</td>
+</tr>
+<tr>
+<td><code>aggregate_mlp.*</code> (FeedForward)</td>
+<td>—</td>
+<td>Residual MLP</td>
+</tr>
+<tr>
+<td><code>norm.weight</code></td>
+<td><code>(D,)</code></td>
+<td>RMSNorm gain</td>
+</tr>
+</tbody>
+</table>
+<p>This module is called <strong>twice per forward</strong> — once from inside the encoder's forward, once from inside the decoder's forward — but those two calls hit the <em>same</em> parameters. So in that sense the encoder and decoder <em>do</em> share the sensor-embed weights. It is the only such sharing in the whole model.</p>
+<h3><code>self.encoder</code>  — <code>BrainTokenizerEncoder</code> — <a href="external/BrainOmni/model_utils/module.py#L89-L134">module.py:89-134</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Shape</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>seanet_encoder.*</code></td>
+<td>many conv weights</td>
+<td>1-D conv stack with downsample ratios <code>[8,4,2]</code>. Distinct from the decoder's SEANet.</td>
+</tr>
+<tr>
+<td><code>neuros</code></td>
+<td><code>(N_neuro=16, D)</code></td>
+<td>The learnable latent-source queries. <strong>Encoder-only</strong> — the decoder never references this tensor directly; it sees its <em>post-quantization</em> version flowing through the RVQ.</td>
+</tr>
+<tr>
+<td><code>backwardsolution.v.weight/bias</code></td>
+<td><code>(D, D), (D,)</code></td>
+<td>Value projection in cross-attention</td>
+</tr>
+<tr>
+<td><code>backwardsolution.proj.weight/bias</code></td>
+<td><code>(D, D), (D,)</code></td>
+<td>Output projection</td>
+</tr>
+<tr>
+<td><code>k_proj.weight/bias</code></td>
+<td><code>(D, D), (D,)</code></td>
+<td>Key projection (applied to <code>sensor_feat + sensor_embedding</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3><code>self.quantizer.rvq</code>  — <a href="external/BrainOmni/model_utils/module.py#L138-L171">module.py:138-171</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Shape</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rvq.layers[q].codebook</code></td>
+<td><code>(V=512, codebook_dim)</code> × <code>Q=4</code> layers</td>
+<td>Four separate codebooks, one per RVQ residual layer. They do <strong>not</strong> share entries.</td>
+</tr>
+<tr>
+<td>projection in / out of <code>codebook_dim</code></td>
+<td>small</td>
+<td>Maps <code>n_dim ↔ codebook_dim</code></td>
+</tr>
+</tbody>
+</table>
+<h3><code>self.decoder</code>  — <code>BrainTokenizerDecoder</code> — <a href="external/BrainOmni/model_utils/module.py#L175-L205">module.py:175-205</a></h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Shape</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>forwardsolution.kv.weight/bias</code></td>
+<td><code>(2D, D), (2D,)</code></td>
+<td><strong>Combined K+V projection</strong> — note this is <em>one</em> matrix that outputs both K and V via <code>split(... , dim=-1)</code>.</td>
+</tr>
+<tr>
+<td><code>forwardsolution.proj.weight/bias</code></td>
+<td><code>(D, D), (D,)</code></td>
+<td>Output projection</td>
+</tr>
+<tr>
+<td><code>seanet_decoder.*</code></td>
+<td>many conv weights</td>
+<td>1-D <em>transposed</em> conv stack with reversed ratios. Distinct from the encoder's SEANet.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>So: is anything actually shared between encoder and decoder?</h2>
+<table>
+<thead>
+<tr>
+<th>Pair</th>
+<th>Shared?</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>seanet_encoder</code> ↔ <code>seanet_decoder</code></td>
+<td><strong>No</strong></td>
+<td>Different classes (<code>SEANetEncoder</code> vs <code>SEANetDecoder</code>). Encoder downsamples (strided conv), decoder upsamples (transposed conv). The kernel shapes are mirrored but the <strong>weight tensors are independent</strong>. Even the kernel counts at each stage may differ.</td>
+</tr>
+<tr>
+<td><code>backwardsolution</code> ↔ <code>forwardsolution</code></td>
+<td><strong>No — and structurally cannot be</strong></td>
+<td>They are different classes with different parameter layouts: BackWard has <code>v: Linear(D, D)</code> (K is computed elsewhere via <code>k_proj</code>), Forward has <code>kv: Linear(D, 2D)</code> (K and V from one combined matmul). Different shapes → can't tie.</td>
+</tr>
+<tr>
+<td><code>encoder.k_proj</code> ↔ anything in decoder</td>
+<td><strong>No</strong></td>
+<td>The decoder has no K projection. The role is asymmetric: in the encoder, K comes from sensor features; in the decoder, K and V both come from the latent-neuro stream via one <code>kv</code> matmul.</td>
+</tr>
+<tr>
+<td><code>encoder.neuros</code> ↔ decoder</td>
+<td><strong>No</strong></td>
+<td>The <code>neuros</code> tensor lives only inside the encoder. The decoder sees the <em>quantized output</em> that resulted from a cross-attention against <code>neuros</code>, not the parameter itself.</td>
+</tr>
+<tr>
+<td><code>sensor_embed</code> (encoder side) ↔ <code>sensor_embed</code> (decoder side)</td>
+<td><strong>Yes</strong></td>
+<td>Because <code>self.sensor_embed</code> is one module instance at the top of <code>BrainTokenizer</code>, and both forward paths call it. Same parameter tensors get used both times.</td>
+</tr>
+<tr>
+<td>RVQ codebooks across the 4 layers</td>
+<td><strong>No</strong></td>
+<td>Each residual layer has its own <code>(V, codebook_dim)</code> matrix.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Why the asymmetry matters for our finetune</h2>
+<p>When we <code>freeze SEANet encoder + SEANet decoder</code>, <strong>we freeze two completely separate sets of conv weights</strong>. There's no risk of "I froze one and accidentally also froze the other via tying" — they're independent tensors and you'd have to call <code>requires_grad = False</code> on both, which is exactly what <a href="neural_tokenizers/meg/brainomni/trainer.py#L47-L51">trainer.py:47-51</a> does:</p>
+<pre><code class="language-python">for p in model.encoder.seanet_encoder.parameters(): p.requires_grad = False
+for p in model.decoder.seanet_decoder.parameters(): p.requires_grad = False
+</code></pre>
+<p>Similarly, the cross-attention modules (<code>backwardsolution</code> and <code>forwardsolution</code>) are <strong>independently trainable</strong> — we are training two distinct sets of attention weights, one on each side of the bottleneck. That's the <em>right</em> setup, because the two attention layers have different jobs (271 sensors → 16 neuros vs 16 neuros → 271 sensors), and the data distribution of their queries/keys/values differs.</p>
+<p>And because <code>sensor_embed</code> is the single shared module, when we train it, <strong>one gradient update improves both the encoder's and the decoder's sensor reasoning at once</strong>. That's why the sensor-embed parameter count counts once in the 959k trainable, not twice.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>Confirmed: SEANet encoder ↔ decoder do not share weights, and the two cross-attention modules can't share weights (different shapes). The only genuinely shared parameter set is <code>sensor_embed</code>, which is instantiated once at the top of <code>BrainTokenizer</code> and called from both the encoder and decoder forward passes.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-29T20-25-09-118Z"><div class="index-item-header"><span class="index-item-number">#4</span><time datetime="2026-05-29T20:25:09.118Z" data-timestamp="2026-05-29T20:25:09.118Z">2026-05-29T20:25:09.118Z</time></div><div class="index-item-content"><p>Give me some more stats of using entire thing frozen --&gt; after finetuning</p></div></a><div class="index-item-stats"><span>5 read · 2 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>Zero-shot (3a, fully frozen) vs Finetuned (3b, <code>adapt</code> mode)</h1>
+<p>All numbers are the actual eval JSON values pulled from <a href="neural_tokenizers/meg/brainomni/runs/">neural_tokenizers/meg/brainomni/runs/</a>. Same test split (<code>n=3000</code>, <code>seed=0</code>), same preprocessing, same RVQ shape <code>(16, 8, 4)</code>, same <code>V=512</code>. The only thing that changed between the two columns is the weights.</p>
+<hr />
+<h2>Reconstruction (§5.1) — the metric that moved most</h2>
+<table>
+<thead>
+<tr>
+<th>Metric (n=3000)</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time-domain MSE ↓</td>
+<td><strong>4.346</strong></td>
+<td><strong>1.198</strong></td>
+<td><strong>−72%</strong></td>
+</tr>
+<tr>
+<td>Mean channel Pearson r ↑</td>
+<td>0.345</td>
+<td>0.870</td>
+<td><strong>+0.525 absolute</strong></td>
+</tr>
+<tr>
+<td>PSD MSE ↓</td>
+<td>1.876 × 10⁸</td>
+<td>6.134 × 10⁷</td>
+<td><strong>−67%</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Reading this: <strong>frozen BrainOmni cannot reconstruct THINGS-MEG well at all.</strong> A mean channel correlation of 0.35 means most channels' reconstructions look only weakly related to the originals. After <code>adapt</code> finetune, mean per-channel correlation jumps to 0.87 — that's a real round-trip codec. PSD MSE drops by two-thirds, meaning the spectral envelope (band power) is being preserved properly post-finetune, not just the time-domain envelope.</p>
+<p>This delta is what the freeze decision was buying. The SEANet conv stack already encodes "what does an MEG-shaped waveform look like locally," so the 4.3 → 1.2 MSE jump comes purely from the sensor-embed + cross-attention + RVQ modules learning the THINGS sensor layout and signal distribution.</p>
+<h3>On the full test set (3b only)</h3>
+<table>
+<thead>
+<tr>
+<th>Metric (n≈10k full split)</th>
+<th>3b finetune</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSE</td>
+<td>1.130</td>
+</tr>
+<tr>
+<td>Channel Pearson</td>
+<td>0.870</td>
+</tr>
+<tr>
+<td>PSD MSE</td>
+<td>3.477 × 10⁷</td>
+</tr>
+</tbody>
+</table>
+<p>Numbers stay stable on the larger eval — no overfitting to the 3k subset.</p>
+<hr />
+<h2>Codebook usage (§5.2)</h2>
+<table>
+<thead>
+<tr>
+<th>Metric (n=3000)</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>Ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Codes used</td>
+<td>512 / 512</td>
+<td>512 / 512</td>
+<td>512</td>
+</tr>
+<tr>
+<td>Dead-code fraction</td>
+<td>0.0</td>
+<td>0.0</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Perplexity</td>
+<td>443.3</td>
+<td>493.5</td>
+<td>512</td>
+</tr>
+<tr>
+<td>Entropy (nats)</td>
+<td>6.094</td>
+<td>6.202</td>
+<td>6.238 (= ln 512)</td>
+</tr>
+</tbody>
+</table>
+<p>Both already use every code; finetune nudges the empirical distribution closer to uniform (perplexity 443 → 494 out of a max of 512). In plain terms: even before finetune, no codebook entry was "dead," but several were rarely used; after finetune the codes are more evenly exercised.</p>
+<hr />
+<h2>Sequence structure (§5.4)</h2>
+<table>
+<thead>
+<tr>
+<th>Metric (n=3000)</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>What you want</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unigram entropy</td>
+<td>6.094</td>
+<td>6.202</td>
+<td>↑ (more diverse)</td>
+</tr>
+<tr>
+<td>Bigram conditional entropy</td>
+<td>5.503</td>
+<td>5.851</td>
+<td>close to unigram</td>
+</tr>
+<tr>
+<td>Entropy gap % ↓</td>
+<td>9.69%</td>
+<td><strong>5.65%</strong></td>
+<td>as small as possible</td>
+</tr>
+<tr>
+<td>Mean run length</td>
+<td>1.0017</td>
+<td>1.0019</td>
+<td>≈ 1</td>
+</tr>
+<tr>
+<td>Fraction of trials with a run ≥ 2</td>
+<td>0.582</td>
+<td>0.628</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>The headline here is the <strong>entropy gap</strong>: it nearly halved (9.7% → 5.6%). That means the finetuned model produces sequences where knowing token <code>t_{i-1}</code> gives you much less information about <code>t_i</code> — i.e., the tokens are closer to independent. That's exactly the property a transformer needs to have something to learn.</p>
+<hr />
+<h2>Linear probe (§5.3) — unchanged, both fail</h2>
+<table>
+<thead>
+<tr>
+<th>Metric (n=3000)</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>Random</th>
+<th>Raw waveform</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>top-1 from tokens</td>
+<td>0.17%</td>
+<td>0.00%</td>
+<td>0.17%</td>
+<td>0.33%</td>
+</tr>
+<tr>
+<td>top-5 from tokens</td>
+<td>2.67%</td>
+<td>2.17%</td>
+<td>2.17%</td>
+<td>0.50%</td>
+</tr>
+</tbody>
+</table>
+<p>Both runs are at chance for object-concept decoding. <strong>Reconstruction-only finetuning did not buy semantic decodability.</strong> This is consistent with the parent CLAUDE.md's warning that VQ training can drive reconstruction down while quietly throwing away the small evoked component that carries the stimulus.</p>
+<hr />
+<h2>Training curve — where the gain actually came from</h2>
+<p>From <a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json#L20-L70">V512_rvq4_win512_sf256_3b/config.json:20-70</a>, val composite loss per epoch:</p>
+<table>
+<thead>
+<tr>
+<th>Epoch</th>
+<th>Train</th>
+<th>Val</th>
+<th>Δ val from start</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1.512</td>
+<td>1.444</td>
+<td>—</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1.424</td>
+<td>1.418</td>
+<td>−0.026</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1.410</td>
+<td>1.413</td>
+<td>−0.031</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1.405</td>
+<td>1.408</td>
+<td>−0.036</td>
+</tr>
+<tr>
+<td>4</td>
+<td>1.402</td>
+<td>1.404</td>
+<td>−0.040</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1.400</td>
+<td>1.402</td>
+<td>−0.041</td>
+</tr>
+<tr>
+<td>6</td>
+<td>1.399</td>
+<td>1.403</td>
+<td>−0.040</td>
+</tr>
+<tr>
+<td>7</td>
+<td>1.398</td>
+<td>1.402</td>
+<td>−0.041</td>
+</tr>
+<tr>
+<td>8</td>
+<td>1.397</td>
+<td>1.402</td>
+<td>−0.042</td>
+</tr>
+<tr>
+<td>9</td>
+<td>1.397</td>
+<td><strong>1.401</strong></td>
+<td>−0.043</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Roughly 60% of the total val-loss improvement happened in epoch 0 alone.</strong> The remaining nine epochs each shaved off less than 0.005. This is the classic pretrained-backbone signature: most of the dataset adaptation is the model "snapping into place" on the new sensor layout in the first pass; after that, the optimizer is grinding diminishing returns.</p>
+<p>System-level implication: if you wanted to finetune cheaply, ~3 epochs would capture nearly all of the gain. The 10-epoch run was conservative.</p>
+<hr />
+<h2>Parameter accounting (from 3b config.json)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Count</th>
+<th>% of total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trainable in <code>adapt</code></td>
+<td>959,360</td>
+<td><strong>19.0%</strong></td>
+</tr>
+<tr>
+<td>Total in BrainTokenizer</td>
+<td>5,050,338</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Frozen (SEANet enc + dec)</td>
+<td>4,090,978</td>
+<td>81.0%</td>
+</tr>
+</tbody>
+</table>
+<p>So the <strong>frozen 81% of the model</strong>, on its own, got you channel correlation 0.345. Unfreezing the remaining 19% — sensor embed, cross-attention, RVQ, k_proj, neuros — got you to 0.870, a 2.5× improvement on round-trip fidelity. The conv stack alone is what BrainOmni's 656 hours of pretraining produced; everything dataset-specific had to be learned on THINGS in those 10 epochs.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>The cleanest summary: <strong>freezing 81% of the model and training only the 19% that handles sensor layout, attention bottleneck, and codebooks</strong> cut reconstruction MSE by 72%, raised channel correlation from 0.35 to 0.87, made the token sequence noticeably more transformer-friendly (entropy gap halved), and gained you essentially nothing on linear semantic decodability. About 60% of the gain was in epoch 1.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-05-29T20-26-46-559Z"><div class="index-item-header"><span class="index-item-number">#5</span><time datetime="2026-05-29T20:26:46.559Z" data-timestamp="2026-05-29T20:26:46.559Z">2026-05-29T20:26:46.559Z</time></div><div class="index-item-content"><p>why do we freeze seannet decoder&gt; doesnt this need to learn the finegrain etails of the 16 channels we produce</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>Why frozen SEANet decoder still works — it never sees the 16 channels</h1>
+<p>Your intuition is reasonable but rests on a misreading of where the SEANet decoder sits in the data flow. Let me walk through the decoder forward with actual shapes; the answer falls out.</p>
+<hr />
+<h2>The decoder forward, with shapes</h2>
+<p>From <a href="external/BrainOmni/model_utils/module.py#L191-L205">external/BrainOmni/model_utils/module.py:191-205</a>:</p>
+<pre><code class="language-python">def forward(self, x, sensor_embedding):
+    # x:                (B, 16, N=1, T=8, D)     ← 16 latent neuros, 8 time tokens
+    # sensor_embedding: (B, 271, D)              ← per-sensor embedding
+
+    x = self.forwardsolution(sensor_embedding, x)
+    # ^^^ CROSS-ATTENTION HAPPENS HERE
+    #     queries: sensor embeddings  (271 sensors)
+    #     K/V:     the 16 latents
+    #     output:  (B*N*T, 271, D)    ← already projected to 271-sensor space
+
+    x = rearrange(x, &quot;(B N T) C D -&gt; (B C N) D T&quot;, ...)
+    # ^^^ Reshape so each (sample, sensor) becomes its own (D, T=8) feature map
+
+    x = self.seanet_decoder(x)
+    # ^^^ Operates on (B*271, D, T=8) → (B*271, 1, L=512)
+    #     Each of the 271 sensors' 8-timestep latent gets upsampled independently
+    #     using THE SAME conv kernel
+
+    return rearrange(x, &quot;(B C N) 1 L -&gt; B C N L&quot;, ...)
+    # Output: (B, 271, 1, 512)
+</code></pre>
+<p>The critical fact: <strong>by the time data reaches <code>seanet_decoder</code>, the cross-attention has already converted the 16 latent channels into 271 sensor-space channels.</strong> The SEANet decoder never sees the 16-channel latent space at all.</p>
+<hr />
+<h2>What SEANet decoder actually does</h2>
+<p>It's a 1-D transposed convolution applied <strong>per-output-sensor, with the same kernel for every sensor</strong>. Its job is exactly:</p>
+<blockquote>
+<p>Given an 8-timestep, D-dimensional feature map for <em>one sensor channel</em>, upsample it to a 512-sample waveform that "looks like MEG."</p>
+</blockquote>
+<p>That's it. It's not learning anything about the 16 latents, and it's not learning anything sensor-specific. The sensor specialization is entirely the cross-attention's job (which uses <code>sensor_embedding</code> as queries to mix the right latents for each output sensor).</p>
+<p>So the function the SEANet decoder represents is:</p>
+<pre><code>single-sensor latent (D, T=8)  →  single-sensor waveform (1, L=512)
+</code></pre>
+<p>This function is:
+- <strong>Sensor-agnostic</strong> — same kernel for every output sensor
+- <strong>Dataset-shift robust</strong> — the local temporal structure of an MEG voltage trace (its frequency content, smoothness, transient shapes) is similar across resting-state and event-related MEG. That's what the 656 h of pretraining captured.</p>
+<hr />
+<h2>Now the subtler version of your question</h2>
+<p>You might rephrase: "OK, the SEANet decoder doesn't see the 16 latents directly. But by finetuning the cross-attention + RVQ, I'm changing the <em>feature distribution</em> that gets fed into the frozen decoder. Doesn't that decoder need to adapt to the new feature distribution?"</p>
+<p>That's a real concern. The answer is:</p>
+<p><strong>The frozen decoder acts as a fixed "language" that the trainable upstream layers have to speak.</strong> During finetune, the cross-attention and RVQ learn to emit features that the (frozen) SEANet decoder kernels can interpret as MEG waveforms. This is a <em>feature</em>, not a bug:</p>
+<ol>
+<li><strong>It constrains the upstream layers to produce "MEG-shaped" features</strong>, because anything else would round-trip badly. The decoder is acting as a learned regularizer.</li>
+<li><strong>It prevents catastrophic forgetting</strong>. If we unfroze the decoder, both ends could co-drift to memorize THINGS reconstruction while losing the generic-MEG prior — bad if you ever want to use this tokenizer on another MEG dataset, and bad for generalization.</li>
+<li><strong>It is empirically sufficient.</strong> Channel Pearson 0.87 after <code>adapt</code> says the trainable layers successfully learned to feed the frozen decoder usable features. If the frozen decoder were the bottleneck, we would have plateaued well below 0.87.</li>
+</ol>
+<p>Think of it like this: the SEANet decoder defines a <em>manifold</em> of "valid MEG-shaped reconstructions" in feature space. Finetuning the upstream layers is just teaching them to project THINGS data onto that manifold. We don't need to reshape the manifold; we just need to learn to land on it.</p>
+<hr />
+<h2>When you WOULD unfreeze the SEANet decoder</h2>
+<p>If you suspected the frozen kernels were <em>systematically</em> distorting THINGS waveforms — e.g., zero-shot 3a had reasonable cross-attention but high-frequency MEG transients were being smeared into smooth shapes — then the decoder's local temporal prior would be wrong and unfreezing helps. The diagnostic would be:</p>
+<ul>
+<li>Time-domain MSE plateaus while spectral MSE in the gamma band (30–80 Hz) stays high</li>
+<li>Per-channel residuals look like a fixed kernel-shape error rather than random misfit</li>
+</ul>
+<p>Neither showed up here. PSD MSE dropped 67%, channel correlation went to 0.87 → the kernels were fine.</p>
+<hr />
+<h2>The asymmetric setup, finally</h2>
+<p>To make this concrete, here's the actual freeze structure relative to where the 16-channel bottleneck is:</p>
+<pre><code>Input (B, 271, 512)
+   │
+   ├── seanet_encoder ←──── FROZEN
+   │     per-sensor 1-D conv stack, 512 → 8 timesteps
+   │
+   ├── backwardsolution ←─── TRAINABLE   (271 sensors → 16 latents)
+   │     cross-attention; sensor embeddings as keys
+   │
+   ├── RVQ quantizer ←────── TRAINABLE   (the 16 latents get tokenized)
+   │
+   │    ╔═════════════ This is where the 16 latents live ═════════════╗
+   │
+   ├── forwardsolution ←──── TRAINABLE   (16 latents → 271 sensors)
+   │     cross-attention; sensor embeddings as queries
+   │
+   ├── seanet_decoder ←───── FROZEN
+   │     per-sensor 1-D conv stack, 8 → 512 timesteps
+   │
+Output (B, 271, 512)
+</code></pre>
+<p>Notice the symmetry: <strong>the trainable layers form a contiguous block around the 16-channel bottleneck</strong>, and the frozen SEANet stacks live entirely in 271-sensor space. The "fine-grain details of the 16 channels" you mentioned are exactly what <code>backwardsolution</code>, <code>neuros</code>, the RVQ codebooks, and <code>forwardsolution</code> are responsible for — and all four of those are trainable. The SEANet kernels never touch the 16-channel space.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>The SEANet decoder doesn't see the 16 latent channels — by the time data hits it, the cross-attention has already projected back to 271 sensor channels, and the decoder applies the same per-sensor upsampling kernel to all of them. So freezing it freezes a sensor-agnostic, dataset-shift-robust function; the dataset-specific work of decoding the 16-channel bottleneck is done by the trainable cross-attention right before it.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-05-29T20-28-42-586Z"><div class="index-item-header"><span class="index-item-number">#6</span><time datetime="2026-05-29T20:28:42.586Z" data-timestamp="2026-05-29T20:28:42.586Z">2026-05-29T20:28:42.586Z</time></div><div class="index-item-content"><p>Explain to me clearly what perplexity and entropy means in the codebook usage here</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>Perplexity and entropy in the codebook context</h1>
+<p>These two numbers are answering the same question — "how evenly is the tokenizer using its codebook?" — but in different units. Perplexity is the one that translates directly into intuition; entropy is the mathematically cleaner version that perplexity is built from.</p>
+<hr />
+<h2>The setup</h2>
+<p>You tokenize a big batch of MEG trials and count how often each of the 512 codebook entries gets selected. That gives you an empirical distribution <code>p</code> over the 512 codes:</p>
+<pre><code>p(code_0)   = fraction of all tokens that were code 0
+p(code_1)   = fraction of all tokens that were code 1
+...
+p(code_511) = fraction of all tokens that were code 511
+</code></pre>
+<p>These 512 numbers sum to 1. Entropy and perplexity are summary statistics of this distribution.</p>
+<hr />
+<h2>Entropy: "how spread out is the distribution?"</h2>
+<p>Shannon entropy (in nats, since we use natural log):</p>
+<pre><code>H(p) = − Σᵢ p(i) · ln p(i)
+</code></pre>
+<p>Two extremes:</p>
+<ul>
+<li><strong>Uniform distribution</strong> (<code>p(i) = 1/512</code> for every code): every code gets equal usage. <code>H = ln(512) ≈ 6.238 nats</code>. This is the <strong>maximum possible</strong> entropy.</li>
+<li><strong>Collapsed distribution</strong> (only one code ever gets used, <code>p(0) = 1</code>): <code>H = 0 nats</code>.</li>
+</ul>
+<p>So <code>H</code> ranges from <code>0</code> (collapsed) to <code>ln(V) ≈ 6.238</code> (perfectly uniform). The closer to <code>ln(V)</code>, the better.</p>
+<p>Our numbers (<a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=n3000_s0.json">eval JSONs</a>):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Entropy (nats)</th>
+<th>Fraction of max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3a (frozen)</td>
+<td>6.094</td>
+<td>97.7%</td>
+</tr>
+<tr>
+<td>3b (finetuned)</td>
+<td>6.202</td>
+<td>99.4%</td>
+</tr>
+<tr>
+<td>Max (uniform)</td>
+<td>6.238</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<p>Both runs are very close to maximum-entropy. Finetuning closed about 70% of the remaining gap.</p>
+<hr />
+<h2>Perplexity: "effective number of codes in use"</h2>
+<p>Perplexity is just entropy run through <code>exp</code>:</p>
+<pre><code>perplexity = exp(H(p))
+</code></pre>
+<p>That looks like a random transform, but it gives you a much more interpretable number: <strong>perplexity is the size of a uniform distribution that would have the same entropy as <code>p</code></strong>.</p>
+<p>Concretely:</p>
+<ul>
+<li>If <code>H = ln(512)</code>, perplexity = 512 → the distribution is "as spread out as a uniform over 512 codes." You're effectively using all 512.</li>
+<li>If <code>H = ln(100)</code>, perplexity = 100 → your distribution is "as spread out as a uniform over 100 codes." Even if all 512 are technically used, the rare ones contribute so little that the effective vocabulary is only 100.</li>
+<li>If <code>H = 0</code>, perplexity = 1 → "as spread out as a uniform over 1 code" = degenerate, one code dominates.</li>
+</ul>
+<p>Our numbers:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Perplexity</th>
+<th>Fraction of V=512</th>
+<th>Wasted codebook capacity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3a (frozen)</td>
+<td>443.3</td>
+<td>86.6%</td>
+<td>~69 codes worth</td>
+</tr>
+<tr>
+<td>3b (finetuned)</td>
+<td>493.5</td>
+<td>96.4%</td>
+<td>~18 codes worth</td>
+</tr>
+<tr>
+<td>Max (uniform)</td>
+<td>512</td>
+<td>100%</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the 3a row: you have 512 codes available, but the way they're being used is only as informative as a uniform draw from 443 of them. About 69 codes are "wasted" in the sense that they're rarely selected and barely contribute. After finetuning, that wasted capacity shrinks to ~18 codes worth.</p>
+<hr />
+<h2>Why "codes_used = 512" but perplexity &lt; 512</h2>
+<p>This is the subtle bit. Both 3a and 3b report <code>codes_used = 512</code> and <code>dead_code_fraction = 0</code>. That means every single code got picked at least once on the eval set. So how can perplexity be less than 512?</p>
+<p>Because <strong>"used at least once" is a much weaker statement than "used uniformly."</strong> Consider a toy example with <code>V = 3</code>:</p>
+<ul>
+<li>Distribution A: <code>p = (1/3, 1/3, 1/3)</code>. All 3 codes used. Entropy = <code>ln(3) ≈ 1.099</code>. Perplexity = 3.</li>
+<li>Distribution B: <code>p = (0.998, 0.001, 0.001)</code>. All 3 codes used (rare codes aren't dead). Entropy ≈ <code>0.018</code>. Perplexity ≈ <code>1.02</code>.</li>
+</ul>
+<p>In B, the codebook reports "3/3 codes used, 0 dead," but the model is effectively a one-code tokenizer. Dead-code fraction is a binary test (was code <code>i</code> ever selected?), while perplexity is a <em>continuous</em> measure that penalizes uneven distributions.</p>
+<p>This is exactly why we report both:</p>
+<ul>
+<li><code>codes_used</code> / <code>dead_code_fraction</code> catches <strong>gross collapse</strong> (codes that literally never fire).</li>
+<li><code>perplexity</code> catches <strong>soft collapse</strong> (codes that fire too rarely to carry information).</li>
+</ul>
+<p>Our tokenizer passes the gross check on both runs but the soft check tells us finetune made the distribution noticeably flatter.</p>
+<hr />
+<h2>A worked sanity check on our numbers</h2>
+<p>3a entropy is 6.094 nats. Convert to perplexity:</p>
+<pre><code>exp(6.094) ≈ 442.7    ← matches the reported 443.3 (modulo rounding)
+</code></pre>
+<p>3b entropy is 6.202 nats:</p>
+<pre><code>exp(6.202) ≈ 493.5    ← matches exactly
+</code></pre>
+<p>Max possible:</p>
+<pre><code>ln(512) = 6.2383
+exp(6.2383) = 512
+</code></pre>
+<p>So they really are the same number expressed two ways.</p>
+<hr />
+<h2>Why we care</h2>
+<p>A VQ tokenizer with low perplexity is a tokenizer that's <strong>leaving capacity on the table</strong>. The whole point of <code>V = 512</code> is to give 4M a 512-way vocabulary; if the actual usage is concentrated on 100 codes, you might as well have built a <code>V = 100</code> tokenizer and saved memory. Conversely, a tokenizer where perplexity is close to <code>V</code> is using its codebook the way the codebook was designed to be used: every entry is doing real work.</p>
+<p>The trajectory <code>443 → 494</code> (out of 512) tells us finetune mostly <em>equalized</em> a codebook that was already broadly used but lopsided. It didn't unlock dead codes (there were none); it just redistributed mass off of overused codes onto underused ones.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>Entropy = how spread out the token distribution is, max = <code>ln(V) ≈ 6.238</code> for <code>V=512</code>. Perplexity = <code>exp(entropy)</code> = effective vocabulary size, max = <code>V = 512</code>. Our 3a → 3b move was 443 → 494, meaning finetune turned a "mostly-but-unevenly-used" codebook into a "nearly-uniformly-used" one — using 96% of capacity instead of 87%, with no dead codes either way.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-05-29T20-32-34-316Z"><div class="index-item-header"><span class="index-item-number">#7</span><time datetime="2026-05-29T20:32:34.316Z" data-timestamp="2026-05-29T20:32:34.316Z">2026-05-29T20:32:34.316Z</time></div><div class="index-item-content"><p>now explain each stat in sequence structure</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>Sequence structure — what each stat is asking</h1>
+<p>The four codebook stats from last time told you "are all the codes being used?" The four sequence stats now ask a different question:</p>
+<blockquote>
+<p>Given a sequence of tokens for one trial — say <code>[42, 117, 9, 311, 88, ...]</code> — does the sequence have anything left to <em>predict</em>, or is it so redundant that a transformer has nothing to learn?</p>
+</blockquote>
+<p>This matters because 4M's training objective is "given some context tokens, predict the masked ones." If the tokenizer emits sequences where the next token is trivially determined by the previous one (e.g., always the same as the previous, or always alternating), the masked-prediction task is solved without learning anything generalizable. The model converges; nothing transfers. <strong>The sequence stats are designed to catch this silent failure.</strong></p>
+<p>Here are our numbers (<a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/evals/eval_ntest=n3000_s0.json">3a eval JSON</a> and <a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=n3000_s0.json">3b</a>) again as the reference:</p>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>Max possible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unigram_entropy</code></td>
+<td>6.094</td>
+<td>6.202</td>
+<td>6.238</td>
+</tr>
+<tr>
+<td><code>bigram_conditional_entropy</code></td>
+<td>5.503</td>
+<td>5.851</td>
+<td>6.238</td>
+</tr>
+<tr>
+<td><code>entropy_gap_pct</code></td>
+<td>9.69%</td>
+<td>5.65%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><code>mean_run_length</code></td>
+<td>1.0017</td>
+<td>1.0019</td>
+<td>1.0 (ideal)</td>
+</tr>
+<tr>
+<td><code>frac_runs_ge_2</code></td>
+<td>0.582</td>
+<td>0.628</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>1. <code>unigram_entropy</code> — how spread out is the marginal token distribution?</h2>
+<p>This is exactly the codebook entropy from last time, just computed on the full <em>flattened token stream</em> over all trials in the test set, not on a single trial.</p>
+<pre><code>H(t) = − Σᵢ p(i) · ln p(i)         where p(i) = fraction of all tokens equal to code i
+</code></pre>
+<p>Max possible: <code>ln(512) ≈ 6.238</code> (every code used equally).</p>
+<p>Why report it again in the sequence section: the codebook section's entropy is sometimes computed <em>per RVQ layer</em> or across a specific subset; the sequence section computes it on whatever exact token stream the harness is treating as "the sequence." Reporting both is a consistency check — they should be close, and they are (6.094 nats matches the codebook section).</p>
+<p><strong>Reading our numbers:</strong> healthy. Both runs are within a hair of the maximum.</p>
+<hr />
+<h2>2. <code>bigram_conditional_entropy</code> — given the previous token, how much uncertainty is left?</h2>
+<p>This is the key one. Bigram conditional entropy is:</p>
+<pre><code>H(tᵢ | tᵢ₋₁) = − Σⱼ p(tᵢ₋₁ = j) · Σₖ p(tᵢ = k | tᵢ₋₁ = j) · ln p(tᵢ = k | tᵢ₋₁ = j)
+</code></pre>
+<p>In plain English: for each possible "previous token" value <code>j</code>, look at the distribution of "next tokens" <code>k</code> that follow it. Compute the entropy of that conditional distribution. Then average those entropies, weighted by how often token <code>j</code> actually occurs.</p>
+<p>Two intuition-building extreme cases:</p>
+<ul>
+<li><strong>Perfectly i.i.d. tokens</strong> (next token completely independent of previous): <code>H(tᵢ | tᵢ₋₁) = H(tᵢ)</code>. Knowing the previous token tells you nothing about the next.</li>
+<li><strong>Perfectly deterministic transitions</strong> (every token uniquely determines the next): <code>H(tᵢ | tᵢ₋₁) = 0</code>. Knowing one token tells you everything.</li>
+</ul>
+<p>For a <em>transformer to have something to learn</em>, you want <code>H(tᵢ | tᵢ₋₁)</code> close to <code>H(tᵢ)</code>. That's the "transitions are nearly independent of the previous token, so the model has to use <em>longer</em> context to predict" regime.</p>
+<p>If <code>H(tᵢ | tᵢ₋₁) = 0</code>, the transformer's next-token prediction is trivial — <code>tᵢ</code> is fully determined by <code>tᵢ₋₁</code>. It learns the identity function and nothing more.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 5.503 nats — knowing the previous token reduced uncertainty from 6.094 → 5.503 nats. The previous token contained <code>6.094 − 5.503 = 0.591</code> nats of information about the next.
+- 3b: 5.851 nats — knowing the previous token reduced uncertainty from 6.202 → 5.851 nats. Only <code>0.351</code> nats of information leaked.</p>
+<p>So finetuning made consecutive tokens <strong>more independent of each other</strong> — a transformer trained on 3b tokens has more left to learn from the previous-token cue than one trained on 3a tokens. Good.</p>
+<hr />
+<h2>3. <code>entropy_gap_pct</code> — the previous two, expressed as a fraction</h2>
+<pre><code>entropy_gap_pct = (unigram_entropy − bigram_conditional_entropy) / unigram_entropy × 100
+</code></pre>
+<p>This normalizes the "how much does the previous token tell you about the next" quantity by the total marginal entropy, so you can compare tokenizers with different vocab sizes apples-to-apples.</p>
+<p>Bounds:
+- <code>0%</code> = consecutive tokens are perfectly independent. Ideal.
+- <code>100%</code> = consecutive tokens are perfectly deterministic. Maximum redundancy.</p>
+<p>The parent CLAUDE.md §5 sets <code>&lt;20%</code> as a "healthy" pass threshold.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 9.69% — already healthy.
+- 3b: 5.65% — even closer to i.i.d. Roughly halved.</p>
+<p>In dollar terms: 3b sequences look more like fresh dice rolls (good for transformer learning), 3a sequences are slightly more "the next token kind of looks like the previous one" (still passing, but less ideal).</p>
+<hr />
+<h2>4. <code>mean_run_length</code> — the most direct redundancy test</h2>
+<p>A "run" is a stretch of the sequence where the same token repeats. For example, in <code>[7, 7, 7, 12, 3, 3, 88]</code> you have runs of lengths <code>3, 1, 2, 1</code>. Mean run length is <code>(3+1+2+1)/4 = 1.75</code>.</p>
+<p>Two extreme cases:
+- All tokens unique (<code>[7, 12, 3, 88, 41]</code>): mean run length = 1.0. Best.
+- All tokens identical (<code>[7, 7, 7, 7, 7]</code>): mean run length = sequence length. Worst — the tokenizer has effectively emitted <em>one</em> code per trial, padded out.</p>
+<p>This is the most visually obvious sign of collapse: if your tokenizer keeps spitting out the same code 8 times in a row, masked-token prediction is trivially solvable and 4M learns nothing.</p>
+<p><strong>Reading our numbers:</strong> both runs are ~1.002, basically the floor. Consecutive identical tokens are essentially nonexistent. Finetune didn't move this — there was nothing to fix.</p>
+<hr />
+<h2>5. <code>frac_runs_ge_2</code> — how many trials have <em>any</em> repeat?</h2>
+<p>The fraction of trials that contain at least one run of length ≥ 2 (i.e., at least one place where <code>tᵢ = tᵢ₋₁</code>).</p>
+<p>This is a coarser, complementary measure to mean run length. Mean run length tells you the average; <code>frac_runs_ge_2</code> tells you the <em>prevalence</em>. You could have a low mean run length (good) but still have some pathological trials where one token repeats a lot — that case would show up here.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 58.2% of trials have at least one repeat somewhere
+- 3b: 62.8% of trials have at least one repeat somewhere</p>
+<p>This one <em>got slightly worse</em> after finetune, which initially looks bad. But notice that <strong>mean run length stayed at ~1.002 in both cases</strong>, so the repeats are isolated <code>(tᵢ, tᵢ₊₁) = (k, k)</code> events, not long runs. Combined with the entropy-gap improvement (9.69% → 5.65%), the picture is: finetune produced sequences where occasional adjacent repeats happen by chance (consistent with a more uniform / more i.i.d. emission), but those repeats are statistically incidental rather than evidence of collapse. If anything, an i.i.d. process <em>should</em> have some adjacent repeats: a uniform draw from 512 codes over a length-512 sequence will have expected number of adjacent equal pairs <code>≈ 511/512 ≈ 1</code>, so the per-trial probability of at least one repeat is high.</p>
+<p>This is a good example of why you need to read sequence stats together: any one number is ambiguous in isolation.</p>
+<hr />
+<h2>6. <code>max_possible_entropy</code> — the ceiling, included for reference</h2>
+<pre><code>max_possible_entropy = ln(V) = ln(512) ≈ 6.238
+</code></pre>
+<p>This is constant per tokenizer. It's reported so the reader can quickly check <code>unigram_entropy / max_possible_entropy</code> to see how close to maximum-spread the marginal is — and so the harness's "is this number good?" thresholds can be relative to vocab size rather than absolute. A tokenizer with <code>V = 128</code> and <code>unigram_entropy = 4.8</code> looks worse than one with <code>V = 512</code> and <code>unigram_entropy = 6.0</code> in absolute terms, but actually has higher fractional codebook usage (<code>4.8 / ln(128) = 99%</code> vs <code>6.0 / ln(512) = 96%</code>).</p>
+<hr />
+<h2>Putting the four diagnostic stats together</h2>
+<p>The four real measurements (ignoring <code>max_possible_entropy</code>, which is a constant) form a layered diagnostic:</p>
+<table>
+<thead>
+<tr>
+<th>Measures</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unigram_entropy</code></td>
+<td>Is the marginal distribution spread out? (single-token redundancy)</td>
+</tr>
+<tr>
+<td><code>bigram_conditional_entropy</code> + <code>entropy_gap_pct</code></td>
+<td>Are consecutive tokens redundant with each other? (transformer has nothing to learn)</td>
+</tr>
+<tr>
+<td><code>mean_run_length</code></td>
+<td>Severity of the most visible collapse pattern (long repeats)</td>
+</tr>
+<tr>
+<td><code>frac_runs_ge_2</code></td>
+<td>Prevalence of even short repeats</td>
+</tr>
+</tbody>
+</table>
+<p>A healthy tokenizer hits roughly: unigram entropy near max, entropy gap &lt; 20%, mean run length ≈ 1.0, <code>frac_runs_ge_2</code> consistent with an i.i.d. process at that vocab size.</p>
+<p>Our 3b run satisfies all four: 6.20 / 6.24 marginal, 5.6% gap, 1.002 mean run, 62.8% repeat-prevalence (in the ballpark of what pure chance predicts at <code>V=512</code>, <code>L=512</code>). The sequence is transformer-ready in the structural sense — whether it carries <em>semantic content</em> is a separate question (the linear probe), and that one still fails.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>Marginal entropy = "are the codes evenly used overall." Bigram conditional entropy = "given the previous token, how much uncertainty is left about the next." Entropy gap % = those two as a normalized redundancy fraction. Mean run length = "how long do same-code stretches get on average." Frac runs ≥ 2 = "how many trials have any adjacent repeat at all." Together they catch every flavor of "transformer-unlearnable sequence collapse." Our 3b run passes all four.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-05-29T20-37-49-533Z"><div class="index-item-header"><span class="index-item-number">#8</span><time datetime="2026-05-29T20:37:49.533Z" data-timestamp="2026-05-29T20:37:49.533Z">2026-05-29T20:37:49.533Z</time></div><div class="index-item-content"><p>also explain mutransforma nd why we used it as a baseline</p></div></a><div class="index-item-stats"><span>2 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><h1>μ-transform — what it is and why it's the baseline</h1>
+<p>The μ-transform isn't a deep learning model at all. It's a 50-year-old idea from telephone audio compression, repurposed by Cho et al. 2026 as a "what's the dumbest sensible tokenizer for neural data?" baseline. Walking through it tells you a lot about what we mean by "tokenizer" in the first place.</p>
+<hr />
+<h2>1. The big picture: a stateless per-sample codec</h2>
+<p>μ-transform takes one MEG sample (one float — say the voltage at one sensor at one timepoint) and maps it to one integer in <code>[0, V)</code>. That's literally it. Apply it independently to every (channel, timepoint) cell of a trial and you get a <code>(271, 281)</code> grid of integers.</p>
+<p>Compare to BrainOmni: BrainOmni reads 271 sensors × 512 timepoints and emits <strong>512 integers</strong> total for the whole trial. μ-transform reads the same input and emits <strong>271 × 281 = 76,151 integers</strong> — one per input sample. So μ-transform is barely "compression" — it's <em>requantization</em>. It replaces 32-bit floats with 8-bit integers, like converting WAV to telephone-quality audio.</p>
+<p>This is the production-pipeline reason BrainOmni wins for 4M, even though μ-transform "wins" reconstruction: BrainOmni's 512 tokens fit in a transformer context; μ-transform's 76k tokens don't.</p>
+<hr />
+<h2>2. The four-step pipeline</h2>
+<p><a href="neural_tokenizers/meg/mu_transform/encoder.py#L20-L45">mu_transform/encoder.py:20-45</a> and <a href="neural_tokenizers/meg/mu_transform/quantizer.py#L18-L30">mu_transform/quantizer.py:18-30</a>:</p>
+<h3>Step 1 — Clip</h3>
+<pre><code>x_clipped = clamp(x, q_lo[c], q_hi[c])
+</code></pre>
+<p>For each channel <code>c</code>, clip the voltage to a per-channel range — defaults <code>[0.5th, 99.5th]</code> percentiles of that channel's distribution on the training data. This kills extreme outliers (movement artifacts, electrode glitches) that would otherwise eat up the codec's dynamic range.</p>
+<p>Why per-channel: different MEG sensors record different absolute amplitudes depending on where they sit on the head. A global clip would over-clip quiet sensors and under-clip loud ones.</p>
+<h3>Step 2 — Max-abs scale to [−1, 1]</h3>
+<pre><code>x_scaled = x_clipped / s[c]      where s[c] = max(|x|) on channel c
+</code></pre>
+<p>Per-channel rescale so each channel's signal lives in <code>[−1, 1]</code>. Now every channel speaks the same numerical units regardless of physical amplitude. The bin grid we'll apply next is universal across channels.</p>
+<h3>Step 3 — μ-law compand</h3>
+<pre><code>F(x) = sign(x) · log(1 + μ·|x|) / log(1 + μ)         with μ = 255
+</code></pre>
+<p>This is the telephone trick. A plain uniform quantizer of 256 bins on <code>[−1, 1]</code> would waste resolution on the rarely-occupied tails and starve the densely-occupied middle. μ-law warps the input so small values get <em>expanded</em> (more dynamic range allocated to the dense center) and large values get <em>compressed</em> (less resolution where data is rare).</p>
+<p>Visually, the input-output curve looks like an S, steep near 0 and flat near ±1. After companding, the distribution is roughly uniform on <code>[−1, 1]</code> — exactly what a uniform binner wants to see.</p>
+<p>The constant <code>μ = 255</code> is a historical choice from G.711 telephony, kept by Cho 2026 for continuity.</p>
+<h3>Step 4 — Uniform binning</h3>
+<pre><code>token = floor((F(x) + 1) / 2 · V)        with V = 256
+</code></pre>
+<p>Slice <code>[−1, 1]</code> into 256 equal-width bins, emit the bin index. That's the integer token.</p>
+<p>The inverse is <strong>bin-center lookup</strong>: token <code>i</code> → <code>−1 + (i + 0.5) · 2/V</code> → inverse μ-law → multiply by <code>s[c]</code> → reconstructed voltage. No learning, no decoder weights.</p>
+<hr />
+<h2>3. "Calibration": what "fit" means without gradients</h2>
+<p>μ-transform has zero gradient-descent weights, but it still has two <strong>dataset-dependent parameters per channel</strong> that must be set before inference:</p>
+<ul>
+<li><code>s[c]</code> — the per-channel max-abs scaler</li>
+<li><code>(q_lo[c], q_hi[c])</code> — per-channel clip thresholds</li>
+</ul>
+<p>These are estimated on the training split, written to a small JSON sidecar (<code>calibration.json</code>), and reused frozen at inference. The CLAUDE.md calls this "calibration" specifically to distinguish it from "training." Think of it as fitting a statistic, not a model.</p>
+<p>The hyperparameters <code>μ = 255</code>, <code>V = 256</code>, percentile choice <code>[0.5, 99.5]</code> are <strong>not</strong> fit — they're paper defaults.</p>
+<p>The shipped artifact is the JSON; total state is <code>271 × 3 + 2 ≈ 815</code> numbers. Compare to BrainOmni's 5M parameters.</p>
+<hr />
+<h2>4. Why it's the baseline — four concrete reasons</h2>
+<h3>(a) Floor on the leaderboard</h3>
+<p>If you ship a deep tokenizer that fails to beat a stateless 50-year-old telecom codec on some axis, you've learned something important — either the deep model is broken or that axis is not what differentiates them. Without a floor, you have no idea whether your fancy tokenizer's MSE of 1.2 is "good" or "barely above hand-crafted." With the floor present, you can see immediately that BrainOmni 3a's MSE of 4.35 is <em>worse than the trivial baseline</em> — that's how we knew zero-shot wasn't enough.</p>
+<h3>(b) Harness sanity check</h3>
+<p>The §5 evaluation harness has to compute reconstruction MSE, channel Pearson, PSD MSE, codebook perplexity, bigram entropies, linear probes on a multi-axis dataset. Any one of those metrics could be implemented wrong. The μ-transform tokenizer is so trivially analyzable that you know what every metric <em>should</em> return — near-perfect MSE, full codebook utilization, no degenerate runs. If the harness produces a surprising number on μ-transform, the harness is the bug. If it agrees with hand-derived expectations on μ-transform, you trust it on BrainOmni.</p>
+<p>This is the same principle as testing a sort function on a 3-element input before trusting it on a million-element input.</p>
+<h3>(c) Defers the deep architecture commitment</h3>
+<p>The parent CLAUDE.md is explicit about this: "avoid prematurely committing to a deep architecture before we know what 'good enough' looks like on this specific THINGS-MEG distribution." Numbers from the baseline tell you what the easy part of the problem looks like — once you see μ-transform achieves 0.998 channel Pearson, you know reconstruction <em>per se</em> is not hard on this data; the hard part must be elsewhere (semantic content, downstream task accuracy, sequence compressibility). That reframes what Phase 2/3 actually has to deliver.</p>
+<h3>(d) Reveals the trivial-vs-meaningful distinction</h3>
+<p>This is the most interesting one. μ-transform shows that you can ace reconstruction (<code>MSE = 1.0</code>, <code>Pearson = 0.998</code>) and <em>still</em> fail the linear probe (top-1 ≈ chance). That's structural: if the <em>hand-crafted codec</em> fails the probe, the probe failure cannot be the deep model's fault — it's an inherent property of "reconstruction-quality tokens." This is what motivated the BrainOmni §5 verdict ("probe failure is expected under reconstruction-only training").</p>
+<p>Without the baseline, when BrainOmni 3b also failed the probe you might have concluded "BrainOmni is broken, try harder." With the baseline, you can see that even a near-perfect codec doesn't carry concept-decodability, so the issue is the training objective, not the tokenizer architecture.</p>
+<hr />
+<h2>5. What μ-transform's strengths and weaknesses tell you</h2>
+<p>The §5 leaderboard numbers from CLAUDE.md §9, read with this framing:</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>μ-transform</th>
+<th>What it teaches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSE = 0.999, channel Pearson = 0.998</td>
+<td>Near-invertible per-sample codec</td>
+<td>Reconstruction is "easy" — almost any sensible codec gets there. <strong>Reconstruction is a <em>necessary</em> but not <em>sufficient</em> property.</strong></td>
+</tr>
+<tr>
+<td>PSD MSE = 1.01 × 10⁹ (much worse than BrainOmni 3b's 6.13 × 10⁷)</td>
+<td>Time-domain perfection doesn't imply spectral perfection</td>
+<td>Per-sample quantization noise is white-ish, which dumps energy across the whole spectrum and corrupts band power. <strong>MEG cares about bands.</strong></td>
+</tr>
+<tr>
+<td>256/256 codes used, perplexity 194 (out of 256 = 76%)</td>
+<td>A simple codec already uses its codebook well</td>
+<td>Codebook utilization is a <em>low</em> bar. Failing it means something is really broken; passing doesn't prove anything interesting.</td>
+</tr>
+<tr>
+<td>Entropy gap 22.9%, frac_runs_ge_2 = 1.0</td>
+<td>Strong adjacent-sample redundancy</td>
+<td>A per-sample codec on continuous data is <em>guaranteed</em> to produce highly autocorrelated token streams — neighboring MEG samples are very similar, so they map to neighboring or identical bins. <strong>This is the "transformer would have nothing to learn" failure mode</strong>, made obvious in the baseline.</td>
+</tr>
+<tr>
+<td>Linear probe top-1 ≈ chance</td>
+<td>Reconstruction-quality tokens carry no decodable concept signal</td>
+<td>The failure is in the training objective, not the architecture. (Confirmed once BrainOmni 3b also fails it.)</td>
+</tr>
+<tr>
+<td>76,151 tokens per trial</td>
+<td>No real compression</td>
+<td>Disqualifies it from 4M production. <strong>This single fact is why μ-transform is a baseline and not a candidate.</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>End-of-turn</h2>
+<p>μ-transform is a stateless per-sample codec (clip → scale → μ-law → bin) borrowed from telephone audio. It's the baseline because (a) it's the simplest thing that fits the <code>Tokenizer</code> interface, (b) it lets us sanity-check the evaluation harness against numbers we can derive by hand, (c) it puts a floor on what counts as "real compression," and (d) its passes-reconstruction-but-fails-probe pattern is what showed us that the linear-probe failure is intrinsic to reconstruction-only training, not a BrainOmni bug. It will never ship into 4M — 76k tokens per trial doesn't fit in a transformer context — but it makes every later number interpretable.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+
+        <dialog id="search-modal">
+            <div class="search-modal-header">
+                <input type="text" id="modal-search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="modal-search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+                <button id="modal-close-btn" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </dialog>
+        <script>
+(function() {
+    var totalPages = 2;
+    var searchBox = document.getElementById('search-box');
+    var searchInput = document.getElementById('search-input');
+    var searchBtn = document.getElementById('search-btn');
+    var modal = document.getElementById('search-modal');
+    var modalInput = document.getElementById('modal-search-input');
+    var modalSearchBtn = document.getElementById('modal-search-btn');
+    var modalCloseBtn = document.getElementById('modal-close-btn');
+    var searchStatus = document.getElementById('search-status');
+    var searchResults = document.getElementById('search-results');
+
+    if (!searchBox || !modal) return;
+
+    // Hide search on file:// protocol (doesn't work due to CORS restrictions)
+    if (window.location.protocol === 'file:') return;
+
+    // Show search box (progressive enhancement)
+    searchBox.style.display = 'flex';
+
+    // Gist preview support - detect if we're on gisthost.github.io or gistpreview.github.io
+    var hostname = window.location.hostname;
+    var isGistPreview = hostname === 'gisthost.github.io' || hostname === 'gistpreview.github.io';
+    var gistId = null;
+    var gistOwner = null;
+    var gistInfoLoaded = false;
+
+    if (isGistPreview) {
+        // Extract gist ID from URL query string like ?78a436a8a9e7a2e603738b8193b95410/index.html
+        var queryMatch = window.location.search.match(/^\?([a-f0-9]+)/i);
+        if (queryMatch) {
+            gistId = queryMatch[1];
+        }
+    }
+
+    async function loadGistInfo() {
+        if (!isGistPreview || !gistId || gistInfoLoaded) return;
+        try {
+            var response = await fetch('https://api.github.com/gists/' + gistId);
+            if (response.ok) {
+                var info = await response.json();
+                gistOwner = info.owner.login;
+                gistInfoLoaded = true;
+            }
+        } catch (e) {
+            console.error('Failed to load gist info:', e);
+        }
+    }
+
+    function getPageFetchUrl(pageFile) {
+        if (isGistPreview && gistOwner && gistId) {
+            // Use raw gist URL for fetching content
+            return 'https://gist.githubusercontent.com/' + gistOwner + '/' + gistId + '/raw/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function getPageLinkUrl(pageFile) {
+        if (isGistPreview && gistId) {
+            // Use gistpreview URL format for navigation links
+            return '?' + gistId + '/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openModal(query) {
+        modalInput.value = query || '';
+        searchResults.innerHTML = '';
+        searchStatus.textContent = '';
+        modal.showModal();
+        modalInput.focus();
+        if (query) {
+            performSearch(query);
+        }
+    }
+
+    function closeModal() {
+        modal.close();
+        // Update URL to remove search fragment, preserving path and query string
+        if (window.location.hash.startsWith('#search=')) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }
+
+    function updateUrlHash(query) {
+        if (query) {
+            // Preserve path and query string when adding hash
+            history.replaceState(null, '', window.location.pathname + window.location.search + '#search=' + encodeURIComponent(query));
+        }
+    }
+
+    function highlightTextNodes(element, searchTerm) {
+        var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        var nodesToReplace = [];
+
+        while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node.nodeValue.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(function(node) {
+            var text = node.nodeValue;
+            var regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            var parts = text.split(regex);
+            if (parts.length > 1) {
+                var span = document.createElement('span');
+                parts.forEach(function(part) {
+                    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                        var mark = document.createElement('mark');
+                        mark.textContent = part;
+                        span.appendChild(mark);
+                    } else {
+                        span.appendChild(document.createTextNode(part));
+                    }
+                });
+                node.parentNode.replaceChild(span, node);
+            }
+        });
+    }
+
+    function fixInternalLinks(element, pageFile) {
+        // Update all internal anchor links to include the page file
+        var links = element.querySelectorAll('a[href^="#"]');
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            link.setAttribute('href', pageFile + href);
+        });
+    }
+
+    function processPage(pageFile, html, query) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var resultsFromPage = 0;
+
+        // Find all message blocks
+        var messages = doc.querySelectorAll('.message');
+        messages.forEach(function(msg) {
+            var text = msg.textContent || '';
+            if (text.toLowerCase().indexOf(query.toLowerCase()) !== -1) {
+                resultsFromPage++;
+
+                // Get the message ID for linking
+                var msgId = msg.id || '';
+                var pageLinkUrl = getPageLinkUrl(pageFile);
+                var link = pageLinkUrl + (msgId ? '#' + msgId : '');
+
+                // Clone the message HTML and highlight matches
+                var clone = msg.cloneNode(true);
+                // Fix internal links to include the page file
+                fixInternalLinks(clone, pageLinkUrl);
+                highlightTextNodes(clone, query);
+
+                var resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<a href="' + link + '">' +
+                    '<div class="search-result-page">' + escapeHtml(pageFile) + '</div>' +
+                    '<div class="search-result-content">' + clone.innerHTML + '</div>' +
+                    '</a>';
+                searchResults.appendChild(resultDiv);
+            }
+        });
+
+        return resultsFromPage;
+    }
+
+    async function performSearch(query) {
+        if (!query.trim()) {
+            searchStatus.textContent = 'Enter a search term';
+            return;
+        }
+
+        updateUrlHash(query);
+        searchResults.innerHTML = '';
+        searchStatus.textContent = 'Searching...';
+
+        // Load gist info if on gistpreview (needed for constructing URLs)
+        if (isGistPreview && !gistInfoLoaded) {
+            searchStatus.textContent = 'Loading gist info...';
+            await loadGistInfo();
+            if (!gistOwner) {
+                searchStatus.textContent = 'Failed to load gist info. Search unavailable.';
+                return;
+            }
+        }
+
+        var resultsFound = 0;
+        var pagesSearched = 0;
+
+        // Build list of pages to fetch
+        var pagesToFetch = [];
+        for (var i = 1; i <= totalPages; i++) {
+            pagesToFetch.push('page-' + String(i).padStart(3, '0') + '.html');
+        }
+
+        searchStatus.textContent = 'Searching...';
+
+        // Process pages in batches of 3, but show results immediately as each completes
+        var batchSize = 3;
+        for (var i = 0; i < pagesToFetch.length; i += batchSize) {
+            var batch = pagesToFetch.slice(i, i + batchSize);
+
+            // Create promises that process results immediately when each fetch completes
+            var promises = batch.map(function(pageFile) {
+                return fetch(getPageFetchUrl(pageFile))
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.text();
+                    })
+                    .then(function(html) {
+                        // Process and display results immediately
+                        var count = processPage(pageFile, html, query);
+                        resultsFound += count;
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    })
+                    .catch(function() {
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    });
+            });
+
+            // Wait for this batch to complete before starting the next
+            await Promise.all(promises);
+        }
+
+        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + totalPages + ' pages';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', function() {
+        openModal(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            openModal(searchInput.value);
+        }
+    });
+
+    modalSearchBtn.addEventListener('click', function() {
+        performSearch(modalInput.value);
+    });
+
+    modalInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(modalInput.value);
+        }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Check for #search= in URL on page load
+    if (window.location.hash.startsWith('#search=')) {
+        var query = decodeURIComponent(window.location.hash.substring(8));
+        if (query) {
+            searchInput.value = query;
+            openModal(query);
+        }
+    }
+})();
+        </script>
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

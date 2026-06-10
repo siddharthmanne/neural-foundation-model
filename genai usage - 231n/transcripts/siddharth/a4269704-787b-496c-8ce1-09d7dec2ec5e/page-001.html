@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 1</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 1/1</h1>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+        
+<div class="message user" id="msg-2026-05-28T06-29-08-519Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-28T06-29-08-519Z" class="timestamp-link"><time datetime="2026-05-28T06:29:08.519Z" data-timestamp="2026-05-28T06:29:08.519Z">2026-05-28T06:29:08.519Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>during validation how does it select specific examples to carry out validation? randomly? does it mask each example in the same way - fixed eval. or does it randomly mask? when we need to run eval we need fixed eval so we have a comparitive base each time</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-12-782Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-12-782Z" class="timestamp-link"><time datetime="2026-05-28T06:29:12.782Z" data-timestamp="2026-05-28T06:29:12.782Z">2026-05-28T06:29:12.782Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-12-787Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-12-787Z" class="timestamp-link"><time datetime="2026-05-28T06:29:12.787Z" data-timestamp="2026-05-28T06:29:12.787Z">2026-05-28T06:29:12.787Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I'll investigate how validation selects examples and applies masking in your codebase.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-14-329Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-14-329Z" class="timestamp-link"><time datetime="2026-05-28T06:29:14.329Z" data-timestamp="2026-05-28T06:29:14.329Z">2026-05-28T06:29:14.329Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01QZB46ARWyfcFLm8VnkT5Sq">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find validation/eval code files</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -rln &#34;def validate\|validation\|val_loader\|val_dataset\|def eval\|@torch.no_grad\|def evaluate&#34; --include=&#34;*.py&#34; | head -50</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-15-621Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-15-621Z" class="timestamp-link"><time datetime="2026-05-28T06:29:15.621Z" data-timestamp="2026-05-28T06:29:15.621Z">2026-05-28T06:29:15.621Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>neural_tokenizers/meg/mu_transform/calibration.py
+neural_tokenizers/meg/brainomni/adapter.py
+neural_tokenizers/meg/modal/modal_meg_eval.py
+neural_tokenizers/evaluation/codebook.py
+neural_tokenizers/evaluation/probe.py
+4m_training/tests/test_in_loop_val.py
+4m_training/tests/test_config_validate.py
+4m_training/modal/modal_verify_token_count.py
+neural_tokenizers/evaluation/reconstruction.py
+4m_training/tests/test_4m_loader_integration.py
+4m_training/tests/test_validate_4m.py
+4m_training/lib/in_loop_val.py
+4m_training/validate_4m.py
+neural_tokenizers/evaluation/__init__.py
+4m_training/lib/config_validate.py
+4m_training/tests/test_neural_output_modalities.py
+4m_training/lib/repo_paths.py
+4m_training/lib/train_4m.py
+4m_training/lib/token_accounting.py
+4m_training/modal/modal_train.py
+4m_training/lib/fourm_dataloader.py
+4m_training/modal/modal_smoke_train.py
+external/Cho2026_Tokenizer/supplementary/plot_generator_history.py
+external/Cho2026_Tokenizer/supplementary/utils/plotting.py
+external/Cho2026_Tokenizer/scripts/15_wh_decoding.py
+external/Cho2026_Tokenizer/scripts/08_token_prediction_analysis.py
+external/Cho2026_Tokenizer/scripts/05_train_generator.py
+external/Cho2026_Tokenizer/scripts/03_tokenize_data.py
+external/Cho2026_Tokenizer/scripts/config/logistic_regression_config.py
+external/Cho2026_Tokenizer/scripts/14_wh_finetune.py
+external/Cho2026_Tokenizer/scripts/config/generator_config.py
+external/Cho2026_Tokenizer/scripts/config/__init__.py
+external/Cho2026_Tokenizer/scripts/utils/analysis.py
+external/Cho2026_Tokenizer/scripts/utils/plotting.py
+external/ml-4m/run_training_vqvae.py
+external/Cho2026_Tokenizer/scripts/models/meg_gpt_subject_emb.py
+external/Cho2026_Tokenizer/scripts/models/meg_gpt_fine_tune.py
+external/Cho2026_Tokenizer/scripts/models/logistic_regression.py
+external/ml-4m/run_training_vqcontrolnet.py
+external/ml-4m/run_training_divae.py
+external/ml-4m/run_training_4m_fsdp.py
+external/ml-4m/run_training_4m.py
+external/ml-4m/run_generation.py
+external/ml-4m/fourm/utils/hmr2_utils/hmr2/models/hmr2.py
+external/ml-4m/fourm/utils/timm/model_ema.py
+external/ml-4m/fourm/utils/timm/transforms_factory.py
+external/ml-4m/fourm/models/generate.py
+external/ml-4m/fourm/vq/scheduling/diffusion_pipeline.py
+external/ml-4m/fourm/vq/vqvae.py
+external/ml-4m/fourm/vq/models/lm_models.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-18-117Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-18-117Z" class="timestamp-link"><time datetime="2026-05-28T06:29:18.117Z" data-timestamp="2026-05-28T06:29:18.117Z">2026-05-28T06:29:18.117Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-18-677Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-18-677Z" class="timestamp-link"><time datetime="2026-05-28T06:29:18.677Z" data-timestamp="2026-05-28T06:29:18.677Z">2026-05-28T06:29:18.677Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The 4m_training validation code is most relevant. Let me read the in-loop validation and the validate script.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-19-114Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-19-114Z" class="timestamp-link"><time datetime="2026-05-28T06:29:19.114Z" data-timestamp="2026-05-28T06:29:19.114Z">2026-05-28T06:29:19.114Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_013QaHJqeE1A2SnEvbPPwL4j"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/in_loop_val.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-19-128Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-19-128Z" class="timestamp-link"><time datetime="2026-05-28T06:29:19.128Z" data-timestamp="2026-05-28T06:29:19.128Z">2026-05-28T06:29:19.128Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Run the named validation-task suite on the *live* model during training.
+2	
+3	Stock 4M&#x27;s in-loop eval can only validate the training task (its val loaders
+4	derive masking from the train dataset of the same name), and it only runs at all
+5	when the data config has a ``val:`` section. To also score the named tasks in
+6	``configs/4m_things_val_tasks.yaml`` every ``eval_freq`` epochs — independently
+7	of any ``val:`` section — we wrap a single stock-trainer global:
+8	
+9	  * ``train_one_epoch`` → after each epoch, at the eval cadence, run the suite on
+10	                          the just-updated model and merge its per-task losses
+11	                          into the returned train stats (which the trainer writes
+12	                          to ``log.txt`` / wandb).
+13	
+14	Hooking the per-epoch train step (always called) rather than ``evaluate`` (only
+15	called with a ``val:`` section) keeps in-loop validation self-contained: it needs
+16	only the ``in_loop_val_tasks`` field. The wrapper factory below is pure (no
+17	fourm) and unit-tested; the fourm-dependent ``build_suite_fn`` reuses
+18	``validate_4m.ValidationSuite`` wholesale — it does not re-implement validation.
+19	
+20	Installed from ``train_4m.run_train``, which imports the stock trainer (not
+21	``runpy`` as ``__main__``) so the global can be reassigned before ``main(args)``.
+22	&quot;&quot;&quot;
+23	
+24	from __future__ import annotations
+25	
+26	from pathlib import Path
+27	from typing import Any, Callable
+28	
+29	from token_accounting import TOKEN_STAT_KEYS, format_tokens_seen
+30	
+31	_HERE = Path(__file__).resolve().parent
+32	_REPO_ROOT = _HERE.parent.parent
+33	
+34	
+35	def make_validating_train_one_epoch(
+36	    orig_train_one_epoch: Callable,
+37	    suite_fn: Callable[[Any, Any], dict],
+38	    eval_freq: int,
+39	    epochs: int | None,
+40	) -&gt; Callable:
+41	    &quot;&quot;&quot;Wrap ``train_one_epoch`` to run the suite at the eval cadence.
+42	
+43	    After the wrapped epoch, when ``(epoch+1) % eval_freq == 0`` (or it&#x27;s the
+44	    final epoch), ``suite_fn(model, device)`` runs on the just-updated live model
+45	    and its stats are merged into the returned train stats. Suite errors are
+46	    swallowed with a warning so a val hiccup never kills a long training run.
+47	    Stock calls this as ``train_one_epoch(model=..., device=..., epoch=..., ...)``.
+48	    &quot;&quot;&quot;
+49	
+50	    def wrapped(*args: Any, **kwargs: Any):
+51	        stats = orig_train_one_epoch(*args, **kwargs)
+52	        epoch = kwargs.get(&quot;epoch&quot;)
+53	        if epoch is None:
+54	            return stats
+55	        at_cadence = (epoch + 1) % eval_freq == 0 or (epochs and epoch + 1 == epochs)
+56	        if at_cadence:
+57	            try:
+58	                suite_stats = suite_fn(kwargs.get(&quot;model&quot;), kwargs.get(&quot;device&quot;))
+59	                stats = {**stats, **suite_stats}
+60	                summary = &quot;  &quot;.join(
+61	                    f&quot;{k}={v:.4f}&quot; for k, v in suite_stats.items() if k.endswith(&quot;] loss&quot;)
+62	                )
+63	                if summary:
+64	                    print(f&quot;[in-loop val] epoch {epoch}: {summary}&quot;, flush=True)
+65	                # Tokens-seen for the checkpoint being scored. The token-accounting wrapper
+66	                # (installed inside this one) already merged these into `stats`; report them
+67	                # alongside the val losses so each validation moment is labeled with the
+68	                # exact training tokens behind it.
+69	                tokens = {k: stats[v] for k, v in TOKEN_STAT_KEYS.items() if v in stats}
+70	                if tokens:
+71	                    print(f&quot;[in-loop val] epoch {epoch}: {format_tokens_seen(tokens)}&quot;, flush=True)
+72	            except Exception as exc:  # noqa: BLE001 — never crash training on val
+73	                print(f&quot;[in-loop val] suite failed at epoch {epoch}: {exc!r}&quot;)
+74	        return stats
+75	
+76	    return wrapped
+77	
+78	
+79	def install_in_loop_validation(
+80	    trainer, suite_fn: Callable[[Any, Any], dict], *, eval_freq: int = 1, epochs: int | None = None
+81	) -&gt; None:
+82	    &quot;&quot;&quot;Reassign the trainer&#x27;s ``train_one_epoch`` global to the validating wrapper.
+83	    ``main()`` looks it up as a module global at call time, so the patch takes
+84	    effect for the run.&quot;&quot;&quot;
+85	    trainer.train_one_epoch = make_validating_train_one_epoch(
+86	        trainer.train_one_epoch, suite_fn, eval_freq, epochs
+87	    )
+88	
+89	
+90	def _dtype_for(args, device):
+91	    &quot;&quot;&quot;Match the training precision (fp32 on CPU).&quot;&quot;&quot;
+92	    import torch
+93	
+94	    if device.type == &quot;cpu&quot;:
+95	        return torch.float32
+96	    return {
+97	        &quot;float16&quot;: torch.float16, &quot;fp16&quot;: torch.float16,
+98	        &quot;bfloat16&quot;: torch.bfloat16, &quot;bf16&quot;: torch.bfloat16,
+99	        &quot;float32&quot;: torch.float32, &quot;fp32&quot;: torch.float32,
+100	    }.get(getattr(args, &quot;dtype&quot;, &quot;float32&quot;), torch.float32)
+101	
+102	
+103	def build_suite_fn(args) -&gt; Callable[[Any, Any], dict]:
+104	    &quot;&quot;&quot;Build a ``suite(model, device) -&gt; {log_key: value}`` closure from ``args``.
+105	
+106	    Thin adapter over ``validate_4m.ValidationSuite`` (the single home for running
+107	    the task suite on a model): it constructs the suite from ``args`` and flattens
+108	    the per-task stats into prefixed keys for the trainer&#x27;s log. Loaders are built
+109	    once inside the suite and re-iterated each eval epoch, so numbers are
+110	    comparable across epochs and match the standalone validate_4m.py run.
+111	    &quot;&quot;&quot;
+112	    import sys
+113	
+114	    import yaml
+115	    from tokenizers import Tokenizer
+116	
+117	    from neural_constants import THINGS_IMAGE_SIZE
+118	    from repo_paths import TEXT_TOKENIZER
+119	
+120	    # validate_4m.py lives in 4m_training/ (parent of this lib/); the training entry
+121	    # point only puts lib/ on sys.path, so add it before importing the suite.
+122	    _training_dir = str(_HERE.parent)
+123	    if _training_dir not in sys.path:
+124	        sys.path.insert(0, _training_dir)
+125	    from validate_4m import ValidationSuite
+126	
+127	    tasks_path = Path(args.in_loop_val_tasks)
+128	    if not tasks_path.is_absolute():
+129	        tasks_path = (_REPO_ROOT / tasks_path).resolve()
+130	    tasks_cfg = yaml.safe_load(tasks_path.read_text())
+131	
+132	    tok_path = getattr(args, &quot;text_tokenizer_path&quot;, None)
+133	    tok = Tokenizer.from_file(
+134	        str((_REPO_ROOT / tok_path).resolve() if tok_path else TEXT_TOKENIZER)
+135	    )
+136	
+137	    select = getattr(args, &quot;in_loop_val_select&quot;, None)
+138	    suite = ValidationSuite(
+139	        tasks_cfg,
+140	        input_size=getattr(args, &quot;input_size&quot;, THINGS_IMAGE_SIZE),
+141	        text_tokenizer=tok,
+142	        loss_type=getattr(args, &quot;loss_type&quot;, &quot;mod&quot;),
+143	        batch_size=int(getattr(args, &quot;batch_size&quot;, 4)),
+144	        n_batches=int(getattr(args, &quot;in_loop_val_n_batches&quot;, 4) or 0),
+145	        select=select.split(&quot;,&quot;) if select else None,
+146	    )
+147	
+148	    def suite_fn(model, device) -&gt; dict:
+149	        results = suite.run(model, device, _dtype_for(args, device))
+150	        return {
+151	            f&quot;[in-loop val: {name}] {key}&quot;: value
+152	            for name, stats in results.items()
+153	            for key, value in stats.items()
+154	            if key != &quot;n_batches&quot;
+155	        }
+156	
+157	    return suite_fn
+158	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-19-444Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-19-444Z" class="timestamp-link"><time datetime="2026-05-28T06:29:19.444Z" data-timestamp="2026-05-28T06:29:19.444Z">2026-05-28T06:29:19.444Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Gj7PbcLZWwn41FGZRPu83V"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/validate_4m.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-19-457Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-19-457Z" class="timestamp-link"><time datetime="2026-05-28T06:29:19.457Z" data-timestamp="2026-05-28T06:29:19.457Z">2026-05-28T06:29:19.457Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Run named validation tasks on a 4M model — masked prediction and cross-modal.
+2	
+3	4M&#x27;s built-in per-epoch eval can only validate the *same* task you trained
+4	(its val loaders derive masking from the train dataset of the same name), so it
+5	can&#x27;t express several distinct validation tasks. This standalone runner builds a
+6	val loader per task (each with its own in/out domains) and runs 4M&#x27;s eval forward,
+7	reporting per-task loss. Pick tasks with ``--select`` or run them all.
+8	
+9	    python 4m_training/validate_4m.py --config configs/4m_things_main.yaml \
+10	        --tasks configs/4m_things_val_tasks.yaml          # checkpoint from the main YAML
+11	    python 4m_training/validate_4m.py ... --checkpoint /path/to.pth   # one-off override
+12	    python 4m_training/validate_4m.py ... --select rgb2depth,anyany_neural
+13	
+14	Tasks are defined in the --tasks YAML; see configs/4m_things_val_tasks.yaml. The
+15	checkpoint comes from the main YAML&#x27;s ``val_checkpoint:`` field unless ``--checkpoint``
+16	is given.
+17	&quot;&quot;&quot;
+18	
+19	from __future__ import annotations
+20	
+21	import argparse
+22	import sys
+23	from pathlib import Path
+24	from typing import Any
+25	
+26	import torch
+27	import yaml
+28	
+29	_HERE = Path(__file__).resolve().parent
+30	_REPO_ROOT = _HERE.parent
+31	sys.path.insert(0, str(_HERE / &quot;lib&quot;))  # library modules live in lib/
+32	
+33	import fourm_neural_modalities  # noqa: F401,E402 — register modalities/transforms
+34	from fourm_dataloader import _wds_eval_loader, patch_pretrain_utils
+35	from neural_constants import THINGS_IMAGE_SIZE
+36	from repo_paths import TEXT_TOKENIZER
+37	from token_accounting import format_tokens_seen, read_tokens_seen
+38	
+39	patch_pretrain_utils()
+40	
+41	
+42	def _resolve(path_str: str) -&gt; Path:
+43	    p = Path(path_str)
+44	    return p if p.is_absolute() else (_REPO_ROOT / p).resolve()
+45	
+46	
+47	def _resolve_checkpoint(cli_checkpoint: Path | None, main_cfg: dict) -&gt; Path | None:
+48	    &quot;&quot;&quot;Pick the checkpoint to validate: CLI ``--checkpoint`` overrides the
+49	    ``val_checkpoint:`` field in the main YAML; absent both, return ``None``
+50	    (random-weight pipeline smoke). Keeps the path varying knob in config so a
+51	    plain ``--validate`` run needs no flags.&quot;&quot;&quot;
+52	    if cli_checkpoint is not None:
+53	        return cli_checkpoint
+54	    yaml_checkpoint = main_cfg.get(&quot;val_checkpoint&quot;)
+55	    return Path(yaml_checkpoint) if yaml_checkpoint else None
+56	
+57	
+58	def _task_dataset_config(task: dict, defaults: dict) -&gt; dict:
+59	    &quot;&quot;&quot;A task entry -&gt; the dataset_config the WDS val loader expects.&quot;&quot;&quot;
+60	    mods = &quot;,&quot;.join(task[&quot;modalities&quot;])
+61	    data_path = f&quot;{defaults[&#x27;val_root&#x27;]}/[{mods}]/{defaults[&#x27;shards&#x27;]}&quot;
+62	    in_n = len(task[&quot;in_domains&quot;].split(&quot;-&quot;))
+63	    out_n = len(task[&quot;out_domains&quot;].split(&quot;-&quot;))
+64	    return {
+65	        &quot;type&quot;: &quot;multimodal&quot;,
+66	        &quot;use_wds&quot;: True,
+67	        &quot;data_path&quot;: data_path,
+68	        &quot;in_domains&quot;: task[&quot;in_domains&quot;],
+69	        &quot;out_domains&quot;: task[&quot;out_domains&quot;],
+70	        &quot;main_augment_domain&quot;: defaults.get(&quot;main_augment_domain&quot;, &quot;tok_rgb&quot;),
+71	        &quot;tok_train_aug&quot;: False,
+72	        &quot;aligned_captions&quot;: False,
+73	        &quot;input_alphas&quot;: &quot;-&quot;.join([&quot;1.0&quot;] * in_n),
+74	        &quot;target_alphas&quot;: &quot;-&quot;.join([&quot;1.0&quot;] * out_n),
+75	    }
+76	
+77	
+78	def build_model(in_union: list[str], out_union: list[str], model_name: str, input_size: int):
+79	    &quot;&quot;&quot;Build a 4M model with encoder embeddings for all inputs, decoders for all targets.&quot;&quot;&quot;
+80	    from fourm.utils import create_model
+81	    from train_4m import _build_modality_info
+82	
+83	    modality_info = _build_modality_info(sorted(set(in_union) | set(out_union)), input_size)
+84	
+85	    def _emb(mod: str, key: str):
+86	        info = modality_info[mod]
+87	        if info[&quot;type&quot;] == &quot;img&quot;:
+88	            return info[key](patch_size=info.get(&quot;patch_size&quot;, 16), image_size=input_size)
+89	        return info[key]()
+90	
+91	    enc = {m: _emb(m, &quot;encoder_embedding&quot;) for m in in_union}
+92	    dec = {m: _emb(m, &quot;decoder_embedding&quot;) for m in out_union}
+93	    return create_model(
+94	        model_name, encoder_embeddings=enc, decoder_embeddings=dec,
+95	        modality_info=modality_info, num_register_tokens=0,
+96	    )
+97	
+98	
+99	def load_checkpoint(model, ckpt_path: Path) -&gt; dict:
+100	    &quot;&quot;&quot;Load weights only; tolerate architecture supersets (strict=False). Returns the
+101	    full checkpoint dict so callers can read non-weight metadata (e.g. tokens-seen).&quot;&quot;&quot;
+102	    ckpt = torch.load(ckpt_path, map_location=&quot;cpu&quot;, weights_only=False)
+103	    state = ckpt.get(&quot;model&quot;, ckpt)
+104	    missing, unexpected = model.load_state_dict(state, strict=False)
+105	    if missing:
+106	        print(f&quot;  [ckpt] {len(missing)} missing keys (e.g. {missing[:3]})&quot;)
+107	    if unexpected:
+108	        print(f&quot;  [ckpt] {len(unexpected)} unexpected keys (e.g. {unexpected[:3]})&quot;)
+109	    return ckpt
+110	
+111	
+112	def _build_task_loader(task_cfg: dict, input_size: int, in_range, out_range,
+113	                       text_tokenizer, num_workers: int, batch_size: int):
+114	    from fourm.data.modality_info import MODALITY_TRANSFORMS
+115	    from fourm.data.pretrain_utils import setup_sampling_mod_info
+116	    from things_augmenter import ThingsImageAugmenter
+117	    from train_4m import _build_modality_info
+118	
+119	    in_d = sorted(task_cfg[&quot;in_domains&quot;].split(&quot;-&quot;))
+120	    out_d = sorted(task_cfg[&quot;out_domains&quot;].split(&quot;-&quot;))
+121	    all_d = sorted(set(in_d) | set(out_d))
+122	    # Restrict masking modality_info to THIS task&#x27;s domains (+ its alphas).
+123	    full = _build_modality_info(all_d, input_size)
+124	    mod_info, sampling_weights = setup_sampling_mod_info(task_cfg, full)
+125	    augmenter = ThingsImageAugmenter(
+126	        target_size=input_size, no_aug=True, main_domain=task_cfg[&quot;main_augment_domain&quot;]
+127	    )
+128	    loader = _wds_eval_loader(
+129	        data_path=task_cfg[&quot;data_path&quot;], all_domains=all_d, modality_info=mod_info,
+130	        modality_transforms=MODALITY_TRANSFORMS, image_augmenter=augmenter,
+131	        text_tokenizer=text_tokenizer, input_tokens_range=in_range,
+132	        target_tokens_range=out_range, num_workers=num_workers, batch_size=batch_size,
+133	        sampling_weights=sampling_weights,
+134	    )
+135	    return loader, all_d
+136	
+137	
+138	@torch.no_grad()
+139	def evaluate_task(model, loader, device, all_domains, n_in, n_out, loss_type, dtype, n_batches):
+140	    &quot;&quot;&quot;Average loss + per-modality loss over up to n_batches val batches.&quot;&quot;&quot;
+141	    model.eval()
+142	    totals: dict[str, float] = {}
+143	    count = 0
+144	    for i, x in enumerate(loader):
+145	        if n_batches and i &gt;= n_batches:
+146	            break
+147	        mod_dict = {
+148	            mod: {k: v.to(device) for k, v in d.items()}
+149	            for mod, d in x.items()
+150	            if mod in all_domains
+151	        }
+152	        autocast = torch.autocast(device_type=device.type, dtype=dtype, enabled=dtype != torch.float32)
+153	        with autocast:
+154	            loss, mod_loss = model(mod_dict, num_encoder_tokens=n_in,
+155	                                   num_decoder_tokens=n_out, loss_type=loss_type)
+156	        totals[&quot;loss&quot;] = totals.get(&quot;loss&quot;, 0.0) + float(loss)
+157	        for mod, l in mod_loss.items():
+158	            totals[f&quot;{mod}_loss&quot;] = totals.get(f&quot;{mod}_loss&quot;, 0.0) + float(l.mean())
+159	        count += 1
+160	    if count == 0:
+161	        return {&quot;loss&quot;: float(&quot;nan&quot;), &quot;n_batches&quot;: 0}
+162	    stats = {k: v / count for k, v in totals.items()}
+163	    stats[&quot;n_batches&quot;] = count
+164	    return stats
+165	
+166	
+167	class ValidationSuite:
+168	    &quot;&quot;&quot;Run the named validation tasks on a model → ``{task_name: stats}``.
+169	
+170	    The single home for &quot;run the task suite on a model&quot;. It is reusable across
+171	    calls: deterministic WDS loaders are built lazily and cached, and the set of
+172	    runnable tasks is resolved once against the model&#x27;s actual domains. Two
+173	    callers share it, differing only in *where the model comes from* and *how the
+174	    result is formatted*:
+175	
+176	      * ``run_validation`` (CLI) — builds a model + loads a checkpoint, runs once.
+177	      * ``in_loop_val`` (training) — runs on the live model every eval epoch.
+178	    &quot;&quot;&quot;
+179	
+180	    def __init__(self, tasks_cfg: dict, *, input_size: int, text_tokenizer,
+181	                 loss_type: str, batch_size: int, n_batches: int,
+182	                 select: list[str] | None = None):
+183	        self.tasks_cfg = tasks_cfg
+184	        self.tasks = tasks_cfg[&quot;tasks&quot;]
+185	        names = select or list(self.tasks)
+186	        unknown = [n for n in names if n not in self.tasks]
+187	        if unknown:
+188	            raise SystemExit(f&quot;unknown task(s) {unknown}; available: {list(self.tasks)}&quot;)
+189	        self.names = names
+190	        self.input_size = input_size
+191	        self.text_tokenizer = text_tokenizer
+192	        self.loss_type = loss_type
+193	        self.batch_size = batch_size
+194	        self.n_batches = n_batches
+195	        self.n_in = tasks_cfg.get(&quot;fixed_eval_input_tokens&quot;, 128)
+196	        self.n_out = tasks_cfg.get(&quot;fixed_eval_target_tokens&quot;, 128)
+197	        self._cache: dict[str, tuple] = {}
+198	        self._runnable: list[str] | None = None
+199	
+200	    def _loader_for(self, name: str):
+201	        if name not in self._cache:
+202	            task_cfg = _task_dataset_config(self.tasks[name], self.tasks_cfg)
+203	            self._cache[name] = _build_task_loader(
+204	                task_cfg, self.input_size, (self.n_in, self.n_in), (self.n_out, self.n_out),
+205	                self.text_tokenizer, num_workers=0, batch_size=self.batch_size,
+206	            )
+207	        return self._cache[name]
+208	
+209	    def _resolve_runnable(self, model) -&gt; list[str]:
+210	        &quot;&quot;&quot;Keep only tasks the model can run: encoder needs every in_domain, decoder
+211	        every out_domain. Reads the (possibly DDP-wrapped) model&#x27;s embedding keys.&quot;&quot;&quot;
+212	        m = getattr(model, &quot;module&quot;, model)
+213	        enc = set(getattr(m, &quot;encoder_embeddings&quot;, {}).keys())
+214	        dec = set(getattr(m, &quot;decoder_embeddings&quot;, {}).keys())
+215	        runnable = []
+216	        for name in self.names:
+217	            task = self.tasks[name]
+218	            missing = (set(task[&quot;in_domains&quot;].split(&quot;-&quot;)) - enc) | (
+219	                set(task[&quot;out_domains&quot;].split(&quot;-&quot;)) - dec)
+220	            if missing:
+221	                print(f&quot;[val suite] skipping &#x27;{name}&#x27;: model lacks {sorted(missing)}&quot;)
+222	            else:
+223	                runnable.append(name)
+224	        return runnable
+225	
+226	    def run(self, model, device, dtype) -&gt; dict[str, dict[str, Any]]:
+227	        if self._runnable is None:
+228	            self._runnable = self._resolve_runnable(model)
+229	        results: dict[str, dict[str, Any]] = {}
+230	        for name in self._runnable:
+231	            loader, all_d = self._loader_for(name)
+232	            results[name] = evaluate_task(
+233	                model, loader, device, all_d, self.n_in, self.n_out,
+234	                self.loss_type, dtype, self.n_batches,
+235	            )
+236	        return results
+237	
+238	
+239	def run_validation(
+240	    main_cfg: dict, tasks_cfg: dict, select: list[str] | None,
+241	    checkpoint: Path | None, device: str, batch_size: int, n_batches: int,
+242	) -&gt; dict[str, dict[str, Any]]:
+243	    device = torch.device(device or (&quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;))
+244	    dtype = torch.float32 if device.type == &quot;cpu&quot; else torch.bfloat16
+245	
+246	    from tokenizers import Tokenizer
+247	
+248	    tok_cfg = main_cfg.get(&quot;text_tokenizer_path&quot;)
+249	    tok = Tokenizer.from_file(str(_resolve(tok_cfg) if tok_cfg else TEXT_TOKENIZER))
+250	    suite = ValidationSuite(
+251	        tasks_cfg, input_size=main_cfg.get(&quot;input_size&quot;, THINGS_IMAGE_SIZE),
+252	        text_tokenizer=tok, loss_type=main_cfg.get(&quot;loss_type&quot;, &quot;mod&quot;),
+253	        batch_size=batch_size, n_batches=n_batches, select=select,
+254	    )
+255	
+256	    # The standalone model spans every modality across the selected tasks (so the
+257	    # suite never skips); the in-loop caller instead reuses the live training model.
+258	    tasks = tasks_cfg[&quot;tasks&quot;]
+259	    in_union = sorted({d for n in suite.names for d in tasks[n][&quot;in_domains&quot;].split(&quot;-&quot;)})
+260	    out_union = sorted({d for n in suite.names for d in tasks[n][&quot;out_domains&quot;].split(&quot;-&quot;)})
+261	    print(f&quot;model in={in_union} out={out_union} device={device.type}&quot;)
+262	    model = build_model(in_union, out_union, main_cfg[&quot;model&quot;],
+263	                        main_cfg.get(&quot;input_size&quot;, THINGS_IMAGE_SIZE)).to(device)
+264	    tokens_seen = None
+265	    if checkpoint:
+266	        tokens_seen = read_tokens_seen(load_checkpoint(model, checkpoint))
+267	
+268	    results = suite.run(model, device, dtype)
+269	    print(format_tokens_seen(tokens_seen))
+270	    for name, stats in results.items():
+271	        pretty = &quot;  &quot;.join(f&quot;{k}={v:.4f}&quot; for k, v in stats.items() if k != &quot;n_batches&quot;)
+272	        print(f&quot;[{name}] {pretty}  (n_batches={stats[&#x27;n_batches&#x27;]})&quot;)
+273	    return results
+274	
+275	
+276	def main() -&gt; None:
+277	    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+278	    p.add_argument(&quot;--config&quot;, type=Path, required=True, help=&quot;main yaml (model, input_size, tokenizer)&quot;)
+279	    p.add_argument(&quot;--tasks&quot;, type=Path, required=True, help=&quot;val-tasks yaml&quot;)
+280	    p.add_argument(&quot;--select&quot;, type=str, default=None, help=&quot;comma-separated task names (default: all)&quot;)
+281	    p.add_argument(&quot;--checkpoint&quot;, type=Path, default=None,
+282	                   help=&quot;model checkpoint (weights); overrides `checkpoint:` in the tasks YAML. &quot;
+283	                        &quot;Omit both for a random-weight pipeline smoke.&quot;)
+284	    p.add_argument(&quot;--device&quot;, type=str, default=None)
+285	    p.add_argument(&quot;--batch-size&quot;, type=int, default=4)
+286	    p.add_argument(&quot;--n-batches&quot;, type=int, default=4, help=&quot;batches per task (0 = whole val set)&quot;)
+287	    args = p.parse_args()
+288	
+289	    main_cfg = yaml.safe_load(_resolve(str(args.config)).read_text())
+290	    tasks_cfg = yaml.safe_load(_resolve(str(args.tasks)).read_text())
+291	    select = args.select.split(&quot;,&quot;) if args.select else None
+292	    checkpoint = _resolve_checkpoint(args.checkpoint, main_cfg)
+293	
+294	    results = run_validation(
+295	        main_cfg, tasks_cfg, select, checkpoint, args.device, args.batch_size, args.n_batches,
+296	    )
+297	    print(&quot;\n=== validation summary ===&quot;)
+298	    for name, stats in results.items():
+299	        print(f&quot;  {name:&gt;16s}: loss={stats.get(&#x27;loss&#x27;, float(&#x27;nan&#x27;)):.4f}  (n_batches={stats[&#x27;n_batches&#x27;]})&quot;)
+300	
+301	
+302	if __name__ == &quot;__main__&quot;:
+303	    main()
+304	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-25-992Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-25-992Z" class="timestamp-link"><time datetime="2026-05-28T06:29:25.992Z" data-timestamp="2026-05-28T06:29:25.992Z">2026-05-28T06:29:25.992Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-26-435Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-26-435Z" class="timestamp-link"><time datetime="2026-05-28T06:29:26.435Z" data-timestamp="2026-05-28T06:29:26.435Z">2026-05-28T06:29:26.435Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now let me look at the dataloader to understand example selection (shuffle?) and how masking is applied.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-27-294Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-27-294Z" class="timestamp-link"><time datetime="2026-05-28T06:29:27.294Z" data-timestamp="2026-05-28T06:29:27.294Z">2026-05-28T06:29:27.294Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_016p5dVEb3zZojHq4WwRFec9"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/fourm_dataloader.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-27-311Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-27-311Z" class="timestamp-link"><time datetime="2026-05-28T06:29:27.311Z" data-timestamp="2026-05-28T06:29:27.311Z">2026-05-28T06:29:27.311Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Minimal hooks so stock 4M dataloaders work with THINGS neural shards.
+2	
+3	We do **not** reimplement the WebDataset pipeline. Instead we patch three
+4	integration points and delegate everything else to upstream 4M:
+5	
+6	  * ``UnifiedMasking`` → ``PresenceAwareUnifiedMasking`` (meg/eeg absence)
+7	  * ``PreTokenizedImageAugmenter`` → ``ThingsImageAugmenter`` (optional crop_settings)
+8	  * ``get_val_dataloader`` → WDS branch when ``use_wds: true`` (stock val is folder-only)
+9	
+10	Train uses stock ``get_train_dataloader`` → ``build_wds_fm_pretraining_dataloader`` unchanged.
+11	Neural transforms are stock ``AbstractTransform`` subclasses registered in
+12	``MODALITY_TRANSFORMS`` via ``fourm_neural_modalities``.
+13	&quot;&quot;&quot;
+14	
+15	from __future__ import annotations
+16	
+17	import copy
+18	from functools import partial
+19	
+20	import webdataset as wds
+21	from fourm.data import pretrain_utils
+22	from fourm.data import unified_datasets as ud
+23	from fourm.data import image_augmenter as ia
+24	from fourm.data.modality_transforms import CropSettingsTransform, IdentityTransform
+25	from fourm.data.pretrain_utils import cfgs_get
+26	from fourm.data.unified_datasets import (
+27	    default_collate,
+28	    filter_metadata,
+29	    map,
+30	    multi_tarfile_samples,
+31	    remove_extensions,
+32	    rename_modalities,
+33	    tok_to_int64,
+34	    wds_decoder,
+35	)
+36	import torchvision.transforms as transforms
+37	from fourm.data.modality_transforms import UnifiedDataTransform
+38	
+39	from fourm.utils import logger as _fourm_logger
+40	
+41	import fourm_neural_modalities
+42	from neural_masking import PresenceAwareUnifiedMasking
+43	from things_augmenter import ThingsImageAugmenter
+44	
+45	_PRESENCE_PATHS = {&quot;meg_mask&quot;: &quot;meg_mask&quot;, &quot;eeg_mask&quot;: &quot;eeg_mask&quot;}
+46	
+47	# Stock 4M hardcodes ``print_freq = 10`` in its train/eval loops (no CLI/YAML knob), which is
+48	# noisy for long epochs. We override it process-wide via the ``MetricLogger.log_every`` patch
+49	# below; train_4m sets this from the main YAML&#x27;s ``print_freq`` field. None = leave stock (10).
+50	_LOG_PRINT_FREQ: int | None = None
+51	
+52	
+53	def set_log_print_freq(n: int | None) -&gt; None:
+54	    &quot;&quot;&quot;Set the progress-print interval (steps) for the stock trainer&#x27;s MetricLogger.&quot;&quot;&quot;
+55	    global _LOG_PRINT_FREQ
+56	    _LOG_PRINT_FREQ = int(n) if n else None
+57	
+58	# Picks ONE trial per sample and splits it into the neural output heads (coherent across
+59	# the 4 MEG RVQ layers). None until a loader is built; set for train vs eval trial sampling.
+60	_NEURAL_SPLITTER = None
+61	
+62	_ORIG_UNIFIED_MASKING = ud.UnifiedMasking
+63	_ORIG_PRETOKENIZED_AUG = ia.PreTokenizedImageAugmenter
+64	_ORIG_GET_VAL = pretrain_utils.get_val_dataloader
+65	_ORIG_RENAME_MODALITIES = ud.rename_modalities
+66	_ORIG_LOG_EVERY = _fourm_logger.MetricLogger.log_every
+67	_PATCHED = False
+68	
+69	
+70	def _log_every(self, iterable, print_freq, *args, **kwargs):
+71	    &quot;&quot;&quot;``MetricLogger.log_every`` with a configurable print interval (see ``set_log_print_freq``).&quot;&quot;&quot;
+72	    if _LOG_PRINT_FREQ is not None:
+73	        print_freq = max(1, _LOG_PRINT_FREQ)
+74	    return _ORIG_LOG_EVERY(self, iterable, print_freq, *args, **kwargs)
+75	
+76	
+77	class _SeqSafeRandom:
+78	    &quot;&quot;&quot;Proxy for the stdlib ``random`` module that lists ``sample`` populations.
+79	
+80	    Stock 4M&#x27;s decoder does ``random.sample(mod_dict.items(), …)``; ``random.sample``
+81	    rejected dict views / sets starting in Python 3.11. Swapping ``fm.random`` for
+82	    this proxy keeps the model forward working on 3.11+ without editing ``ml-4m`` —
+83	    every other attribute delegates to the real module unchanged.
+84	    &quot;&quot;&quot;
+85	
+86	    def __init__(self, real):
+87	        self._real = real
+88	
+89	    def sample(self, population, k):
+90	        return self._real.sample(list(population), k)
+91	
+92	    def __getattr__(self, name):
+93	        return getattr(self._real, name)
+94	
+95	
+96	def _set_neural_target_splitter(training: bool) -&gt; None:
+97	    &quot;&quot;&quot;Install the per-sample neural-output trial splitter (train vs eval sampling).&quot;&quot;&quot;
+98	    global _NEURAL_SPLITTER
+99	    from neural_trial_transform import NeuralTargetSplitter
+100	
+101	    _NEURAL_SPLITTER = NeuralTargetSplitter(training=training)
+102	
+103	
+104	def _rename_modalities(sample, modality_paths):
+105	    &quot;&quot;&quot;Stock rename assumes every path exists; THINGS omits optional ``crop_settings`` tars.
+106	
+107	    Also the single point where neural OUTPUT heads are materialized: rename fans the
+108	    ``tok_meg`` / ``tok_eeg`` folder out to the output modalities (aliasing one array),
+109	    then the splitter picks one trial and slices the per-head targets — so the 4 MEG RVQ
+110	    heads stay coherent. No-op when no neural output modality is requested.
+111	    &quot;&quot;&quot;
+112	    present = {out: src for out, src in modality_paths.items() if src in sample}
+113	    if not present:
+114	        return sample
+115	    renamed = _ORIG_RENAME_MODALITIES(sample, present)
+116	    if _NEURAL_SPLITTER is not None:
+117	        _NEURAL_SPLITTER(renamed)
+118	    return renamed
+119	
+120	
+121	def _extend_modality_paths(modality_info: dict) -&gt; dict[str, str]:
+122	    paths = {mod: modality_info[mod].get(&quot;path&quot;, None) or mod for mod in modality_info}
+123	    paths.update(_PRESENCE_PATHS)
+124	    return paths
+125	
+126	
+127	def _wds_eval_loader(
+128	    data_path: str,
+129	    all_domains: list[str],
+130	    modality_info: dict,
+131	    modality_transforms: dict,
+132	    image_augmenter,
+133	    text_tokenizer,
+134	    input_tokens_range,
+135	    target_tokens_range,
+136	    num_workers: int,
+137	    batch_size: int,
+138	    sampling_weights=None,
+139	    modality_name_map=None,
+140	):
+141	    &quot;&quot;&quot;Deterministic WDS val loader — only gap stock 4M does not cover.
+142	
+143	    Reuses the same transform stack as ``build_wds_fm_pretraining_dataloader``
+144	    (``UnifiedDataTransform`` + patched ``PresenceAwareUnifiedMasking``).
+145	    Pipeline differs only in shard source (``SimpleShardList``, no shuffle/repeat).
+146	    &quot;&quot;&quot;
+147	    fourm_neural_modalities.register(training=False)
+148	    _set_neural_target_splitter(training=False)  # eval: deterministic trial 0
+149	
+150	    modality_paths = _extend_modality_paths(modality_info)
+151	    modality_transforms = copy.deepcopy(modality_transforms)
+152	    if any(modality_info[d].get(&quot;pretokenized&quot;, False) for d in all_domains):
+153	        modality_transforms[&quot;crop_settings&quot;] = CropSettingsTransform()
+154	    modality_transforms[&quot;__key__&quot;] = IdentityTransform()
+155	
+156	    transform = transforms.Compose(
+157	        [
+158	            UnifiedDataTransform(
+159	                transforms_dict=modality_transforms,
+160	                image_augmenter=image_augmenter,
+161	            ),
+162	            PresenceAwareUnifiedMasking(
+163	                modality_info=modality_info,
+164	                text_tokenizer=text_tokenizer,
+165	                input_tokens_range=input_tokens_range,
+166	                target_tokens_range=target_tokens_range,
+167	                sampling_weights=sampling_weights,
+168	            ),
+169	        ]
+170	    )
+171	
+172	    datapipe = wds.DataPipeline(
+173	        wds.SimpleShardList(data_path),
+174	        partial(multi_tarfile_samples, modality_name_map=modality_name_map),
+175	        wds.decode(wds_decoder),
+176	        wds.map(remove_extensions),
+177	        map(filter_metadata),
+178	        map(tok_to_int64),
+179	        # Tolerant rename: a task&#x27;s shards may omit optional folders (e.g. meg_mask
+180	        # for a vision-only val task), so skip paths not present in the sample.
+181	        map(partial(_rename_modalities, modality_paths=modality_paths)),
+182	        map(transform),
+183	        wds.batched(batch_size, collation_fn=default_collate, partial=False),
+184	    )
+185	    return wds.WebLoader(datapipe, num_workers=num_workers, batch_size=None)
+186	
+187	
+188	def _neural_get_val_dataloader(
+189	    dataset_config,
+190	    dataset_name,
+191	    train_configs,
+192	    modality_info,
+193	    sampling_weights,
+194	    text_tokenizer,
+195	    input_size,
+196	    num_input_tokens,
+197	    num_target_tokens,
+198	    min_input_tokens,
+199	    min_target_tokens,
+200	    fixed_eval,
+201	    fixed_eval_input_tokens,
+202	    fixed_eval_target_tokens,
+203	    dist_eval,
+204	    num_tasks,
+205	    num_workers,
+206	    batch_size,
+207	    pin_mem,
+208	):
+209	    &quot;&quot;&quot;Stock val loader, plus WDS tars when ``use_wds: true`` in val config.&quot;&quot;&quot;
+210	    from fourm.data.modality_info import MODALITY_TRANSFORMS
+211	    from fourm.data.modality_transforms import CaptionTransform
+212	    from fourm.data.image_augmenter import CenterCropImageAugmenter
+213	
+214	    dataset_type = cfgs_get(&quot;type&quot;, dataset_config, dataset_name, train_configs)
+215	    use_wds = cfgs_get(&quot;use_wds&quot;, dataset_config, dataset_name, train_configs, False)
+216	
+217	    if not (dataset_type == &quot;multimodal&quot; and use_wds):
+218	        return _ORIG_GET_VAL(
+219	            dataset_config,
+220	            dataset_name,
+221	            train_configs,
+222	            modality_info,
+223	            sampling_weights,
+224	            text_tokenizer,
+225	            input_size,
+226	            num_input_tokens,
+227	            num_target_tokens,
+228	            min_input_tokens,
+229	            min_target_tokens,
+230	            fixed_eval,
+231	            fixed_eval_input_tokens,
+232	            fixed_eval_target_tokens,
+233	            dist_eval,
+234	            num_tasks,
+235	            num_workers,
+236	            batch_size,
+237	            pin_mem,
+238	        )
+239	
+240	    in_domains = sorted(
+241	        cfgs_get(&quot;in_domains&quot;, dataset_config, dataset_name, train_configs).split(&quot;-&quot;)
+242	    )
+243	    out_domains = sorted(
+244	        cfgs_get(&quot;out_domains&quot;, dataset_config, dataset_name, train_configs).split(&quot;-&quot;)
+245	    )
+246	    all_domains = sorted(set(in_domains) | set(out_domains))
+247	
+248	    modality_transforms = MODALITY_TRANSFORMS
+249	    if &quot;caption&quot; in modality_transforms:
+250	        modality_transforms[&quot;caption&quot;] = CaptionTransform(
+251	            aligned_captions=cfgs_get(
+252	                &quot;aligned_captions&quot;, dataset_config, dataset_name, train_configs, True
+253	            )
+254	        )
+255	
+256	    main_augment_domain = cfgs_get(
+257	        &quot;main_augment_domain&quot;, dataset_config, dataset_name, train_configs
+258	    )
+259	    is_pretokenized = any(
+260	        modality_info[mod].get(&quot;pretokenized&quot;, False) for mod in modality_info
+261	    )
+262	    eval_image_augmenter = (
+263	        ThingsImageAugmenter(
+264	            target_size=input_size, no_aug=True, main_domain=main_augment_domain
+265	        )
+266	        if is_pretokenized
+267	        else CenterCropImageAugmenter(
+268	            target_size=input_size, main_domain=main_augment_domain
+269	        )
+270	    )
+271	
+272	    if fixed_eval:
+273	        input_tokens_range = (fixed_eval_input_tokens, fixed_eval_input_tokens)
+274	        target_tokens_range = (fixed_eval_target_tokens, fixed_eval_target_tokens)
+275	    else:
+276	        num_input_tokens = dataset_config.get(&quot;num_input_tokens&quot;, num_input_tokens)
+277	        num_target_tokens = dataset_config.get(&quot;num_target_tokens&quot;, num_target_tokens)
+278	        min_input_tokens = dataset_config.get(&quot;min_input_tokens&quot;, min_input_tokens)
+279	        min_target_tokens = dataset_config.get(&quot;min_target_tokens&quot;, min_target_tokens)
+280	        min_input_tokens = (
+281	            num_input_tokens if min_input_tokens is None else min_input_tokens
+282	        )
+283	        min_target_tokens = (
+284	            num_target_tokens if min_target_tokens is None else min_target_tokens
+285	        )
+286	        input_tokens_range = (min_input_tokens, num_input_tokens)
+287	        target_tokens_range = (min_target_tokens, num_target_tokens)
+288	
+289	    print(
+290	        &quot;Warning: Eval stats may vary slightly as the masking applied on images is random.&quot;
+291	    )
+292	    return _wds_eval_loader(
+293	        data_path=cfgs_get(&quot;data_path&quot;, dataset_config, dataset_name, train_configs),
+294	        all_domains=all_domains,
+295	        modality_info=modality_info,
+296	        modality_transforms=modality_transforms,
+297	        image_augmenter=eval_image_augmenter,
+298	        text_tokenizer=text_tokenizer,
+299	        input_tokens_range=input_tokens_range,
+300	        target_tokens_range=target_tokens_range,
+301	        num_workers=num_workers,
+302	        batch_size=batch_size,
+303	        sampling_weights=sampling_weights,
+304	        modality_name_map=cfgs_get(
+305	            &quot;modality_name_map&quot;, dataset_config, dataset_name, train_configs
+306	        ),
+307	    )
+308	
+309	
+310	def patch_pretrain_utils() -&gt; None:
+311	    &quot;&quot;&quot;Install neural hooks into stock 4M (idempotent).&quot;&quot;&quot;
+312	    global _PATCHED
+313	    if _PATCHED:
+314	        return
+315	
+316	    # Stock WDS + folder datasets instantiate these classes by reference.
+317	    ud.UnifiedMasking = PresenceAwareUnifiedMasking
+318	    ia.PreTokenizedImageAugmenter = ThingsImageAugmenter
+319	    pretrain_utils.PreTokenizedImageAugmenter = ThingsImageAugmenter
+320	    ud.rename_modalities = _rename_modalities
+321	    _fourm_logger.MetricLogger.log_every = _log_every  # configurable progress-print interval
+322	
+323	    # Make the decoder forward&#x27;s random.sample(dict.items()) work on Python 3.11+.
+324	    from fourm.models import fm as _fm
+325	
+326	    if not isinstance(_fm.random, _SeqSafeRandom):
+327	        _fm.random = _SeqSafeRandom(_fm.random)
+328	
+329	    fourm_neural_modalities.register(training=True)
+330	    _set_neural_target_splitter(training=True)  # train: random trial per sample
+331	
+332	    pretrain_utils.get_val_dataloader = _neural_get_val_dataloader
+333	    import fourm.data as fd
+334	
+335	    fd.get_val_dataloader = _neural_get_val_dataloader
+336	    _PATCHED = True
+337	
+338	
+339	def unpatch_pretrain_utils() -&gt; None:
+340	    &quot;&quot;&quot;Restore stock 4M (for tests).&quot;&quot;&quot;
+341	    global _PATCHED, _NEURAL_SPLITTER
+342	    _NEURAL_SPLITTER = None
+343	    ud.UnifiedMasking = _ORIG_UNIFIED_MASKING
+344	    ia.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG
+345	    pretrain_utils.PreTokenizedImageAugmenter = _ORIG_PRETOKENIZED_AUG
+346	    ud.rename_modalities = _ORIG_RENAME_MODALITIES
+347	    _fourm_logger.MetricLogger.log_every = _ORIG_LOG_EVERY
+348	    pretrain_utils.get_val_dataloader = _ORIG_GET_VAL
+349	    import fourm.data as fd
+350	
+351	    fd.get_val_dataloader = _ORIG_GET_VAL
+352	
+353	    from fourm.models import fm as _fm
+354	
+355	    if isinstance(_fm.random, _SeqSafeRandom):
+356	        _fm.random = _fm.random._real
+357	    _PATCHED = False
+358	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-30-817Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-30-817Z" class="timestamp-link"><time datetime="2026-05-28T06:29:30.817Z" data-timestamp="2026-05-28T06:29:30.817Z">2026-05-28T06:29:30.817Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-32-012Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-32-012Z" class="timestamp-link"><time datetime="2026-05-28T06:29:32.012Z" data-timestamp="2026-05-28T06:29:32.012Z">2026-05-28T06:29:32.012Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now the critical piece — how <code>PresenceAwareUnifiedMasking</code> decides <em>which</em> tokens to mask. Let me read it and the stock masking it builds on.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-32-412Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-32-412Z" class="timestamp-link"><time datetime="2026-05-28T06:29:32.412Z" data-timestamp="2026-05-28T06:29:32.412Z">2026-05-28T06:29:32.412Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01SizMot62pyEWgxBU4VgdUg"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/neural_masking.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-32-425Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-32-425Z" class="timestamp-link"><time datetime="2026-05-28T06:29:32.425Z" data-timestamp="2026-05-28T06:29:32.425Z">2026-05-28T06:29:32.425Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Masking wrapper that skips Dirichlet budget for absent MEG/EEG samples.
+2	
+3	When ``meg_mask`` or ``eeg_mask`` is 0 (sentinel placeholder on disk), force
+4	token budgets for the corresponding ``tok_*`` modality to zero so 4M&#x27;s
+5	``sequence_token_mask`` produces no decoder logits and loss is skipped.
+6	&quot;&quot;&quot;
+7	
+8	from __future__ import annotations
+9	
+10	import random
+11	from typing import Any
+12	
+13	import torch
+14	from fourm.data.masking import UnifiedMasking
+15	from fourm.data.modality_transforms import get_transform_key
+16	
+17	from neural_constants import (
+18	    EEG_MODALITY,
+19	    MEG_RVQ_MODALITIES,
+20	    NEURAL_GRID_TYPE,
+21	)
+22	
+23	# Maps token modality -&gt; presence-flag key loaded from shard tars. The four MEG RVQ
+24	# modalities share ``meg_mask``; EEG gates on ``eeg_mask`` (many modalities -&gt; one mask).
+25	PRESENCE_FLAGS: dict[str, str] = {
+26	    **{mod: &quot;meg_mask&quot; for mod in MEG_RVQ_MODALITIES},
+27	    EEG_MODALITY: &quot;eeg_mask&quot;,
+28	}
+29	
+30	
+31	def _read_presence_flag(value: Any) -&gt; bool:
+32	    &quot;&quot;&quot;Return True when neural data is present (mask == 1).&quot;&quot;&quot;
+33	    if value is None:
+34	        return True
+35	    if isinstance(value, torch.Tensor):
+36	        return bool(int(value.reshape(-1)[0].item()))
+37	    return bool(int(value.reshape(-1)[0]))
+38	
+39	
+40	def extract_presence_flags(mod_dict: dict) -&gt; dict[str, bool]:
+41	    &quot;&quot;&quot;Pop ``meg_mask`` / ``eeg_mask`` from ``mod_dict`` and return presence map.
+42	
+43	    Several token modalities may share one flag (e.g. the four ``tok_meg_rvq*`` heads
+44	    all gate on ``meg_mask``), so read every flag before removing the unique flag keys.
+45	    &quot;&quot;&quot;
+46	    presence: dict[str, bool] = {}
+47	    for tok_mod, flag_mod in PRESENCE_FLAGS.items():
+48	        presence[tok_mod] = (
+49	            _read_presence_flag(mod_dict[flag_mod]) if flag_mod in mod_dict else True
+50	        )
+51	    for flag_mod in set(PRESENCE_FLAGS.values()):
+52	        mod_dict.pop(flag_mod, None)
+53	    return presence
+54	
+55	
+56	def zero_absent_budgets(
+57	    modality_info: dict,
+58	    input_budget: list[int],
+59	    target_budget: list[int | None],
+60	    presence: dict[str, bool],
+61	) -&gt; tuple[list[int], list[int | None]]:
+62	    &quot;&quot;&quot;Set input/target budgets to 0 for token modalities marked absent.&quot;&quot;&quot;
+63	    input_budget = list(input_budget)
+64	    target_budget = list(target_budget)
+65	    for i, mod_name in enumerate(modality_info.keys()):
+66	        if mod_name in presence and not presence[mod_name]:
+67	            input_budget[i] = 0
+68	            if target_budget[i] is not None:
+69	                target_budget[i] = 0
+70	    return input_budget, target_budget
+71	
+72	
+73	class PresenceAwareUnifiedMasking(UnifiedMasking):
+74	    &quot;&quot;&quot;``UnifiedMasking`` that respects per-sample MEG/EEG presence flags.&quot;&quot;&quot;
+75	
+76	    def __call__(self, mod_dict):  # noqa: D102 — mirrors upstream signature
+77	        presence = extract_presence_flags(mod_dict)
+78	
+79	        if self.sampling_weights is not None:
+80	            dir_idx = torch.multinomial(self.sampling_weights, 1).item()
+81	        else:
+82	            dir_idx = random.randint(0, self.num_dirichlets - 1)
+83	
+84	        num_input_tokens = random.randint(*self.input_tokens_range)
+85	        num_target_tokens = (
+86	            random.randint(*self.target_tokens_range)
+87	            if self.target_tokens_range is not None
+88	            else None
+89	        )
+90	
+91	        input_token_budget = self.input_token_budget(num_input_tokens, dir_idx)
+92	
+93	        if num_target_tokens is not None:
+94	            target_token_budget = self.target_token_budget(
+95	                input_token_budget, num_target_tokens, dir_idx
+96	            )
+97	        else:
+98	            target_token_budget = [None] * self.num_modalities
+99	
+100	        input_token_budget, target_token_budget = zero_absent_budgets(
+101	            self.modality_info,
+102	            input_token_budget,
+103	            target_token_budget,
+104	            presence,
+105	        )
+106	
+107	        masked_mod_dict = {}
+108	        for (mod_name, mod_info), input_budget, target_budget in zip(
+109	            self.modality_info.items(),
+110	            input_token_budget,
+111	            target_token_budget,
+112	        ):
+113	            mod_type = mod_info[&quot;type&quot;]
+114	            mod_name_load = (
+115	                mod_name if mod_name in mod_dict else get_transform_key(mod_name)
+116	            )
+117	            if mod_type == &quot;img&quot;:
+118	                masked_mod_dict[mod_name] = self.image_mask(
+119	                    mod_dict[mod_name_load],
+120	                    mod_info[&quot;max_tokens&quot;],
+121	                    input_budget,
+122	                    target_budget,
+123	                )
+124	            elif mod_type == &quot;seq&quot;:
+125	                keep_scheme = (
+126	                    &quot;random&quot;
+127	                    if (&quot;keep&quot; not in mod_info)
+128	                    else mod_info[&quot;keep&quot;][dir_idx]
+129	                )
+130	                masked_mod_dict[mod_name] = self.sequence_mask(
+131	                    mod_dict[mod_name_load],
+132	                    mod_info[&quot;max_tokens&quot;],
+133	                    input_budget,
+134	                    target_budget,
+135	                    keep_scheme,
+136	                )
+137	            elif mod_type == NEURAL_GRID_TYPE:
+138	                # Symmetric neural modalities: parallel grid masking (scatter), like img.
+139	                # image_mask takes BOTH budgets and partitions cells into input vs target
+140	                # (disjoint), so a cell is never both an encoder input and a decoder target
+141	                # -&gt; no input-&gt;target leakage. The decoder branch in fm.cat_decoder_tensors
+142	                # treats any non-seq type as parallel, so targets are per-cell, not shifted.
+143	                masked_mod_dict[mod_name] = self.image_mask(
+144	                    mod_dict[mod_name_load],
+145	                    mod_info[&quot;max_tokens&quot;],
+146	                    input_budget,
+147	                    target_budget,
+148	                )
+149	            elif mod_type == &quot;seq_token&quot;:
+150	                keep_scheme = (
+151	                    &quot;random&quot;
+152	                    if (&quot;keep&quot; not in mod_info)
+153	                    else mod_info[&quot;keep&quot;][dir_idx]
+154	                )
+155	                vocab_offset = mod_info.get(&quot;vocab_offset&quot;, 0)
+156	                masked_mod_dict[mod_name] = self.sequence_token_mask(
+157	                    mod_dict[mod_name_load],
+158	                    mod_info[&quot;max_tokens&quot;],
+159	                    input_budget,
+160	                    target_budget,
+161	                    keep_scheme,
+162	                    vocab_offset=vocab_offset,
+163	                )
+164	            elif mod_type == &quot;seq_emb&quot;:
+165	                keep_scheme = (
+166	                    &quot;random&quot;
+167	                    if (&quot;keep&quot; not in mod_info)
+168	                    else mod_info[&quot;keep&quot;][dir_idx]
+169	                )
+170	                masked_mod_dict[mod_name] = self.sequence_emb_mask_span(
+171	                    mod_dict[mod_name_load],
+172	                    mod_info[&quot;max_tokens&quot;],
+173	                    input_budget,
+174	                    target_budget,
+175	                    keep_scheme,
+176	                )
+177	            else:
+178	                raise ValueError(f&quot;Invalid modality type: {mod_type}&quot;)
+179	
+180	        return masked_mod_dict
+181	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-39-358Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-39-358Z" class="timestamp-link"><time datetime="2026-05-28T06:29:39.358Z" data-timestamp="2026-05-28T06:29:39.358Z">2026-05-28T06:29:39.358Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-39-877Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-39-877Z" class="timestamp-link"><time datetime="2026-05-28T06:29:39.877Z" data-timestamp="2026-05-28T06:29:39.877Z">2026-05-28T06:29:39.877Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me check the upstream <code>UnifiedMasking.image_mask</code> for its randomness, and whether any seed is set in the eval path.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-41-232Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-41-232Z" class="timestamp-link"><time datetime="2026-05-28T06:29:41.232Z" data-timestamp="2026-05-28T06:29:41.232Z">2026-05-28T06:29:41.232Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01YK2PcomVS7Syz5xEfP85MF">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Locate stock 4M masking.py</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">find /Users/Siddharth/neural-foundation-model/external/ml-4m -name &#34;masking.py&#34; -path &#34;*data*&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-41-259Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-41-259Z" class="timestamp-link"><time datetime="2026-05-28T06:29:41.259Z" data-timestamp="2026-05-28T06:29:41.259Z">2026-05-28T06:29:41.259Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/external/ml-4m/fourm/data/masking.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-43-226Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-43-226Z" class="timestamp-link"><time datetime="2026-05-28T06:29:43.226Z" data-timestamp="2026-05-28T06:29:43.226Z">2026-05-28T06:29:43.226Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_014iYMUghRMeXG3jPWqW7PfZ">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check for any seeding in eval path</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -rn &#34;seed\|manual_seed\|set_seed\|np.random.seed\|random.seed\|worker_init&#34; /Users/Siddharth/neural-foundation-model/4m_training/lib/fourm_dataloader.py /Users/Siddharth/neural-foundation-model/4m_training/validate_4m.py /Users/Siddharth/neural-foundation-model/4m_training/lib/neural_masking.py /Users/Siddharth/neural-foundation-model/4m_training/lib/in_loop_val.py</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-43-258Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-43-258Z" class="timestamp-link"><time datetime="2026-05-28T06:29:43.258Z" data-timestamp="2026-05-28T06:29:43.258Z">2026-05-28T06:29:43.258Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>(Bash completed with no output)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-45-720Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-45-720Z" class="timestamp-link"><time datetime="2026-05-28T06:29:45.720Z" data-timestamp="2026-05-28T06:29:45.720Z">2026-05-28T06:29:45.720Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-45-722Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-45-722Z" class="timestamp-link"><time datetime="2026-05-28T06:29:45.722Z" data-timestamp="2026-05-28T06:29:45.722Z">2026-05-28T06:29:45.722Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>No seeding anywhere in the eval path. Let me confirm the randomness inside the stock masking functions.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-47-871Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-47-871Z" class="timestamp-link"><time datetime="2026-05-28T06:29:47.871Z" data-timestamp="2026-05-28T06:29:47.871Z">2026-05-28T06:29:47.871Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01K19E2iixcSTmL3u8B7XmUy">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find randomness sources in stock masking</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;def image_mask\|def input_token_budget\|def target_token_budget\|def sequence_mask\|def sequence_token_mask\|np.random\|torch.rand\|torch.randperm\|random\.\|Dirichlet\|dirichlet\|multinomial\|def input_token_budget\|self.input_tokens_range\|self.dirichlet&#34; /Users/Siddharth/neural-foundation-model/external/ml-4m/fourm/data/masking.py</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-47-903Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-47-903Z" class="timestamp-link"><time datetime="2026-05-28T06:29:47.903Z" data-timestamp="2026-05-28T06:29:47.903Z">2026-05-28T06:29:47.903Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>23:from torch.distributions import Dirichlet
+41:    return min_val + 0.5 * (max_val - min_val) * (1 + math.cos(math.pi * random.uniform(0, 1)))
+55:    return random.uniform(min_val, max_val)
+71:    masks = torch.where(torch.rand(sequence_length) &lt;= keep_prob, 0, 1).bool().tolist()
+107:    masks = torch.where(torch.rand(chunk_length) &lt;= keep_prob, 0, 1).bool().tolist()
+147:            sampling_weights: Sampling weights for the mixture of Dirichlet distributions
+149:        self.input_tokens_range = to_2tuple(input_tokens_range)
+158:        # Dirichlet sampling (supports a mixture of multiple Dirichlet distributions)
+162:        self.input_dirichlets = [Dirichlet(torch.clamp(input_alpha, min=eps)) for input_alpha in input_alphas]
+165:        self.target_dirichlets = [Dirichlet(torch.clamp(target_alpha, min=eps)) for target_alpha in target_alphas]
+166:        assert(len(self.input_dirichlets) == len(self.target_dirichlets))
+167:        self.num_dirichlets = len(self.input_dirichlets)
+169:            assert len(sampling_weights) == self.num_dirichlets
+181:    def input_token_budget(self, num_input_tokens, dir_idx=0):
+192:            input_token_budget = (self.input_dirichlets[dir_idx].sample() * num_input_tokens).floor().int()
+194:            # Adds the remaining tokens by sampling from the Dirichlet and taking the argmax
+196:            input_token_budget += torch.bincount(self.input_dirichlets[dir_idx].sample_n(diff).argmax(dim=-1), minlength=len(input_token_budget))
+207:    def target_token_budget(self, input_token_budget, num_target_tokens, dir_idx=0):
+221:            target_token_budget = (self.target_dirichlets[dir_idx].sample() * num_target_tokens).floor().int()
+223:            # Adds the remaining tokens by sampling from the Dirichlet and taking the argmax
+225:            target_token_budget += torch.bincount(self.target_dirichlets[dir_idx].sample_n(diff).argmax(dim=-1), minlength=len(target_token_budget))
+236:    def image_mask(self, tensor: torch.Tensor, num_tokens: int, input_budget: int, target_budget: int):
+248:        noise = torch.rand(num_tokens)
+268:    def sequence_token_mask(self, sequence_ids: str, max_tokens: int, input_budget: int, target_budget: int, keep_scheme: str, vocab_offset: int):
+298:                keep_prob = random.choice([0., 1.])
+327:            chosen_sentinel = np.random.randint(max(1, len(sentinel_indices) - 1))
+345:    def sequence_mask(self, sequence: Union[str, List[str]], max_tokens: int, input_budget: int, target_budget: int, keep_scheme: str):
+400:                keep_prob = random.choice([0., 1.])
+429:            chosen_sentinel = np.random.randint(max(1, len(sentinel_indices) - 1))
+489:                keep_prob = random.choice([0., 1.])
+530:            dir_idx = torch.multinomial(self.sampling_weights, 1).item()
+533:            dir_idx = random.randint(0, self.num_dirichlets - 1)
+535:        num_input_tokens = random.randint(*self.input_tokens_range)
+536:        num_target_tokens = random.randint(*self.target_tokens_range) if self.target_tokens_range is not None else None</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-51-401Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-51-401Z" class="timestamp-link"><time datetime="2026-05-28T06:29:51.401Z" data-timestamp="2026-05-28T06:29:51.401Z">2026-05-28T06:29:51.401Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-29-52-259Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-29-52-259Z" class="timestamp-link"><time datetime="2026-05-28T06:29:52.259Z" data-timestamp="2026-05-28T06:29:52.259Z">2026-05-28T06:29:52.259Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_015vFMTPFsCn2ipNxie81sgS"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/external/ml-4m/fourm/data/masking.py&#34;,
+  &#34;offset&#34;: 236,
+  &#34;limit&#34;: 32
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T06-29-52-279Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T06-29-52-279Z" class="timestamp-link"><time datetime="2026-05-28T06:29:52.279Z" data-timestamp="2026-05-28T06:29:52.279Z">2026-05-28T06:29:52.279Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>236	    def image_mask(self, tensor: torch.Tensor, num_tokens: int, input_budget: int, target_budget: int):
+237	        &quot;&quot;&quot;Applies input and target masking to an image tensor
+238	
+239	        Args:
+240	            tensor: Image tensor
+241	            num_tokens: Number of tokens in the tensor
+242	            input_budget: Token budget for the input
+243	            target_budget: Token budget for the target
+244	
+245	        Returns:
+246	            Dictionary containing the masked image tensor, the input mask, the target mask, and the decoder attention mask
+247	        &quot;&quot;&quot;
+248	        noise = torch.rand(num_tokens)
+249	        ids_shuffle = torch.argsort(noise, dim=0)
+250	
+251	        input_mask = torch.ones(num_tokens, dtype=torch.bool)
+252	        input_mask[:input_budget] = 0
+253	        input_mask = torch.gather(input_mask, dim=0, index=ids_shuffle)
+254	
+255	        if target_budget is None:
+256	            target_mask = ~input_mask
+257	        else:
+258	            target_mask = torch.ones(num_tokens, dtype=torch.bool)
+259	            target_mask[input_budget:input_budget + target_budget] = 0
+260	            target_mask = torch.gather(target_mask, dim=0, index=ids_shuffle)
+261	
+262	        decoder_attention_mask = torch.zeros(num_tokens, dtype=torch.int)
+263	        first_mask_token = torch.argmin(target_mask + torch.arange(target_mask.shape[0], device=target_mask.device) * 1e-6)
+264	        decoder_attention_mask[first_mask_token] = (~target_mask).sum()  # Equiv. to target budget
+265	
+266	        return {&quot;tensor&quot;: tensor, &quot;input_mask&quot;: input_mask, &quot;target_mask&quot;: target_mask, &quot;decoder_attention_mask&quot;: decoder_attention_mask}
+267	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-30-34-693Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-30-34-693Z" class="timestamp-link"><time datetime="2026-05-28T06:30:34.693Z" data-timestamp="2026-05-28T06:30:34.693Z">2026-05-28T06:30:34.693Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-30-45-543Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-30-45-543Z" class="timestamp-link"><time datetime="2026-05-28T06:30:45.543Z" data-timestamp="2026-05-28T06:30:45.543Z">2026-05-28T06:30:45.543Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>I now have the complete picture. Here's how validation works in your pipeline, and an important caveat about "fixed eval."</p>
+<h2>Example selection — deterministic ✓</h2>
+<p>Selection is <strong>fixed, not random</strong>. The eval loader is built deterministically:</p>
+<ul>
+<li><a href="4m_training/lib/fourm_dataloader.py#L172-L185">fourm_dataloader.py:172-185</a> builds the pipe from <code>wds.SimpleShardList(data_path)</code> with <strong>no shuffle and no repeat</strong> (unlike the train loader). Shards are read in listed order, samples in tar order.</li>
+<li><a href="4m_training/validate_4m.py#L144-L146">validate_4m.py:144-146</a>: <code>evaluate_task</code> just does <code>for i, x in enumerate(loader): if i &gt;= n_batches: break</code> — it takes the <strong>first <code>n_batches</code> batches</strong> every time.</li>
+<li>The suite caches the loader (<a href="4m_training/validate_4m.py#L200-L207">validate_4m.py:200-207</a>) and uses <code>num_workers=0</code>, so there's no worker-ordering nondeterminism.</li>
+</ul>
+<p>So every run (and every in-loop epoch) scores the <strong>same examples in the same order</strong>. Good.</p>
+<h2>Masking — random and unseeded ✗</h2>
+<p>This is the problem for your comparative-base goal. Two things are fixed, one is not:</p>
+<ul>
+<li><strong>Token counts are fixed.</strong> <a href="4m_training/validate_4m.py#L204">validate_4m.py:204</a> passes <code>(n_in, n_in)</code> and <code>(n_out, n_out)</code>, so <code>random.randint(n_in, n_in)</code> always returns <code>n_in</code> (<a href="4m_training/lib/neural_masking.py#L84">neural_masking.py:84</a>). This is all 4M's <code>fixed_eval</code> flag ever meant — fixed <em>budgets</em>.</li>
+<li><strong>Which tokens get masked is random, per sample, every run.</strong> Inside the same <code>__call__</code>:</li>
+<li><code>dir_idx = random.randint(...)</code> / <code>torch.multinomial(...)</code> picks which Dirichlet mixture component → which modality split (<a href="4m_training/lib/neural_masking.py#L79-L82">neural_masking.py:79-82</a>)</li>
+<li><code>input_dirichlets[dir_idx].sample()</code> splits the fixed budget across modalities randomly (<a href="external/ml-4m/fourm/data/masking.py#L192">masking.py:192</a>)</li>
+<li><code>noise = torch.rand(num_tokens); argsort</code> picks <em>which specific cells</em> are input vs target (<a href="external/ml-4m/fourm/data/masking.py#L248-L249">masking.py:248-249</a>)</li>
+</ul>
+<p>There is <strong>no seeding anywhere</strong> in the eval path (I grepped — none). Stock 4M even prints the tell at <a href="4m_training/lib/fourm_dataloader.py#L289-L291">fourm_dataloader.py:289-291</a>: <em>"Eval stats may vary slightly as the masking applied on images is random."</em></p>
+<p><strong>Implication:</strong> your eval is <em>not</em> currently a fixed comparative base. Same examples, same token budgets — but a fresh random mask each time. So loss differences between checkpoints/epochs partly reflect mask luck, not just model quality. With <code>n_batches=4</code> the wobble can be non-trivial.</p>
+<h2>Fixing it</h2>
+<p>The system-level question is <em>where the determinism should live</em>. Three options, increasing robustness:</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-28T06-30-55-720Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-28T06-30-55-720Z" class="timestamp-link"><time datetime="2026-05-28T06:30:55.720Z" data-timestamp="2026-05-28T06:30:55.720Z">2026-05-28T06:30:55.720Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01VQxHW7p75jxrwu9NwXp2Yu"><div class="tool-header"><span class="tool-icon">⚙</span> AskUserQuestion</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;questions&#34;: [
+    {
+      &#34;question&#34;: &#34;How should we make the eval masking fixed/reproducible?&#34;,
+      &#34;header&#34;: &#34;Mask determinism&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Per-sample key-derived seed (Recommended)&#34;,
+          &#34;description&#34;: &#34;Seed RNG from a hash of the sample&#39;s __key__ right before masking each example, in PresenceAwareUnifiedMasking. Each example ALWAYS gets the same mask regardless of order, batch size, n_batches, or what ran before. Most robust &#39;fixed eval&#39;; only active in eval mode so training stays stochastic.&#34;,
+          &#34;preview&#34;: &#34;# neural_masking.py __call__ (eval mode only)\nif self.deterministic:\n    s = int(hashlib.sha1(key.encode()).hexdigest()[:8],16)\n    random.seed(s); np.random.seed(s)\n    torch.manual_seed(s)\n# ...existing dirichlet/noise sampling now reproducible\n\n# Same key -&gt; same mask, ALWAYS.\n# Order-independent, batch-independent.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Seed once per eval run&#34;,
+          &#34;description&#34;: &#34;Save RNG state, set a fixed seed at the start of suite.run / evaluate_task, restore afterward. Simple (~5 lines). Reproducible run-to-run as long as sample order + count are identical (they are). Less robust: changing n_batches/batch_size shifts the mask stream.&#34;,
+          &#34;preview&#34;: &#34;# validate_4m.py evaluate_task\nstate = (random.getstate(), torch.get_rng_state(), np.random.get_state())\nrandom.seed(0); torch.manual_seed(0); np.random.seed(0)\ntry:\n    ...run eval loop...\nfinally:\n    restore(state)  # don&#39;t perturb training RNG&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Precompute + cache fixed masks&#34;,
+          &#34;description&#34;: &#34;Generate each example&#39;s mask once, persist it, reuse on every eval. Truly fixed regardless of any RNG consumption. Most invasive: needs a mask cache and changes to the transform stack. Probably overkill unless you later parallelize eval with workers.&#34;,
+          &#34;preview&#34;: &#34;# heaviest option\nmask_cache[key] = mask  # computed once, stored\n# reused verbatim every eval, every run\n# robust to workers/order but adds\n# storage + a cache-invalidation concern&#34;
+        }
+      ]
+    }
+  ]
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-28T22-36-07-927Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-28T22-36-07-927Z" class="timestamp-link"><time datetime="2026-05-28T22:36:07.927Z" data-timestamp="2026-05-28T22:36:07.927Z">2026-05-28T22:36:07.927Z</time></a></div><div class="message-content"><div class="tool-result tool-error"><div class="truncatable"><div class="truncatable-content"><pre>Tool permission request failed: Error: Tool permission stream closed before response received</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+        
+
+<div class="pagination"><a href="index.html" class="index-link">Index</a></div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

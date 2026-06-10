@@ -1,0 +1,2000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 4</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 4/4</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-003.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<span class="current">4</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+        
+<div class="message user" id="msg-2026-05-23T21-55-55-138Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-23T21-55-55-138Z" class="timestamp-link"><time datetime="2026-05-23T21:55:55.138Z" data-timestamp="2026-05-23T21:55:55.138Z">2026-05-23T21:55:55.138Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>rename things/meg to tok_meg</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-56-21-223Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-56-21-223Z" class="timestamp-link"><time datetime="2026-05-23T21:56:21.223Z" data-timestamp="2026-05-23T21:56:21.223Z">2026-05-23T21:56:21.223Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-56-22-232Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-56-22-232Z" class="timestamp-link"><time datetime="2026-05-23T21:56:22.232Z" data-timestamp="2026-05-23T21:56:22.232Z">2026-05-23T21:56:22.232Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Right — matches the <code>tok_eeg/</code> convention already on the volume. This needs:
+1. Source code changes (constants + manifest <code>shards_subpath</code>)
+2. Volume rename + manifest JSON update for the existing shards</p>
+<p>Doing all three in one pass.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-56-24-781Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-56-24-781Z" class="timestamp-link"><time datetime="2026-05-23T21:56:24.781Z" data-timestamp="2026-05-23T21:56:24.781Z">2026-05-23T21:56:24.781Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01GwyqVepv1XM9vJc6pr5jfM">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_pack_shards.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">DST_TRAIN_MEG = &#34;/project/data/train/things/meg&#34;
+DST_VAL_MEG = &#34;/project/data/val/things/meg&#34;
+STAGING_ROOT = &#34;/project/data/staging/meg&#34;</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">DST_TRAIN_MEG = &#34;/project/data/train/things/tok_meg&#34;
+DST_VAL_MEG = &#34;/project/data/val/things/tok_meg&#34;
+STAGING_ROOT = &#34;/project/data/staging/tok_meg&#34;</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-56-48-029Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-56-48-029Z" class="timestamp-link"><time datetime="2026-05-23T21:56:48.029Z" data-timestamp="2026-05-23T21:56:48.029Z">2026-05-23T21:56:48.029Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-56-52-516Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-56-52-516Z" class="timestamp-link"><time datetime="2026-05-23T21:56:52.516Z" data-timestamp="2026-05-23T21:56:52.516Z">2026-05-23T21:56:52.516Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01EMaCQW3aNjYVjNsJJXzC8a">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find shards_subpath references</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#39;&#34;things/meg&#34;&#39; modal/modal_meg_pack_shards.py</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-56-52-553Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-56-52-553Z" class="timestamp-link"><time datetime="2026-05-23T21:56:52.553Z" data-timestamp="2026-05-23T21:56:52.553Z">2026-05-23T21:56:52.553Z</time></a></div><div class="message-content"><div class="tool-result tool-error"><div class="truncatable"><div class="truncatable-content"><pre>Exit code 2
+ugrep: warning: modal/modal_meg_pack_shards.py: No such file or directory</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-56-56-747Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-56-56-747Z" class="timestamp-link"><time datetime="2026-05-23T21:56:56.747Z" data-timestamp="2026-05-23T21:56:56.747Z">2026-05-23T21:56:56.747Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01YWgajgCeHxDjq6STnUhBHR">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find remaining things/meg refs in code</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural-foundation-model &amp;&amp; grep -n &#39;things/meg&#39; modal/modal_meg_pack_shards.py modal/meg_token_shard.py 2&gt;&amp;1 | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-56-56-783Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-56-56-783Z" class="timestamp-link"><time datetime="2026-05-23T21:56:56.783Z" data-timestamp="2026-05-23T21:56:56.783Z">2026-05-23T21:56:56.783Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>modal/modal_meg_pack_shards.py:4:  /project/data/train/things/meg/shard_NNN.tar   (23 shards, mirrors RGB train)
+modal/modal_meg_pack_shards.py:5:  /project/data/val/things/meg/shard_NNN.tar     (4 shards,  mirrors RGB val)
+modal/modal_meg_pack_shards.py:197:        &quot;shards_subpath&quot;: &quot;things/meg&quot;,
+modal/modal_meg_pack_shards.py:205:        &quot;shards_subpath&quot;: &quot;things/meg&quot;,
+modal/meg_token_shard.py:29:  /project/data/train/things/meg/shard_NNN.tar   for image_ids in train manifest
+modal/meg_token_shard.py:30:  /project/data/val/things/meg/shard_NNN.tar     for image_ids in val manifest</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-02-251Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-02-251Z" class="timestamp-link"><time datetime="2026-05-23T21:57:02.251Z" data-timestamp="2026-05-23T21:57:02.251Z">2026-05-23T21:57:02.251Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01F19VdPBtVz8wdiM74DfmEM">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_pack_shards.py</span> <span class="edit-replace-all">(replace all)</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">&#34;shards_subpath&#34;: &#34;things/meg&#34;,</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">&#34;shards_subpath&#34;: &#34;things/tok_meg&#34;,</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-57-04-711Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-57-04-711Z" class="timestamp-link"><time datetime="2026-05-23T21:57:04.711Z" data-timestamp="2026-05-23T21:57:04.711Z">2026-05-23T21:57:04.711Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py has been updated. All occurrences were successfully replaced. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-16-622Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-16-622Z" class="timestamp-link"><time datetime="2026-05-23T21:57:16.622Z" data-timestamp="2026-05-23T21:57:16.622Z">2026-05-23T21:57:16.622Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-17-679Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-17-679Z" class="timestamp-link"><time datetime="2026-05-23T21:57:17.679Z" data-timestamp="2026-05-23T21:57:17.679Z">2026-05-23T21:57:17.679Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Doing just the rename on the volume (existing shards intact, no re-pack). First updating remaining docstrings, then a one-shot rename Modal function.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-20-992Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-20-992Z" class="timestamp-link"><time datetime="2026-05-23T21:57:20.992Z" data-timestamp="2026-05-23T21:57:20.992Z">2026-05-23T21:57:20.992Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01FetFqENuj6s1vQqhqGWsDU">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_pack_shards.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">What it produces:
+  /project/data/train/things/meg/shard_NNN.tar   (23 shards, mirrors RGB train)
+  /project/data/val/things/meg/shard_NNN.tar     (4 shards,  mirrors RGB val)
+  /project/data/staging/meg/pack_plan.json       (transient; deleted after pack)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">What it produces:
+  /project/data/train/things/tok_meg/shard_NNN.tar   (23 shards, mirrors RGB train)
+  /project/data/val/things/tok_meg/shard_NNN.tar     (4 shards,  mirrors RGB val)
+  /project/data/staging/tok_meg/pack_plan.json       (transient; deleted after pack)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-57-24-737Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-57-24-737Z" class="timestamp-link"><time datetime="2026-05-23T21:57:24.737Z" data-timestamp="2026-05-23T21:57:24.737Z">2026-05-23T21:57:24.737Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-31-420Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-31-420Z" class="timestamp-link"><time datetime="2026-05-23T21:57:31.420Z" data-timestamp="2026-05-23T21:57:31.420Z">2026-05-23T21:57:31.420Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_014uwzn7N7G4VonWKNyM1FyT">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_token_shard.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/meg_token_shard.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">The MEG shard layout MIRRORS the RGB split:
+  /project/data/train/things/meg/shard_NNN.tar   for image_ids in train manifest
+  /project/data/val/things/meg/shard_NNN.tar     for image_ids in val manifest</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">The MEG shard layout MIRRORS the RGB split (uses 4M&#39;s `tok_&lt;modality&gt;/`
+convention, matching the sibling `tok_eeg/` directory already on the volume):
+  /project/data/train/things/tok_meg/shard_NNN.tar   for image_ids in train manifest
+  /project/data/val/things/tok_meg/shard_NNN.tar     for image_ids in val manifest</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-57-37-640Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-57-37-640Z" class="timestamp-link"><time datetime="2026-05-23T21:57:37.640Z" data-timestamp="2026-05-23T21:57:37.640Z">2026-05-23T21:57:37.640Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/meg_token_shard.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-42-834Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-42-834Z" class="timestamp-link"><time datetime="2026-05-23T21:57:42.834Z" data-timestamp="2026-05-23T21:57:42.834Z">2026-05-23T21:57:42.834Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now adding a one-shot rename function to <code>modal_meg_pack_shards.py</code> and running it.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-57-52-810Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-57-52-810Z" class="timestamp-link"><time datetime="2026-05-23T21:57:52.810Z" data-timestamp="2026-05-23T21:57:52.810Z">2026-05-23T21:57:52.810Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Pwx5yiRWBiLZoHS2uDymVa">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_pack_shards.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">@app.local_entrypoint()
+def plan():</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">@app.function(
+    image=pack_image,
+    volumes={PROJECT_MOUNT: project_volume},
+    cpu=2.0,
+    memory=4 * 1024,
+    timeout=60 * 10,
+)
+def rename_meg_to_tok_meg_remote() -&gt; dict:
+    &#34;&#34;&#34;One-shot migration: rename existing things/meg/ → things/tok_meg/
+    and update the shards_subpath field in both manifest JSONs.
+
+    Idempotent: if the destination already exists and source is gone, do nothing.
+    &#34;&#34;&#34;
+    moved: list[tuple[str, str]] = []
+    for old, new in (
+        (&#34;/project/data/train/things/meg&#34;, DST_TRAIN_MEG),
+        (&#34;/project/data/val/things/meg&#34;, DST_VAL_MEG),
+    ):
+        if os.path.isdir(old) and not os.path.exists(new):
+            os.rename(old, new)
+            moved.append((old, new))
+            print(f&#34;[rename] {old} → {new}&#34;)
+        elif os.path.isdir(new) and not os.path.exists(old):
+            print(f&#34;[rename] {new} already exists; nothing to do&#34;)
+        else:
+            raise RuntimeError(
+                f&#34;unexpected state: old={os.path.isdir(old)} new={os.path.isdir(new)}&#34;
+            )
+
+    # Update manifests in place: only the shards_subpath field changes.
+    updated_manifests = []
+    for path in (TRAIN_MEG_MANIFEST, VAL_MEG_MANIFEST):
+        if not os.path.exists(path):
+            print(f&#34;[rename] {path} missing; skipping manifest update&#34;)
+            continue
+        m = json.loads(open(path).read())
+        if m.get(&#34;shards_subpath&#34;) == &#34;things/tok_meg&#34;:
+            print(f&#34;[rename] {path} already has shards_subpath=things/tok_meg&#34;)
+            continue
+        m[&#34;shards_subpath&#34;] = &#34;things/tok_meg&#34;
+        open(path, &#34;w&#34;).write(json.dumps(m, indent=2))
+        updated_manifests.append(path)
+        print(f&#34;[rename] updated shards_subpath in {path}&#34;)
+
+    project_volume.commit()
+    return {&#34;dirs_moved&#34;: moved, &#34;manifests_updated&#34;: updated_manifests}
+
+
+@app.local_entrypoint()
+def rename_meg_to_tok_meg():
+    &#34;&#34;&#34;One-off: migrate existing things/meg/ shards to things/tok_meg/.&#34;&#34;&#34;
+    summary = rename_meg_to_tok_meg_remote.remote()
+    print(&#34;\n[rename] summary:&#34;)
+    for k, v in summary.items():
+        print(f&#34;  {k}: {v}&#34;)
+
+
+@app.local_entrypoint()
+def plan():</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-58-11-492Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-58-11-492Z" class="timestamp-link"><time datetime="2026-05-23T21:58:11.492Z" data-timestamp="2026-05-23T21:58:11.492Z">2026-05-23T21:58:11.492Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-58-15-883Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-58-15-883Z" class="timestamp-link"><time datetime="2026-05-23T21:58:15.883Z" data-timestamp="2026-05-23T21:58:15.883Z">2026-05-23T21:58:15.883Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01CU6RKFSS2UeqKRiusdSeWN">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Run rename migration on volume</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal &amp;&amp; modal run modal_meg_pack_shards.py::rename_meg_to_tok_meg 2&gt;&amp;1 | tail -25</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-58-28-726Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-58-28-726Z" class="timestamp-link"><time datetime="2026-05-23T21:58:28.726Z" data-timestamp="2026-05-23T21:58:28.726Z">2026-05-23T21:58:28.726Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>https://modal.com/apps/neural-fm/main/ap-SRXbBHUux2d4wGo0nTXJ0k
+✓ Created objects.
+├── 🔨 Created mount 
+│   /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal
+│   _meg_pack_shards.py
+├── 🔨 Created mount 
+│   /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal
+│   _app.py
+├── 🔨 Created mount PythonPackage:meg_token_shard, PythonPackage:modal_app
+├── 🔨 Created function hello.
+├── 🔨 Created function plan_remote.
+├── 🔨 Created function pack_remote.
+├── 🔨 Created function verify_remote.
+└── 🔨 Created function rename_meg_to_tok_meg_remote.
+[rename] /project/data/train/things/meg → /project/data/train/things/tok_meg
+[rename] /project/data/val/things/meg → /project/data/val/things/tok_meg
+[rename] updated shards_subpath in /project/data/train/things_meg_manifest.json
+[rename] updated shards_subpath in /project/data/val/things_meg_manifest.json
+
+[rename] summary:
+  dirs_moved: [(&#x27;/project/data/train/things/meg&#x27;, &#x27;/project/data/train/things/tok_meg&#x27;), (&#x27;/project/data/val/things/meg&#x27;, &#x27;/project/data/val/things/tok_meg&#x27;)]
+  manifests_updated: [&#x27;/project/data/train/things_meg_manifest.json&#x27;, &#x27;/project/data/val/things_meg_manifest.json&#x27;]
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/neural-fm/main/ap-SRXbBHUux2d4wGo0nTXJ0k</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-58-32-760Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-58-32-760Z" class="timestamp-link"><time datetime="2026-05-23T21:58:32.760Z" data-timestamp="2026-05-23T21:58:32.760Z">2026-05-23T21:58:32.760Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Quick sanity check on the volume to confirm the rename landed correctly.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-58-34-227Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-58-34-227Z" class="timestamp-link"><time datetime="2026-05-23T21:58:34.227Z" data-timestamp="2026-05-23T21:58:34.227Z">2026-05-23T21:58:34.227Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01GrTrhRnv9MRyRsLvQstQuX">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Verify rename on volume</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal volume ls project /data/train/things/ 2&gt;&amp;1 | head -10 &amp;&amp; echo &#34;---&#34; &amp;&amp; modal volume ls project /data/val/things/ 2&gt;&amp;1 | head -10 &amp;&amp; echo &#34;--- spot check first MEG tar in tok_meg ---&#34; &amp;&amp; modal volume ls project /data/train/things/tok_meg/ 2&gt;&amp;1 | head -3</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-58-57-180Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-58-57-180Z" class="timestamp-link"><time datetime="2026-05-23T21:58:57.180Z" data-timestamp="2026-05-23T21:58:57.180Z">2026-05-23T21:58:57.180Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>data/train/things/tok_eeg
+data/train/things/rgb
+data/train/things/tok_meg
+---
+data/val/things/tok_eeg
+data/val/things/rgb
+data/val/things/tok_meg
+--- spot check first MEG tar in tok_meg ---
+data/train/things/tok_meg/shard_022.tar
+data/train/things/tok_meg/shard_021.tar
+data/train/things/tok_meg/shard_020.tar</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-59-07-488Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-59-07-488Z" class="timestamp-link"><time datetime="2026-05-23T21:59:07.488Z" data-timestamp="2026-05-23T21:59:07.488Z">2026-05-23T21:59:07.488Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-59-11-622Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-59-11-622Z" class="timestamp-link"><time datetime="2026-05-23T21:59:11.622Z" data-timestamp="2026-05-23T21:59:11.622Z">2026-05-23T21:59:11.622Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01U4bgWBzQX6AXpDiUoyTWVy"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 1: THINGS RGB train/val split + manifests</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2a: filename bridge built + 100% coverage verified</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2b: pure-logic meg_token_shard.py + 26 tests passing</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2c: tokenize_all done (98,592 trials cached)</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2d: pack/verify done — 23 train + 4 val MEG shards live on volume</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Rename things/meg/ → things/tok_meg/ on volume + code</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T21-59-11-630Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T21-59-11-630Z" class="timestamp-link"><time datetime="2026-05-23T21:59:11.630Z" data-timestamp="2026-05-23T21:59:11.630Z">2026-05-23T21:59:11.630Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T21-59-21-074Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T21-59-21-074Z" class="timestamp-link"><time datetime="2026-05-23T21:59:21.074Z" data-timestamp="2026-05-23T21:59:21.074Z">2026-05-23T21:59:21.074Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Done. Final state matches the 4M convention and is consistent with the EEG owner's layout:</p>
+<pre><code>data/train/things/
+  rgb/        # 23 shards of THINGS images
+  tok_meg/    # 23 shards of BrainOmni 3b tokens (renamed from meg/)
+  tok_eeg/    # existing — EEG owner's tokens
+
+data/val/things/
+  rgb/        # 4 shards
+  tok_meg/    # 4 shards (renamed from meg/)
+  tok_eeg/    # existing
+</code></pre>
+<p>Both manifest JSONs (<code>train/things_meg_manifest.json</code> and <code>val/things_meg_manifest.json</code>) now have <code>shards_subpath: "things/tok_meg"</code>. Source code constants in <code>modal_meg_pack_shards.py</code> and docstrings in <code>meg_token_shard.py</code> also updated, so any future re-run of pack uses the new path natively.</p>
+<p>One thing worth noting for the team: the EEG owner has now also split their data into train/val (I noticed <code>tok_eeg/</code> in both <code>train/things/</code> and <code>val/things/</code>). If they're using a different split policy than ours (which is image-level random seed=0 per <code>things_catalog.json</code> + <code>train/things_manifest.json</code>), 4M won't be able to pair RGB↔MEG↔EEG consistently — worth a quick sync with them on whether they're respecting <code>things_manifest.json</code> or have their own split.</p></div></div></div>
+<div class="message user" id="msg-2026-05-23T21-59-21-107Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-23T21-59-21-107Z" class="timestamp-link"><time datetime="2026-05-23T21:59:21.107Z" data-timestamp="2026-05-23T21:59:21.107Z">2026-05-23T21:59:21.107Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pack_shards.py in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>only do a final complete check on the whole MEG tokenization pipeline and the data that is present within this MODAL volume right now I wanna leave this behind and make sure that it was completely OK. Your job is to create a testing strategy now.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-00-19-222Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-00-19-222Z" class="timestamp-link"><time datetime="2026-05-23T22:00:19.222Z" data-timestamp="2026-05-23T22:00:19.222Z">2026-05-23T22:00:19.222Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-00-33-643Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-00-33-643Z" class="timestamp-link"><time datetime="2026-05-23T22:00:33.643Z" data-timestamp="2026-05-23T22:00:33.643Z">2026-05-23T22:00:33.643Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Good call — running a full audit before walking away. Let me lay out the testing strategy in 4 layers, then implement and run.</p>
+<h2>Test strategy</h2>
+<h3>Layer 1 — Structural (does everything exist?)</h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1.1</td>
+<td>All expected files exist (catalog, bridge, 4 token caches + cache config, 2 manifests, 27 tars)</td>
+</tr>
+<tr>
+<td>L1.2</td>
+<td>Schema validation: each JSON has expected top-level keys + types</td>
+</tr>
+<tr>
+<td>L1.3</td>
+<td>On-disk shard count matches manifest count per split</td>
+</tr>
+</tbody>
+</table>
+<h3>Layer 2 — Cross-artifact consistency (do the JSONs/caches agree?)</h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L2.1</td>
+<td><code>catalog ⊇ bridge filenames</code>: every bridge filename resolves to a catalog image_id (already-checked but reverify on the now-final state)</td>
+</tr>
+<tr>
+<td>L2.2</td>
+<td><code>bridge ⊇ cache triggers</code>: every trigger code in token caches exists in the bridge (no catch trials slipped through)</td>
+</tr>
+<tr>
+<td>L2.3</td>
+<td><code>MEG image_ids ⊆ matching RGB shard</code>: image_id in <code>meg/shard_N.tar</code> is always in <code>rgb/shard_N.tar</code></td>
+</tr>
+<tr>
+<td>L2.4</td>
+<td><code>train ∩ val image_ids = ∅</code> for both RGB AND MEG (no leakage)</td>
+</tr>
+<tr>
+<td>L2.5</td>
+<td>Total MEG entries: <code>cache total == shard total</code> (no trials lost in pack)</td>
+</tr>
+</tbody>
+</table>
+<h3>Layer 3 — Data integrity (are the bytes correct?)</h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L3.1</td>
+<td>Every MEG tar opens cleanly, every entry name parses as <code>&lt;id&gt;_&lt;subj&gt;_t&lt;n&gt;.meg.npy</code></td>
+</tr>
+<tr>
+<td>L3.2</td>
+<td>Every loaded array is <code>(16, 8, 4)</code> int16</td>
+</tr>
+<tr>
+<td>L3.3</td>
+<td>All token values in <code>[0, 512)</code> (codebook range)</td>
+</tr>
+<tr>
+<td>L3.4</td>
+<td>No duplicate <code>(image_id, subject, trial_idx)</code> anywhere across the full corpus</td>
+</tr>
+<tr>
+<td>L3.5</td>
+<td>Random-sample round trip: pick N=200 entries from shards, look up the same <code>(trigger, trial_idx)</code> in the cache, assert tokens are byte-identical</td>
+</tr>
+</tbody>
+</table>
+<h3>Layer 4 — Domain-level sanity (does it match THINGS-MEG protocol?)</h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L4.1</td>
+<td>Total trials ≈ 98,592 (88,992 exp + 9,600 test, the post-filter expected count)</td>
+</tr>
+<tr>
+<td>L4.2</td>
+<td>Per-subject trial count == 24,648 in cache</td>
+</tr>
+<tr>
+<td>L4.3</td>
+<td>Trial-count-per-(image, subject) distribution: ~22k images with exactly 1, ~200 images with ~12</td>
+</tr>
+<tr>
+<td>L4.4</td>
+<td>All 512 RVQ codes used at least once on each of the 4 quantizer layers (no dead codes from a broken finetune)</td>
+</tr>
+</tbody>
+</table>
+<p>This will be one Modal job (<code>modal_meg_pipeline_audit.py::audit</code>), CPU only, ~5–10 min. Reads everything, prints PASS/FAIL per layer, plus a final yes/no summary.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-00-38-816Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-00-38-816Z" class="timestamp-link"><time datetime="2026-05-23T22:00:38.816Z" data-timestamp="2026-05-23T22:00:38.816Z">2026-05-23T22:00:38.816Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_011Uuot8owvQKHjxyUqAmQPc"><div class="tool-header"><span class="tool-icon">⚙</span> AskUserQuestion</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;questions&#34;: [
+    {
+      &#34;question&#34;: &#34;Scope of the audit?&#34;,
+      &#34;header&#34;: &#34;Audit scope&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Full 4-layer audit as described (Recommended)&#34;,
+          &#34;description&#34;: &#34;Runs all 15 checks. One Modal job, ~5–10 min CPU, reads every tar and the full token caches. Strongest &#39;walk away&#39; confidence.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Layers 1-3 only (skip Layer 4 protocol/dead-code stats)&#34;,
+          &#34;description&#34;: &#34;Skip THINGS-protocol counts + codebook utilization. Faster (~3 min). Covers structural/consistency/integrity which is where bugs would actually hide.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Quick spot-check only&#34;,
+          &#34;description&#34;: &#34;Just rerun existing verify (first+last shard each split) plus L2.3 (MEG↔RGB key pairing). 1 min. Lower confidence.&#34;
+        }
+      ]
+    }
+  ]
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-03-01-931Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-03-01-931Z" class="timestamp-link"><time datetime="2026-05-23T22:03:01.931Z" data-timestamp="2026-05-23T22:03:01.931Z">2026-05-23T22:03:01.931Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Your questions have been answered: &quot;Scope of the audit?&quot;=&quot;Full 4-layer audit as described (Recommended)&quot;. You can now continue with these answers in mind.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-03-12-278Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-03-12-278Z" class="timestamp-link"><time datetime="2026-05-23T22:03:12.278Z" data-timestamp="2026-05-23T22:03:12.278Z">2026-05-23T22:03:12.278Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-03-12-828Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-03-12-828Z" class="timestamp-link"><time datetime="2026-05-23T22:03:12.828Z" data-timestamp="2026-05-23T22:03:12.828Z">2026-05-23T22:03:12.828Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Writing the audit script.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-04-52-985Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-04-52-985Z" class="timestamp-link"><time datetime="2026-05-23T22:04:52.985Z" data-timestamp="2026-05-23T22:04:52.985Z">2026-05-23T22:04:52.985Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01Cb8UCfK5e2jJFnBfB3StYS">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">modal_meg_pipeline_audit.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pipeline_audit.py</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content">&#34;&#34;&#34;Comprehensive end-to-end audit of the MEG tokenization pipeline.
+
+Reads everything on the project Volume and runs 15 cross-layer checks:
+  Layer 1 (structural):   does everything exist where expected?
+  Layer 2 (consistency):  do the JSONs / caches / shards agree with each other?
+  Layer 3 (data integrity): are the bytes correct?
+  Layer 4 (protocol):     does the corpus match the THINGS-MEG protocol?
+
+Exits 0 if every check passes. If any check FAILs, prints the offending
+details and exits with a non-zero summary so it&#39;s safe to script.
+
+Cost: ~$0.10 (CPU only, ~5 min).
+
+Run from inner repo root (uses modal/ working dir for the image):
+    cd modal
+    modal run modal_meg_pipeline_audit.py::audit
+&#34;&#34;&#34;
+
+from __future__ import annotations
+
+import io
+import json
+import os
+import tarfile
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from typing import Callable
+
+import modal
+
+import meg_token_shard
+import things_manifest
+from modal_app import app, image
+
+
+project_volume = modal.Volume.from_name(&#34;project&#34;)
+PROJECT_MOUNT = &#34;/project&#34;
+
+CATALOG_PATH = &#34;/project/data/things_catalog.json&#34;
+BRIDGE_PATH = &#34;/project/data/things-meg/labels/meg_trigger_to_image_id.json&#34;
+CACHE_DIR = &#34;/project/data/things-meg/tokens/brainomni/V512_rvq4_win512_sf256_3b&#34;
+TRAIN_RGB_MANIFEST = &#34;/project/data/train/things_manifest.json&#34;
+VAL_RGB_MANIFEST = &#34;/project/data/val/things_manifest.json&#34;
+TRAIN_MEG_MANIFEST = &#34;/project/data/train/things_meg_manifest.json&#34;
+VAL_MEG_MANIFEST = &#34;/project/data/val/things_meg_manifest.json&#34;
+TRAIN_MEG_DIR = &#34;/project/data/train/things/tok_meg&#34;
+VAL_MEG_DIR = &#34;/project/data/val/things/tok_meg&#34;
+SUBJECTS = (&#34;P1&#34;, &#34;P2&#34;, &#34;P3&#34;, &#34;P4&#34;)
+EXPECTED_CODEBOOK_SIZE = 512
+EXPECTED_NUM_QUANTIZERS = 4
+EXPECTED_TOKEN_SHAPE = (16, 8, 4)
+EXPECTED_TOTAL_TRIALS = 98_592   # 88,992 exp + 9,600 test from bridge totals
+EXPECTED_PER_SUBJECT_TRIALS = 24_648
+SAMPLE_ROUNDTRIP_N = 200
+
+audit_image = (
+    image
+    .pip_install(&#34;numpy&#34;)
+    .add_local_python_source(&#34;meg_token_shard&#34;, &#34;things_manifest&#34;, &#34;modal_app&#34;)
+)
+
+
+# ---------- result harness -----------------------------------------------
+
+@dataclass
+class CheckResult:
+    name: str
+    passed: bool
+    message: str
+
+
+def _ok(name: str, msg: str = &#34;&#34;) -&gt; CheckResult:
+    print(f&#34;  [PASS] {name}  {msg}&#34;)
+    return CheckResult(name, True, msg)
+
+
+def _fail(name: str, msg: str) -&gt; CheckResult:
+    print(f&#34;  [FAIL] {name}  {msg}&#34;)
+    return CheckResult(name, False, msg)
+
+
+def _section(title: str) -&gt; None:
+    print(f&#34;\n=== {title} ===&#34;)
+
+
+# ---------- helpers (read from volume) ------------------------------------
+
+def _load_catalog() -&gt; dict:
+    return json.loads(open(CATALOG_PATH).read())
+
+
+def _load_bridge() -&gt; dict:
+    return json.loads(open(BRIDGE_PATH).read())
+
+
+def _load_manifests() -&gt; tuple[dict, dict, dict, dict]:
+    return (
+        json.loads(open(TRAIN_RGB_MANIFEST).read()),
+        json.loads(open(VAL_RGB_MANIFEST).read()),
+        json.loads(open(TRAIN_MEG_MANIFEST).read()),
+        json.loads(open(VAL_MEG_MANIFEST).read()),
+    )
+
+
+def _load_cache_arrays(subject: str):
+    import numpy as np
+
+    return np.load(os.path.join(CACHE_DIR, f&#34;{subject}.npz&#34;))
+
+
+def _enumerate_meg_shard(tar_path: str):
+    &#34;&#34;&#34;Yield (filename, np.ndarray) for every entry in a MEG shard tar.&#34;&#34;&#34;
+    import numpy as np
+
+    with tarfile.open(tar_path, &#34;r&#34;) as tar:
+        for member in tar:
+            if not member.name.endswith(&#34;.meg.npy&#34;):
+                continue
+            f = tar.extractfile(member)
+            if f is None:
+                continue
+            arr = np.load(io.BytesIO(f.read()), allow_pickle=False)
+            yield member.name, arr
+
+
+# ---------- the actual checks --------------------------------------------
+
+def layer1_structural() -&gt; list[CheckResult]:
+    _section(&#34;Layer 1 — Structural&#34;)
+    results: list[CheckResult] = []
+
+    # L1.1: file presence
+    expected_files = [
+        CATALOG_PATH, BRIDGE_PATH,
+        TRAIN_RGB_MANIFEST, VAL_RGB_MANIFEST,
+        TRAIN_MEG_MANIFEST, VAL_MEG_MANIFEST,
+        os.path.join(CACHE_DIR, &#34;config.json&#34;),
+    ] + [os.path.join(CACHE_DIR, f&#34;{s}.npz&#34;) for s in SUBJECTS]
+    missing = [p for p in expected_files if not os.path.exists(p)]
+    if missing:
+        results.append(_fail(&#34;L1.1 file presence&#34;, f&#34;missing: {missing}&#34;))
+    else:
+        results.append(_ok(&#34;L1.1 file presence&#34;, f&#34;{len(expected_files)} files present&#34;))
+
+    # L1.2: schema sanity on each JSON
+    for path, required_keys in (
+        (CATALOG_PATH, {&#34;version&#34;, &#34;n_images&#34;, &#34;image_id_to_filename&#34;}),
+        (BRIDGE_PATH, {&#34;trigger_to_image_id&#34;, &#34;n_triggers&#34;}),
+        (TRAIN_RGB_MANIFEST, {&#34;split&#34;, &#34;n_shards&#34;, &#34;n_images&#34;, &#34;shards&#34;}),
+        (VAL_RGB_MANIFEST, {&#34;split&#34;, &#34;n_shards&#34;, &#34;n_images&#34;, &#34;shards&#34;}),
+        (TRAIN_MEG_MANIFEST, {&#34;split&#34;, &#34;n_shards&#34;, &#34;n_entries&#34;, &#34;shards&#34;, &#34;shards_subpath&#34;, &#34;tokenizer_cfg&#34;}),
+        (VAL_MEG_MANIFEST, {&#34;split&#34;, &#34;n_shards&#34;, &#34;n_entries&#34;, &#34;shards&#34;, &#34;shards_subpath&#34;, &#34;tokenizer_cfg&#34;}),
+    ):
+        try:
+            payload = json.loads(open(path).read())
+            missing_keys = required_keys - set(payload.keys())
+            if missing_keys:
+                results.append(_fail(f&#34;L1.2 schema {os.path.basename(path)}&#34;, f&#34;missing keys {missing_keys}&#34;))
+            else:
+                results.append(_ok(f&#34;L1.2 schema {os.path.basename(path)}&#34;, &#34;keys ok&#34;))
+        except json.JSONDecodeError as e:
+            results.append(_fail(f&#34;L1.2 schema {os.path.basename(path)}&#34;, f&#34;malformed JSON: {e}&#34;))
+
+    # L1.3: shard count on disk == manifest count per split
+    for split_name, manifest_path, shard_dir in (
+        (&#34;train MEG&#34;, TRAIN_MEG_MANIFEST, TRAIN_MEG_DIR),
+        (&#34;val MEG&#34;, VAL_MEG_MANIFEST, VAL_MEG_DIR),
+    ):
+        m = json.loads(open(manifest_path).read())
+        on_disk = sorted(f for f in os.listdir(shard_dir) if f.endswith(&#34;.tar&#34;))
+        expected = sorted(f&#34;{s}.tar&#34; for s in m[&#34;shards&#34;])
+        if on_disk == expected:
+            results.append(_ok(f&#34;L1.3 shard count {split_name}&#34;, f&#34;{len(on_disk)} shards&#34;))
+        else:
+            results.append(_fail(
+                f&#34;L1.3 shard count {split_name}&#34;,
+                f&#34;on_disk={len(on_disk)} vs manifest={len(expected)}; &#34;
+                f&#34;missing={sorted(set(expected) - set(on_disk))[:5]}&#34;
+            ))
+
+    return results
+
+
+def layer2_consistency(
+    catalog: dict, bridge: dict, train_rgb: dict, val_rgb: dict,
+    train_meg: dict, val_meg: dict, cache_summaries: dict,
+) -&gt; list[CheckResult]:
+    _section(&#34;Layer 2 — Cross-artifact consistency&#34;)
+    results: list[CheckResult] = []
+
+    catalog_filenames = set(catalog[&#34;image_id_to_filename&#34;].values())
+    catalog_image_ids = set(catalog[&#34;image_id_to_filename&#34;].keys())
+    bridge_triggers = {int(k) for k in bridge[&#34;trigger_to_image_id&#34;]}
+    bridge_filenames = set(bridge[&#34;trigger_to_filename&#34;].values())
+    bridge_image_ids = set(bridge[&#34;trigger_to_image_id&#34;].values())
+
+    # L2.1: every bridge filename exists in catalog
+    missing_in_catalog = bridge_filenames - catalog_filenames
+    if missing_in_catalog:
+        results.append(_fail(
+            &#34;L2.1 bridge⊆catalog filenames&#34;,
+            f&#34;{len(missing_in_catalog)} unresolved; first 5: {sorted(missing_in_catalog)[:5]}&#34;,
+        ))
+    else:
+        results.append(_ok(
+            &#34;L2.1 bridge⊆catalog filenames&#34;,
+            f&#34;{len(bridge_filenames)} bridge filenames all in catalog&#34;,
+        ))
+
+    # L2.2: every cache trigger exists in bridge
+    cache_triggers: set[int] = set()
+    for s in SUBJECTS:
+        cache_triggers.update(cache_summaries[s][&#34;triggers&#34;])
+    not_in_bridge = cache_triggers - bridge_triggers
+    if not_in_bridge:
+        results.append(_fail(
+            &#34;L2.2 cache⊆bridge triggers&#34;,
+            f&#34;{len(not_in_bridge)} cache triggers not in bridge; first 5: {sorted(not_in_bridge)[:5]}&#34;,
+        ))
+    else:
+        results.append(_ok(
+            &#34;L2.2 cache⊆bridge triggers&#34;,
+            f&#34;all {len(cache_triggers)} unique cache triggers in bridge&#34;,
+        ))
+
+    # L2.3: every MEG shard image_id is in the matching RGB shard
+    bad_pairings: list[str] = []
+    for split_name, meg_manifest, rgb_manifest, shard_dir in (
+        (&#34;train&#34;, train_meg, train_rgb, TRAIN_MEG_DIR),
+        (&#34;val&#34;, val_meg, val_rgb, VAL_MEG_DIR),
+    ):
+        for shard_id in sorted(meg_manifest[&#34;shards&#34;]):
+            rgb_image_ids = set(rgb_manifest[&#34;shards&#34;][shard_id][&#34;image_ids&#34;])
+            meg_image_ids: set[str] = set()
+            tar_path = os.path.join(shard_dir, f&#34;{shard_id}.tar&#34;)
+            for name, _arr in _enumerate_meg_shard(tar_path):
+                parsed = meg_token_shard.parse_meg_filename(name)
+                if parsed is None:
+                    continue
+                meg_image_ids.add(parsed[0])
+            unexpected = meg_image_ids - rgb_image_ids
+            if unexpected:
+                bad_pairings.append(
+                    f&#34;{split_name}/{shard_id}: {len(unexpected)} MEG ids not in RGB; &#34;
+                    f&#34;first: {sorted(unexpected)[:2]}&#34;
+                )
+    if bad_pairings:
+        results.append(_fail(&#34;L2.3 MEG⊆RGB per shard&#34;, &#34;; &#34;.join(bad_pairings[:3])))
+    else:
+        results.append(_ok(&#34;L2.3 MEG⊆RGB per shard&#34;, &#34;all 27 shards pair cleanly&#34;))
+
+    # L2.4: train/val image_id disjointness (both RGB and MEG)
+    rgb_train_ids = {iid for s in train_rgb[&#34;shards&#34;].values() for iid in s[&#34;image_ids&#34;]}
+    rgb_val_ids = {iid for s in val_rgb[&#34;shards&#34;].values() for iid in s[&#34;image_ids&#34;]}
+    if rgb_train_ids.isdisjoint(rgb_val_ids):
+        results.append(_ok(&#34;L2.4a RGB train ∩ val = ∅&#34;, f&#34;|train|={len(rgb_train_ids)} |val|={len(rgb_val_ids)}&#34;))
+    else:
+        leak = rgb_train_ids &amp; rgb_val_ids
+        results.append(_fail(&#34;L2.4a RGB train ∩ val&#34;, f&#34;{len(leak)} leaked; first: {sorted(leak)[:3]}&#34;))
+
+    # MEG image_id sets derived from cache entries (no need to re-enumerate tars):
+    meg_image_ids_per_subject: dict[str, set[str]] = {}
+    for s in SUBJECTS:
+        meg_image_ids_per_subject[s] = {
+            bridge[&#34;trigger_to_image_id&#34;][str(t)] for t in cache_summaries[s][&#34;triggers&#34;]
+        }
+    meg_all_image_ids = set().union(*meg_image_ids_per_subject.values())
+    meg_train_ids = meg_all_image_ids &amp; rgb_train_ids
+    meg_val_ids = meg_all_image_ids &amp; rgb_val_ids
+    if meg_train_ids.isdisjoint(meg_val_ids):
+        results.append(_ok(&#34;L2.4b MEG train ∩ val = ∅&#34;, f&#34;|train|={len(meg_train_ids)} |val|={len(meg_val_ids)}&#34;))
+    else:
+        results.append(_fail(&#34;L2.4b MEG train ∩ val&#34;, f&#34;{len(meg_train_ids &amp; meg_val_ids)} leaked&#34;))
+
+    # L2.5: cache total entries == shard total entries (no loss in pack)
+    cache_total = sum(cache_summaries[s][&#34;n&#34;] for s in SUBJECTS)
+    shard_total = train_meg[&#34;n_entries&#34;] + val_meg[&#34;n_entries&#34;]
+    if cache_total == shard_total:
+        results.append(_ok(&#34;L2.5 cache total == shard total&#34;, f&#34;{cache_total} entries&#34;))
+    else:
+        results.append(_fail(
+            &#34;L2.5 cache total == shard total&#34;,
+            f&#34;cache={cache_total}, shards={shard_total}, diff={cache_total - shard_total}&#34;
+        ))
+
+    return results
+
+
+def layer3_integrity(train_meg: dict, val_meg: dict, cache_summaries: dict, bridge: dict) -&gt; list[CheckResult]:
+    &#34;&#34;&#34;Full enumeration over all 27 MEG shards.
+    Also collects metadata that Layer 4 uses (vocab histograms, trial counts).&#34;&#34;&#34;
+    import numpy as np
+    _section(&#34;Layer 3 — Data integrity (full enumeration)&#34;)
+    results: list[CheckResult] = []
+
+    bad_filenames: list[tuple[str, str]] = []
+    bad_shapes: list[tuple[str, str, tuple]] = []
+    bad_dtypes: list[tuple[str, str, str]] = []
+    out_of_range: list[tuple[str, str, int, int]] = []
+    keys_seen: set[tuple[str, str, str, int]] = set()  # (shard, image, subject, trial_idx)
+    duplicates: list[tuple] = []
+
+    # Stash all loaded tokens keyed by (image_id, subject, trial_idx) so L3.5
+    # can do a random round-trip sample without re-reading tars.
+    shard_tokens_lookup: dict[tuple[str, str, int], np.ndarray] = {}
+
+    # Per-quantizer code histogram (4 layers × 512 codes).
+    code_seen = np.zeros((EXPECTED_TOKEN_SHAPE[2], EXPECTED_CODEBOOK_SIZE), dtype=bool)
+
+    n_total_entries = 0
+    for split_name, meg_manifest, shard_dir in (
+        (&#34;train&#34;, train_meg, TRAIN_MEG_DIR),
+        (&#34;val&#34;, val_meg, VAL_MEG_DIR),
+    ):
+        for shard_id in sorted(meg_manifest[&#34;shards&#34;]):
+            tar_path = os.path.join(shard_dir, f&#34;{shard_id}.tar&#34;)
+            for name, arr in _enumerate_meg_shard(tar_path):
+                n_total_entries += 1
+                parsed = meg_token_shard.parse_meg_filename(name)
+                if parsed is None:
+                    bad_filenames.append((f&#34;{split_name}/{shard_id}&#34;, name))
+                    continue
+                image_id, subject, trial_idx = parsed
+                if arr.shape != EXPECTED_TOKEN_SHAPE:
+                    bad_shapes.append((shard_id, name, arr.shape))
+                    continue
+                if arr.dtype != np.int16:
+                    bad_dtypes.append((shard_id, name, str(arr.dtype)))
+                    continue
+                a_min, a_max = int(arr.min()), int(arr.max())
+                if a_min &lt; 0 or a_max &gt;= EXPECTED_CODEBOOK_SIZE:
+                    out_of_range.append((shard_id, name, a_min, a_max))
+                key = (shard_id, image_id, subject, trial_idx)
+                if key in keys_seen:
+                    duplicates.append(key)
+                else:
+                    keys_seen.add(key)
+                shard_tokens_lookup[(image_id, subject, trial_idx)] = arr
+                # Update per-quantizer codebook histogram.
+                # arr shape: (16=C, 8=T, 4=Q). For each q, accumulate seen codes.
+                for q in range(EXPECTED_TOKEN_SHAPE[2]):
+                    code_seen[q, np.unique(arr[:, :, q])] = True
+
+    # L3.1 / L3.2 / L3.3 collated:
+    if bad_filenames:
+        results.append(_fail(&#34;L3.1 filename parse&#34;, f&#34;{len(bad_filenames)}; first: {bad_filenames[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.1 filename parse&#34;, f&#34;{n_total_entries} entries parse ok&#34;))
+
+    if bad_shapes:
+        results.append(_fail(&#34;L3.2 token shape&#34;, f&#34;{len(bad_shapes)}; first: {bad_shapes[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.2 token shape&#34;, f&#34;all (16,8,4)&#34;))
+    if bad_dtypes:
+        results.append(_fail(&#34;L3.2 token dtype&#34;, f&#34;{len(bad_dtypes)}; first: {bad_dtypes[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.2 token dtype&#34;, &#34;all int16&#34;))
+
+    if out_of_range:
+        results.append(_fail(&#34;L3.3 vocab range [0,512)&#34;, f&#34;{len(out_of_range)}; first: {out_of_range[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.3 vocab range [0,512)&#34;, &#34;all entries in range&#34;))
+
+    # L3.4: duplicate (image_id, subject, trial_idx) anywhere
+    # We tracked per-shard duplicates; also check across shards.
+    cross_shard_keys: dict[tuple[str, str, int], str] = {}
+    cross_dups: list = []
+    for shard_id, iid, subj, t in keys_seen:
+        k2 = (iid, subj, t)
+        if k2 in cross_shard_keys:
+            cross_dups.append((k2, cross_shard_keys[k2], shard_id))
+        else:
+            cross_shard_keys[k2] = shard_id
+    all_dups = duplicates + cross_dups
+    if all_dups:
+        results.append(_fail(&#34;L3.4 no duplicate (image, subject, trial)&#34;, f&#34;{len(all_dups)}; first: {all_dups[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.4 no duplicate (image, subject, trial)&#34;, f&#34;{len(cross_shard_keys)} unique keys&#34;))
+
+    # L3.5: cache↔shard round-trip on a random sample.
+    import random
+    rng = random.Random(0)
+    keys_sample = rng.sample(sorted(cross_shard_keys.keys()), k=min(SAMPLE_ROUNDTRIP_N, len(cross_shard_keys)))
+    mismatches: list = []
+    bridge_image_id_to_trigger = {v: int(k) for k, v in bridge[&#34;trigger_to_image_id&#34;].items()}
+    for image_id, subject, trial_idx in keys_sample:
+        trigger = bridge_image_id_to_trigger.get(image_id)
+        if trigger is None:
+            mismatches.append((image_id, subject, trial_idx, &#34;no trigger&#34;))
+            continue
+        cache = cache_summaries[subject]
+        # Find the index in cache where (trigger, trial_idx) match.
+        mask = (cache[&#34;triggers_arr&#34;] == trigger) &amp; (cache[&#34;trial_idx_arr&#34;] == trial_idx)
+        positions = np.flatnonzero(mask)
+        if len(positions) != 1:
+            mismatches.append((image_id, subject, trial_idx, f&#34;{len(positions)} cache hits&#34;))
+            continue
+        cache_tokens = cache[&#34;tokens_arr&#34;][int(positions[0])]
+        shard_tokens = shard_tokens_lookup[(image_id, subject, trial_idx)]
+        if not np.array_equal(cache_tokens, shard_tokens):
+            mismatches.append((image_id, subject, trial_idx, &#34;tokens differ&#34;))
+    if mismatches:
+        results.append(_fail(&#34;L3.5 cache↔shard round-trip&#34;, f&#34;{len(mismatches)}/{len(keys_sample)}; first: {mismatches[0]}&#34;))
+    else:
+        results.append(_ok(&#34;L3.5 cache↔shard round-trip&#34;, f&#34;{len(keys_sample)} samples byte-identical&#34;))
+
+    # Stash the code histogram for L4.4.
+    layer3_integrity._code_seen = code_seen  # type: ignore[attr-defined]
+    layer3_integrity._n_entries = n_total_entries  # type: ignore[attr-defined]
+    return results
+
+
+def layer4_protocol(train_meg: dict, val_meg: dict, cache_summaries: dict, bridge: dict) -&gt; list[CheckResult]:
+    import numpy as np
+    _section(&#34;Layer 4 — Domain-level (THINGS-MEG protocol)&#34;)
+    results: list[CheckResult] = []
+
+    # L4.1: total trials
+    total = train_meg[&#34;n_entries&#34;] + val_meg[&#34;n_entries&#34;]
+    if total == EXPECTED_TOTAL_TRIALS:
+        results.append(_ok(&#34;L4.1 total trials&#34;, f&#34;{total}&#34;))
+    else:
+        results.append(_fail(&#34;L4.1 total trials&#34;, f&#34;{total}, expected {EXPECTED_TOTAL_TRIALS}&#34;))
+
+    # L4.2: per-subject trials in cache
+    for s in SUBJECTS:
+        n = cache_summaries[s][&#34;n&#34;]
+        if n == EXPECTED_PER_SUBJECT_TRIALS:
+            results.append(_ok(f&#34;L4.2 cache {s} count&#34;, f&#34;{n}&#34;))
+        else:
+            results.append(_fail(f&#34;L4.2 cache {s} count&#34;, f&#34;{n}, expected {EXPECTED_PER_SUBJECT_TRIALS}&#34;))
+
+    # L4.3: trial-count-per-(image, subject) distribution.
+    pair_counts: Counter = Counter()
+    for s in SUBJECTS:
+        for t in cache_summaries[s][&#34;triggers&#34;]:
+            pair_counts[(t, s)] += 1
+    counts_only = list(pair_counts.values())
+    dist = Counter(counts_only)
+    n_singletons = dist.get(1, 0)
+    # exp images: ~22,248 × 4 subj × 1 trial = 88,992 singletons
+    # test images: ~200 × 4 subj × ~12 trials = many higher-count pairs
+    n_high = sum(c for v, c in dist.items() if v &gt;= 10)
+    if n_singletons &gt; 80_000 and n_high &gt; 500:
+        results.append(_ok(&#34;L4.3 trial-count distribution&#34;, f&#34;singletons={n_singletons}, ≥10-trial pairs={n_high}&#34;))
+    else:
+        results.append(_fail(&#34;L4.3 trial-count distribution&#34;, f&#34;singletons={n_singletons}, ≥10-trial pairs={n_high}&#34;))
+    # Also print the top values for visibility.
+    print(f&#34;    (top trial-counts/pair: {sorted(dist.items())[:5]}...{sorted(dist.items())[-3:]})&#34;)
+
+    # L4.4: codebook utilization per quantizer layer
+    code_seen = getattr(layer3_integrity, &#34;_code_seen&#34;, None)
+    if code_seen is None:
+        results.append(_fail(&#34;L4.4 codebook utilization&#34;, &#34;code_seen not computed (Layer 3 didn&#39;t run?)&#34;))
+    else:
+        per_layer_used = code_seen.sum(axis=1)
+        unused_per_layer = EXPECTED_CODEBOOK_SIZE - per_layer_used
+        if (unused_per_layer == 0).all():
+            results.append(_ok(&#34;L4.4 codebook utilization&#34;, f&#34;all 512 codes seen on all {EXPECTED_NUM_QUANTIZERS} layers&#34;))
+        else:
+            results.append(_fail(
+                &#34;L4.4 codebook utilization&#34;,
+                f&#34;dead codes per layer: {unused_per_layer.tolist()}&#34;
+            ))
+
+    return results
+
+
+# ---------- master runner ------------------------------------------------
+
+@app.function(
+    image=audit_image,
+    volumes={PROJECT_MOUNT: project_volume},
+    cpu=4.0,
+    memory=16 * 1024,
+    timeout=60 * 30,
+)
+def audit_remote() -&gt; dict:
+    import numpy as np
+
+    print(&#34;=&#34; * 60)
+    print(&#34;MEG TOKENIZATION PIPELINE — FULL AUDIT&#34;)
+    print(&#34;=&#34; * 60)
+
+    catalog = _load_catalog()
+    bridge = _load_bridge()
+    train_rgb, val_rgb, train_meg, val_meg = _load_manifests()
+
+    cache_summaries: dict = {}
+    print(&#34;\n[load] reading per-subject token caches...&#34;)
+    for s in SUBJECTS:
+        arr = _load_cache_arrays(s)
+        triggers = arr[&#34;meg_trigger_codes&#34;]
+        trial_idx = arr[&#34;trial_idx&#34;]
+        cache_summaries[s] = {
+            &#34;n&#34;: int(arr[&#34;tokens&#34;].shape[0]),
+            &#34;triggers&#34;: set(int(t) for t in triggers),
+            &#34;triggers_arr&#34;: triggers,
+            &#34;trial_idx_arr&#34;: trial_idx,
+            &#34;tokens_arr&#34;: arr[&#34;tokens&#34;],
+        }
+        print(f&#34;  {s}: {cache_summaries[s][&#39;n&#39;]} trials, {len(cache_summaries[s][&#39;triggers&#39;])} unique triggers&#34;)
+
+    results: list[CheckResult] = []
+    results.extend(layer1_structural())
+    results.extend(layer2_consistency(
+        catalog, bridge, train_rgb, val_rgb, train_meg, val_meg, cache_summaries
+    ))
+    results.extend(layer3_integrity(train_meg, val_meg, cache_summaries, bridge))
+    results.extend(layer4_protocol(train_meg, val_meg, cache_summaries, bridge))
+
+    n_pass = sum(1 for r in results if r.passed)
+    n_fail = sum(1 for r in results if not r.passed)
+    failures = [r for r in results if not r.passed]
+
+    print(&#34;\n&#34; + &#34;=&#34; * 60)
+    print(f&#34;SUMMARY  {n_pass} pass  /  {n_fail} fail   ({len(results)} total checks)&#34;)
+    print(&#34;=&#34; * 60)
+    if failures:
+        print(&#34;\nFAILED CHECKS:&#34;)
+        for r in failures:
+            print(f&#34;  {r.name}: {r.message}&#34;)
+        print(&#34;\nRESULT: AUDIT FAILED — fix above before walking away from the pipeline.&#34;)
+    else:
+        print(&#34;\nRESULT: AUDIT PASSED — pipeline is safe to leave behind.&#34;)
+
+    return {
+        &#34;n_pass&#34;: n_pass,
+        &#34;n_fail&#34;: n_fail,
+        &#34;results&#34;: [(r.name, r.passed, r.message) for r in results],
+    }
+
+
+@app.local_entrypoint()
+def audit():
+    summary = audit_remote.remote()
+    print(f&#34;\n[local] {summary[&#39;n_pass&#39;]} pass / {summary[&#39;n_fail&#39;]} fail&#34;)
+    if summary[&#34;n_fail&#34;] &gt; 0:
+        raise SystemExit(1)
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-04-55-996Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-04-55-996Z" class="timestamp-link"><time datetime="2026-05-23T22:04:55.996Z" data-timestamp="2026-05-23T22:04:55.996Z">2026-05-23T22:04:55.996Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>File created successfully at: /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pipeline_audit.py (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-05-05-513Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-05-05-513Z" class="timestamp-link"><time datetime="2026-05-23T22:05:05.513Z" data-timestamp="2026-05-23T22:05:05.513Z">2026-05-23T22:05:05.513Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_016Upa9CVaj2ArSuTaQED6mB">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Syntax check audit script</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural-foundation-model &amp;&amp; python -c &#34;import ast; ast.parse(open(&#39;modal/modal_meg_pipeline_audit.py&#39;).read()); print(&#39;parse OK&#39;)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-05-22-238Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-05-22-238Z" class="timestamp-link"><time datetime="2026-05-23T22:05:22.238Z" data-timestamp="2026-05-23T22:05:22.238Z">2026-05-23T22:05:22.238Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>parse OK</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-05-28-383Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-05-28-383Z" class="timestamp-link"><time datetime="2026-05-23T22:05:28.383Z" data-timestamp="2026-05-23T22:05:28.383Z">2026-05-23T22:05:28.383Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Running the full audit.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-05-29-722Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-05-29-722Z" class="timestamp-link"><time datetime="2026-05-23T22:05:29.722Z" data-timestamp="2026-05-23T22:05:29.722Z">2026-05-23T22:05:29.722Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01APSHaBDb8C6LJsmZXuwKn6">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Run full pipeline audit</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal &amp;&amp; modal run modal_meg_pipeline_audit.py::audit 2&gt;&amp;1 | tail -80</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-07-44-010Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-07-44-010Z" class="timestamp-link"><time datetime="2026-05-23T22:07:44.010Z" data-timestamp="2026-05-23T22:07:44.010Z">2026-05-23T22:07:44.010Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>✓ Initialized. View run at 
+https://modal.com/apps/neural-fm/main/ap-4ZrXKC1QBwQAzcyXadSuoX
+✓ Created objects.
+├── 🔨 Created mount 
+│   /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal
+│   _app.py
+├── 🔨 Created mount 
+│   /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal
+│   _meg_pipeline_audit.py
+├── 🔨 Created mount PythonPackage:meg_token_shard, 
+│   PythonPackage:things_manifest, PythonPackage:modal_app
+├── 🔨 Created function hello.
+└── 🔨 Created function audit_remote.
+============================================================
+MEG TOKENIZATION PIPELINE — FULL AUDIT
+============================================================
+
+[load] reading per-subject token caches...
+  P1: 24648 trials, 22448 unique triggers
+  P2: 24648 trials, 22448 unique triggers
+  P3: 24648 trials, 22448 unique triggers
+  P4: 24648 trials, 22448 unique triggers
+
+=== Layer 1 — Structural ===
+  [PASS] L1.1 file presence  11 files present
+  [PASS] L1.2 schema things_catalog.json  keys ok
+  [PASS] L1.2 schema meg_trigger_to_image_id.json  keys ok
+  [PASS] L1.2 schema things_manifest.json  keys ok
+  [PASS] L1.2 schema things_manifest.json  keys ok
+  [PASS] L1.2 schema things_meg_manifest.json  keys ok
+  [PASS] L1.2 schema things_meg_manifest.json  keys ok
+  [PASS] L1.3 shard count train MEG  23 shards
+  [PASS] L1.3 shard count val MEG  4 shards
+
+=== Layer 2 — Cross-artifact consistency ===
+  [PASS] L2.1 bridge⊆catalog filenames  22448 bridge filenames all in catalog
+  [PASS] L2.2 cache⊆bridge triggers  all 22448 unique cache triggers in bridge
+  [PASS] L2.3 MEG⊆RGB per shard  all 27 shards pair cleanly
+  [PASS] L2.4a RGB train ∩ val = ∅  |train|=22191 |val|=3916
+  [PASS] L2.4b MEG train ∩ val = ∅  |train|=19071 |val|=3377
+  [PASS] L2.5 cache total == shard total  98592 entries
+
+=== Layer 3 — Data integrity (full enumeration) ===
+  [PASS] L3.1 filename parse  98592 entries parse ok
+  [PASS] L3.2 token shape  all (16,8,4)
+  [PASS] L3.2 token dtype  all int16
+  [PASS] L3.3 vocab range [0,512)  all entries in range
+
+[local] 27 pass / 1 fail
+  [PASS] L3.4 no duplicate (image, subject, trial)  98592 unique keys
+  [PASS] L3.5 cache↔shard round-trip  200 samples byte-identical
+
+=== Layer 4 — Domain-level (THINGS-MEG protocol) ===
+  [PASS] L4.1 total trials  98592
+  [PASS] L4.2 cache P1 count  24648
+  [PASS] L4.2 cache P2 count  24648
+  [PASS] L4.2 cache P3 count  24648
+  [PASS] L4.2 cache P4 count  24648
+  [FAIL] L4.3 trial-count distribution  singletons=89792, ≥10-trial pairs=0
+    (top trial-counts/pair: [(1, 89792)]...[(1, 89792)])
+  [PASS] L4.4 codebook utilization  all 512 codes seen on all 4 layers
+
+============================================================
+SUMMARY  27 pass  /  1 fail   (28 total checks)
+============================================================
+
+FAILED CHECKS:
+  L4.3 trial-count distribution: singletons=89792, ≥10-trial pairs=0
+
+RESULT: AUDIT FAILED — fix above before walking away from the pipeline.
+Stopping app - uncaught exception raised locally: SystemExit(1).</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-08-16-373Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-08-16-373Z" class="timestamp-link"><time datetime="2026-05-23T22:08:16.373Z" data-timestamp="2026-05-23T22:08:16.373Z">2026-05-23T22:08:16.373Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-08-18-030Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-08-18-030Z" class="timestamp-link"><time datetime="2026-05-23T22:08:18.030Z" data-timestamp="2026-05-23T22:08:18.030Z">2026-05-23T22:08:18.030Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>L4.3 failed but it's a bug in the <strong>audit code</strong>, not the data. I iterated over <code>cache["triggers"]</code> which is a set (so every trigger appears once), instead of the raw triggers array. Fixing.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-08-23-918Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-08-23-918Z" class="timestamp-link"><time datetime="2026-05-23T22:08:23.918Z" data-timestamp="2026-05-23T22:08:23.918Z">2026-05-23T22:08:23.918Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01FG2PNG6rLPbLKpd8nFZLVV">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_pipeline_audit.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pipeline_audit.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    # L4.3: trial-count-per-(image, subject) distribution.
+    pair_counts: Counter = Counter()
+    for s in SUBJECTS:
+        for t in cache_summaries[s][&#34;triggers&#34;]:
+            pair_counts[(t, s)] += 1</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    # L4.3: trial-count-per-(image, subject) distribution.
+    # Iterate triggers_arr (raw per-trial), not triggers (set), so test
+    # repeats produce &gt;1 count per (trigger, subject).
+    pair_counts: Counter = Counter()
+    for s in SUBJECTS:
+        for t in cache_summaries[s][&#34;triggers_arr&#34;]:
+            pair_counts[(int(t), s)] += 1</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-09-27-909Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-09-27-909Z" class="timestamp-link"><time datetime="2026-05-23T22:09:27.909Z" data-timestamp="2026-05-23T22:09:27.909Z">2026-05-23T22:09:27.909Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/modal/modal_meg_pipeline_audit.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-09-33-344Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-09-33-344Z" class="timestamp-link"><time datetime="2026-05-23T22:09:33.344Z" data-timestamp="2026-05-23T22:09:33.344Z">2026-05-23T22:09:33.344Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01CFeZ8pmHW6pSR8H52YGVqT">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Re-run audit after L4.3 fix</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">modal run modal_meg_pipeline_audit.py::audit 2&gt;&amp;1 | tail -50</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-10-23-538Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-10-23-538Z" class="timestamp-link"><time datetime="2026-05-23T22:10:23.538Z" data-timestamp="2026-05-23T22:10:23.538Z">2026-05-23T22:10:23.538Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>  P3: 24648 trials, 22448 unique triggers
+  P4: 24648 trials, 22448 unique triggers
+
+=== Layer 1 — Structural ===
+  [PASS] L1.1 file presence  11 files present
+  [PASS] L1.2 schema things_catalog.json  keys ok
+  [PASS] L1.2 schema meg_trigger_to_image_id.json  keys ok
+  [PASS] L1.2 schema things_manifest.json  keys ok
+  [PASS] L1.2 schema things_manifest.json  keys ok
+  [PASS] L1.2 schema things_meg_manifest.json  keys ok
+  [PASS] L1.2 schema things_meg_manifest.json  keys ok
+  [PASS] L1.3 shard count train MEG  23 shards
+  [PASS] L1.3 shard count val MEG  4 shards
+
+=== Layer 2 — Cross-artifact consistency ===
+  [PASS] L2.1 bridge⊆catalog filenames  22448 bridge filenames all in catalog
+  [PASS] L2.2 cache⊆bridge triggers  all 22448 unique cache triggers in bridge
+  [PASS] L2.3 MEG⊆RGB per shard  all 27 shards pair cleanly
+  [PASS] L2.4a RGB train ∩ val = ∅  |train|=22191 |val|=3916
+  [PASS] L2.4b MEG train ∩ val = ∅  |train|=19071 |val|=3377
+  [PASS] L2.5 cache total == shard total  98592 entries
+
+=== Layer 3 — Data integrity (full enumeration) ===
+  [PASS] L3.1 filename parse  98592 entries parse ok
+  [PASS] L3.2 token shape  all (16,8,4)
+  [PASS] L3.2 token dtype  all int16
+  [PASS] L3.3 vocab range [0,512)  all entries in range
+  [PASS] L3.4 no duplicate (image, subject, trial)  98592 unique keys
+  [PASS] L3.5 cache↔shard round-trip  200 samples byte-identical
+
+=== Layer 4 — Domain-level (THINGS-MEG protocol) ===
+  [PASS] L4.1 total trials  98592
+  [PASS] L4.2 cache P1 count  24648
+  [PASS] L4.2 cache P2 count  24648
+  [PASS] L4.2 cache P3 count  24648
+  [PASS] L4.2 cache P4 count  24648
+  [PASS] L4.3 trial-count distribution  singletons=88992, ≥10-trial pairs=800
+    (top trial-counts/pair: [(1, 88992), (12, 800)]...[(1, 88992), (12, 800)])
+  [PASS] L4.4 codebook utilization  all 512 codes seen on all 4 layers
+
+============================================================
+SUMMARY  28 pass  /  0 fail   (28 total checks)
+============================================================
+
+RESULT: AUDIT PASSED — pipeline is safe to leave behind.
+
+[local] 28 pass / 0 fail
+Stopping app - local entrypoint completed.
+✓ App completed. View run at 
+https://modal.com/apps/neural-fm/main/ap-Qo3kvUESYQs3SuiHpwh9UA</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-10-29-767Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-10-29-767Z" class="timestamp-link"><time datetime="2026-05-23T22:10:29.767Z" data-timestamp="2026-05-23T22:10:29.767Z">2026-05-23T22:10:29.767Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01SwXoEFbLSggp9NpvxgFVer"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 1: THINGS RGB train/val split + manifests</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2: MEG tokenization pipeline (bridge → tokenize → pack → rename)</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Full 4-layer audit: 28/28 checks pass</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-10-29-770Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-10-29-770Z" class="timestamp-link"><time datetime="2026-05-23T22:10:29.770Z" data-timestamp="2026-05-23T22:10:29.770Z">2026-05-23T22:10:29.770Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-10-43-090Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-10-43-090Z" class="timestamp-link"><time datetime="2026-05-23T22:10:43.090Z" data-timestamp="2026-05-23T22:10:43.090Z">2026-05-23T22:10:43.090Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><strong>28 / 28 checks pass.</strong> Pipeline is safe to leave behind.</p>
+<p>Key numbers confirmed end-to-end:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Highlight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>L1</strong></td>
+<td>11 expected files present; 27 tars match manifest counts (23 train + 4 val)</td>
+</tr>
+<tr>
+<td><strong>L2</strong></td>
+<td>100% bridge↔catalog coverage; no leakage in either RGB or MEG splits; cache total (98,592) == shard total (98,592) — zero loss in packing</td>
+</tr>
+<tr>
+<td><strong>L3</strong></td>
+<td>All 98,592 entries parse, are <code>(16,8,4) int16</code> in vocab range <code>[0,512)</code>; no duplicate <code>(image_id, subject, trial_idx)</code> anywhere; 200-sample cache↔shard round-trip byte-identical</td>
+</tr>
+<tr>
+<td><strong>L4</strong></td>
+<td>Per-subject = 24,648 exact; trial distribution matches protocol exactly: <strong>88,992 singletons</strong> (exp images, one per subject) + <strong>800 pairs with count=12</strong> (200 test images × 4 subjects, 12 repeats each); all <strong>512 codes used on all 4 RVQ layers</strong> (no dead codes)</td>
+</tr>
+</tbody>
+</table>
+<p>The L4.3 distribution <code>[(1, 88992), (12, 800)]</code> is exactly the THINGS-MEG protocol shape — confirms the trial_idx assignment in <code>tokenize_all_remote</code> correctly numbered the test repeats <code>t0..t11</code>.</p>
+<p><strong>Audit artifact</strong>: <a href="modal/modal_meg_pipeline_audit.py">modal/modal_meg_pipeline_audit.py</a> is reusable — anyone can <code>modal run modal_meg_pipeline_audit.py::audit</code> to re-verify the pipeline state after future changes. Worth a brief mention in <code>meg/CLAUDE.md</code> so the next person knows to run it before/after touching the cache or shards.</p></div></div></div>
+<div class="message user" id="msg-2026-05-23T22-10-45-756Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-23T22-10-45-756Z" class="timestamp-link"><time datetime="2026-05-23T22:10:45.756Z" data-timestamp="2026-05-23T22:10:45.756Z">2026-05-23T22:10:45.756Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /temp/readonly/Bash tool output (ytpwno) in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>update claude.md in neural tokenizers and in meg completely</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-12-17-370Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-12-17-370Z" class="timestamp-link"><time datetime="2026-05-23T22:12:17.370Z" data-timestamp="2026-05-23T22:12:17.370Z">2026-05-23T22:12:17.370Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-12-19-724Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-12-19-724Z" class="timestamp-link"><time datetime="2026-05-23T22:12:19.724Z" data-timestamp="2026-05-23T22:12:19.724Z">2026-05-23T22:12:19.724Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Updating both docs to reflect the work shipped this session. Two passes:
+1. <strong>Parent <code>neural_tokenizers/CLAUDE.md</code></strong> — add a new section on the shared THINGS volume layout that every modality owner needs
+2. <strong><code>neural_tokenizers/meg/CLAUDE.md</code></strong> — add phase-4 row to progress table, resolve open decisions that are now done, mark automation candidates as shipped, add new §13 with the full production export recipe</p>
+<p>Starting with the parent.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-12-36-598Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-12-36-598Z" class="timestamp-link"><time datetime="2026-05-23T22:12:36.598Z" data-timestamp="2026-05-23T22:12:36.598Z">2026-05-23T22:12:36.598Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01FMt7385ZU5mgx1UuLvjZrD">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">## 9. Notes on automation / `.claude` layering</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">## 9. Shared THINGS data layout on the `project` Volume (2026-05-23)
+
+This section is cross-modality — every modality owner needs to read it. The
+shared infrastructure is implemented under top-level [`../modal/`](../modal/),
+NOT under `neural_tokenizers/&lt;modality&gt;/modal/`.
+
+### 9.1 Layout
+
+```
+/project/data/
+  things_catalog.json                # 26,107 image_id ↔ filename, split-invariant
+  train/
+    things_manifest.json             # which image_ids in each train shard
+    things_meg_manifest.json         # per-shard MEG entry counts (see meg/CLAUDE.md §13)
+    things/
+      rgb/shard_NNN.tar              # 23 shards (~85% of images)
+      tok_meg/shard_NNN.tar          # 23 shards (BrainOmni 3b tokens)
+      tok_eeg/                       # EEG owner&#39;s tokens (separate convention)
+  val/
+    things_manifest.json
+    things_meg_manifest.json
+    things/
+      rgb/shard_NNN.tar              # 4 shards (~15%)
+      tok_meg/shard_NNN.tar          # 4 shards
+      tok_eeg/
+```
+
+### 9.2 Conventions every modality must respect
+
+- **`image_id`** = 9-digit zero-padded *alphabetical rank* of the THINGS image
+  filename. `things_catalog.json` is the only source of truth — the same
+  image_id refers to the same image forever, regardless of split.
+- **Split** = image-level random, seed=0, 85/15 train/val. Stored in
+  `train/things_manifest.json` + `val/things_manifest.json`. **Do not produce
+  a different split** — modalities pair on identical image_id sets so 4M
+  can ingest them jointly.
+- **Per-modality shard subfolder**: `things/&lt;modality&gt;/shard_NNN.tar`,
+  using the **4M `tok_&lt;modality&gt;/` prefix** for tokenized modalities
+  (`tok_meg`, `tok_eeg`, …) and the bare modality name for raw image data
+  (`rgb`). 23 train + 4 val shards per modality, indexed identically to RGB.
+- **WebDataset key convention** inside each tar:
+  - one-sample-per-image modality → `&lt;image_id&gt;.&lt;ext&gt;` (RGB: `.jpg` + `.txt`)
+  - multi-trial modality (MEG) → `&lt;image_id&gt;_&lt;provenance&gt;.&lt;ext&gt;`
+    (e.g. `&lt;image_id&gt;_&lt;subject&gt;_t&lt;trial_idx&gt;.meg.npy`).
+  - 4M loaders pair across modalities by stripping everything after the
+    first `_` to recover image_id.
+
+### 9.3 Source files (top-level `modal/`)
+
+| File | Purpose |
+|---|---|
+| [`../modal/things_manifest.py`](../modal/things_manifest.py) | Pure-logic THINGS catalog + split + RGB shard repack |
+| [`../modal/modal_things_repack.py`](../modal/modal_things_repack.py) | Modal entrypoints: `plan` / `repack` / `verify` for the RGB train/val split |
+| [`../modal/meg_token_shard.py`](../modal/meg_token_shard.py) | Pure-logic MEG shard packer (filename convention, planning, tar I/O) |
+| [`../modal/modal_meg_pack_shards.py`](../modal/modal_meg_pack_shards.py) | Modal entrypoints: `plan` / `pack` / `verify` for MEG token shards |
+| [`../modal/modal_meg_pipeline_audit.py`](../modal/modal_meg_pipeline_audit.py) | End-to-end 28-check audit (structural / consistency / integrity / protocol) |
+
+### 9.4 Adding a new modality (EEG, fMRI, intracortical, …)
+
+Mirror this layout. Write your tokens into `things/tok_&lt;modality&gt;/shard_NNN.tar`
+for each split, using the **same shard indexing as the catalog manifests** —
+read `train/things_manifest.json` and `val/things_manifest.json` to know
+which image_ids belong in each shard. Don&#39;t invent your own split.
+
+## 10. Notes on automation / `.claude` layering</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-12-46-733Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-12-46-733Z" class="timestamp-link"><time datetime="2026-05-23T22:12:46.733Z" data-timestamp="2026-05-23T22:12:46.733Z">2026-05-23T22:12:46.733Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-01-668Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-01-668Z" class="timestamp-link"><time datetime="2026-05-23T22:13:01.668Z" data-timestamp="2026-05-23T22:13:01.668Z">2026-05-23T22:13:01.668Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-02-193Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-02-193Z" class="timestamp-link"><time datetime="2026-05-23T22:13:02.193Z" data-timestamp="2026-05-23T22:13:02.193Z">2026-05-23T22:13:02.193Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now updating the MEG doc — phase table, open decisions, automation candidates, plus the new §13.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-11-632Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-11-632Z" class="timestamp-link"><time datetime="2026-05-23T22:13:11.632Z" data-timestamp="2026-05-23T22:13:11.632Z">2026-05-23T22:13:11.632Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_015ttBrpAQX7Hji1HPKJy6av">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">| Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** token-cache export script; wire `meg_tokens_brainomni` in
+ml-4m `modality_info.py` (draft in `meg/modality_registration.py`).</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">| Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+| 4 | BrainOmni 3b token cache + tok_meg/ shards for 4M | **Done (2026-05-23)** — see §13 |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** wire `meg_tokens_brainomni` in ml-4m `modality_info.py`
+(draft in `meg/modality_registration.py`). Token cache + shard export is
+shipped — see §13.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-11-636Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-11-636Z" class="timestamp-link"><time datetime="2026-05-23T22:13:11.636Z" data-timestamp="2026-05-23T22:13:11.636Z">2026-05-23T22:13:11.636Z</time></a></div><div class="message-content"><div class="tool-result tool-error"><div class="truncatable"><div class="truncatable-content"><pre>&lt;tool_use_error&gt;String to replace not found in file.
+String: | Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** token-cache export script; wire `meg_tokens_brainomni` in
+ml-4m `modality_info.py` (draft in `meg/modality_registration.py`).
+(note: Edit also tried swapping \uXXXX escapes and their characters; neither form matched, so the mismatch is likely elsewhere in old_string. Re-read the file and copy the exact surrounding text.)&lt;/tool_use_error&gt;</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-16-430Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-16-430Z" class="timestamp-link"><time datetime="2026-05-23T22:13:16.430Z" data-timestamp="2026-05-23T22:13:16.430Z">2026-05-23T22:13:16.430Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-18-546Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-18-546Z" class="timestamp-link"><time datetime="2026-05-23T22:13:18.546Z" data-timestamp="2026-05-23T22:13:18.546Z">2026-05-23T22:13:18.546Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_017y82nkoi27bty2GGefG396">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find phase table in meg CLAUDE.md</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;Phase 1 (μ-transform)\|μ-transform (V=256\|Phase\|Status&#34; /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-18-588Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-18-588Z" class="timestamp-link"><time datetime="2026-05-23T22:13:18.588Z" data-timestamp="2026-05-23T22:13:18.588Z">2026-05-23T22:13:18.588Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>63:| Phase 1 (μ-transform)| 256 (paper default)            | 1             | 271 × 281 (per sample) |
+64:| Phase 2 (Cho2026 learned) | 128 (paper) → V* after refactor | 1        | 271 × 281 (target)     |
+65:| Phase 3 (BrainOmni)  | **512** (per RVQ layer)        | **4**         | **16 × 8 × 4 = 512** indices |
+67:Registration shape for sample-level tokenizers (Phase 1/2):
+151:| Phase | Tokenizer                                | Learns? | Cost     | Role                         | Status |
+167:### Phase 1 — μ-transform recalibration (no gradient descent, but still a `fit` step)
+203:**Phase 1 status (shipped):** calibrated on THINGS-MEG train split with
+214:### Phase 2 — Cho 2026 learnable tokenizer (actual gradient training)
+282:### Phase 3 — BrainOmni BrainTokenizer (implemented)
+420:  mu_transform/               # Phase 1
+429:  cho2026/                    # Phase 2 — thin adapter, NOT a fork
+436:  brainomni/                  # Phase 3 — BrainOmni BrainTokenizer adapter
+463:Phase 1 run artifact:
+504:# BrainOmni — see §5 Phase 3 for brainomni commands
+534:| Metric | μ-transform (V=256) | BrainOmni 3a/3b (V=512) |
+591:- **Phase 1**: per-channel vs. global max-abs scaler. **Resolved:** per-channel
+594:- **Phase 1**: vocab size `V`. **Resolved:** V=256 (paper default). Optional
+596:- **Phase 3**: BrainOmni codebook size. **Resolved:** V=512 (codebook sweep).
+597:- **Phase 3**: finetune LR. **Resolved:** 3e-5 (`adapt` mode, 10 epochs).
+598:- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-24-315Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-24-315Z" class="timestamp-link"><time datetime="2026-05-23T22:13:24.315Z" data-timestamp="2026-05-23T22:13:24.315Z">2026-05-23T22:13:24.315Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01XubUjLdW3Ni4GpQK8rcbjH"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;,
+  &#34;offset&#34;: 300,
+  &#34;limit&#34;: 25
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-24-326Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-24-326Z" class="timestamp-link"><time datetime="2026-05-23T22:13:24.326Z" data-timestamp="2026-05-23T22:13:24.326Z">2026-05-23T22:13:24.326Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>300	
+301	| Mode | What&#x27;s trainable | Params (approx) |
+302	|------|------------------|-----------------|
+303	| `adapt` (default) | sensor embed, cross-attn, latent neuros, RVQ | ~959k / 5.05M |
+304	| `rvq_only` | RVQ codebooks only | smaller |
+305	| `full` | entire BrainTokenizer | 5.05M |
+306	
+307	Default `adapt` freezes SEANet encoder/decoder (~81% of weights). RVQ
+308	codebooks update via EMA during training.
+309	
+310	**Hyperparameter sweeps (smoke: 1k train / 200 val):**
+311	
+312	| Sweep | Grid | Winner | Smoke best val |
+313	|-------|------|--------|----------------|
+314	| LR | `{3e-6, 1e-5, 3e-5}` × 5 ep | **3e-5** | 1.597 |
+315	| Codebook | `{256, 512, 1024}` × 10 ep | **512** | 1.543 |
+316	| LR coarse | `{1e-4, 1e-3}` × 10 ep | 1e-4 (both worse than 3e-5) | 1.620 |
+317	
+318	Summaries: `brainomni/runs/3b_smoke_sweep/`, `3b_codebook_sweep/`,
+319	`3b_lr_sweep_coarse/`.
+320	
+321	**Full finetune (3b) — completed:**
+322	
+323	- Config: `adapt`, lr=**3e-5**, batch=**32**, 10 epochs, V=512
+324	- Data: 88,340 train / 9,816 val (80/10/10 `LEARNABLE_SPLIT_DEFAULTS`)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-29-228Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-29-228Z" class="timestamp-link"><time datetime="2026-05-23T22:13:29.228Z" data-timestamp="2026-05-23T22:13:29.228Z">2026-05-23T22:13:29.228Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01THFm9chSonzPgBo6e3BenW"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;,
+  &#34;offset&#34;: 145,
+  &#34;limit&#34;: 30
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-29-238Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-29-238Z" class="timestamp-link"><time datetime="2026-05-23T22:13:29.238Z" data-timestamp="2026-05-23T22:13:29.238Z">2026-05-23T22:13:29.238Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>145	The phases trade off cost vs. expected fidelity. We deliberately start with
+146	the cheapest possible MEG tokenizer to (a) prove the §5 harness is correctly
+147	wired for MEG-shaped data, (b) put a floor on the leaderboard, and (c) avoid
+148	prematurely committing to a deep architecture before we know what &quot;good
+149	enough&quot; looks like on this specific THINGS-MEG distribution.
+150	
+151	| Phase | Tokenizer                                | Learns? | Cost     | Role                         | Status |
+152	|-------|------------------------------------------|---------|----------|------------------------------|--------|
+153	| 1     | μ-transform (Cho 2026 baseline)          | No¹     | seconds  | Floor + harness sanity check | **Shipped** |
+154	| 2     | Cho 2026 learnable AE (causal / non-causal) | Yes  | hours-GPU | Likely production tokenizer | Not started |
+155	| 3     | BrainOmni BrainTokenizer, finetuned        | Yes     | hours-GPU | Learned compression + 4M-friendly grid | **Shipped (3a+3b)** |
+156	
+157	¹ &quot;Non-learnable&quot; means no gradient-descent weights — but the μ-transform
+158	still has dataset-fit parameters (clip thresholds and max-abs scaler) that
+159	**must** be re-estimated on THINGS-MEG. See §5 for what &quot;recalibration&quot;
+160	actually means.
+161	
+162	## 5. What &quot;recalibration&quot; / &quot;finetuning&quot; actually mean here
+163	
+164	The Cho 2026 paper warns that both tokenizer families need dataset-specific
+165	adaptation. The mechanism is different for each.
+166	
+167	### Phase 1 — μ-transform recalibration (no gradient descent, but still a `fit` step)
+168	
+169	The μ-transform pipeline (paper §3.3.1):
+170	
+171	1. **Clip** the input to a percentile range `[q_lo, q_hi]` to suppress
+172	   outliers.
+173	2. **Max-abs scale** to `[−1, 1]`: `x&#x27; = x / s` with `s = max|x|`.
+174	3. **μ-law compand**: `F(x&#x27;) = sgn(x&#x27;) · ln(1 + μ|x&#x27;|) / ln(1 + μ)`.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-34-877Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-34-877Z" class="timestamp-link"><time datetime="2026-05-23T22:13:34.877Z" data-timestamp="2026-05-23T22:13:34.877Z">2026-05-23T22:13:34.877Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-35-872Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-35-872Z" class="timestamp-link"><time datetime="2026-05-23T22:13:35.872Z" data-timestamp="2026-05-23T22:13:35.872Z">2026-05-23T22:13:35.872Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_0132vT4S5txidGZPTz7TEnbM"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;,
+  &#34;offset&#34;: 370,
+  &#34;limit&#34;: 35
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-35-877Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-35-877Z" class="timestamp-link"><time datetime="2026-05-23T22:13:35.877Z" data-timestamp="2026-05-23T22:13:35.877Z">2026-05-23T22:13:35.877Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>370	
+371	See also `meg/brainomni/README.md` for command cheat sheet.
+372	
+373	## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
+374	
+375	The `external/Cho2026_Tokenizer` submodule we pinned in this branch is
+376	**TensorFlow 2.11** + `osl_dynamics` + `osl_foundation` (see their
+377	`README.md`, &quot;Requirements&quot;). Our stack (ml-4m, Modal, existing eval code)
+378	is **PyTorch**. Do not try to bridge TF→Torch inside this subdir.
+379	
+380	The OHBA group released a PyTorch port: **[`OHBA-analysis/EphysTokenizer`](https://github.com/OHBA-analysis/EphysTokenizer)**
+381	(linked from the Cho2026 README&#x27;s &quot;PyTorch version&quot; toggle). This is the
+382	real runtime target for phase 2. The plan is:
+383	
+384	- **Keep `external/Cho2026_Tokenizer`** — it is the source of truth for
+385	  the paper&#x27;s configs (`models/tokenizer/{mu_transform,causal,noncausal}/config.yml`),
+386	  reference scripts (`scripts/01_train_tokenizer.py`, etc.), and the
+387	  reproducibility of the published numbers. Read it, don&#x27;t run it.
+388	- **Add `external/EphysTokenizer` as a second submodule** when phase 2
+389	  starts. That is the PyTorch implementation we will actually finetune
+390	  and integrate behind the `Tokenizer` protocol.
+391	- **Adapter pattern, no fork.** Implement `meg/cho2026/adapter.py` as a
+392	  thin wrapper that imports from `external/EphysTokenizer/...` and exposes
+393	  the `Tokenizer` protocol. Do not copy upstream code into `meg/`. If we
+394	  have to patch upstream, do it as a real fork pinned by submodule SHA.
+395	
+396	Open question for the user before phase 2 starts: do we also pin
+397	`EphysTokenizer`, or reimplement the (small) PyTorch tokenizer in-tree?
+398	Both are defensible — EphysTokenizer if we want to inherit pretrained
+399	checkpoints; in-tree if we want to control the training loop without an
+400	extra dependency.
+401	
+402	## 7. File layout under `meg/`
+403	
+404	Each phase is a self-contained subpackage that exposes a class implementing</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-41-768Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-41-768Z" class="timestamp-link"><time datetime="2026-05-23T22:13:41.768Z" data-timestamp="2026-05-23T22:13:41.768Z">2026-05-23T22:13:41.768Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01JeiJiLRdN6K6RHW9oDxPQz">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List MEG CLAUDE.md sections</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;^## &#34; /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-41-804Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-41-804Z" class="timestamp-link"><time datetime="2026-05-23T22:13:41.804Z" data-timestamp="2026-05-23T22:13:41.804Z">2026-05-23T22:13:41.804Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>11:## 1. Goal
+19:## 2. What 4M expects from a new modality — the binding constraint
+75:## 3. Data — verified, not assumed
+143:## 4. Why three phases, in this order
+162:## 5. What &quot;recalibration&quot; / &quot;finetuning&quot; actually mean here
+373:## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
+402:## 7. File layout under `meg/`
+467:## 8. Evaluation contract
+513:## 9. §5 leaderboard — μ-transform vs BrainOmni (2026-05-22)
+587:## 10. Open decisions
+621:## 11. Engineering norms specific to this subdir
+646:## 12. Automation / `.claude` candidates</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-54-011Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-54-011Z" class="timestamp-link"><time datetime="2026-05-23T22:13:54.011Z" data-timestamp="2026-05-23T22:13:54.011Z">2026-05-23T22:13:54.011Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-13-54-504Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-13-54-504Z" class="timestamp-link"><time datetime="2026-05-23T22:13:54.504Z" data-timestamp="2026-05-23T22:13:54.504Z">2026-05-23T22:13:54.504Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01FVJWZeNVUakdKcugMCoo97"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md&#34;,
+  &#34;offset&#34;: 587,
+  &#34;limit&#34;: 80
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-13-54-510Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-13-54-510Z" class="timestamp-link"><time datetime="2026-05-23T22:13:54.510Z" data-timestamp="2026-05-23T22:13:54.510Z">2026-05-23T22:13:54.510Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>587	## 10. Open decisions
+588	
+589	Resolve in the PR that implements each phase, not here.
+590	
+591	- **Phase 1**: per-channel vs. global max-abs scaler. **Resolved:** per-channel
+592	  (`clip0.5-99.5`, max-abs per channel). Run:
+593	  `V256_mu255_clip0.5-99.5_per_channel_s0`.
+594	- **Phase 1**: vocab size `V`. **Resolved:** V=256 (paper default). Optional
+595	  sweep `{64, 128, 256, 512}` deferred — 256 passes harness with full codebook use.
+596	- **Phase 3**: BrainOmni codebook size. **Resolved:** V=512 (codebook sweep).
+597	- **Phase 3**: finetune LR. **Resolved:** 3e-5 (`adapt` mode, 10 epochs).
+598	- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.
+599	- **Phase 2**: causal vs. non-causal decoder. Non-causal has strictly more
+600	  reconstruction capacity; causal is needed only for real-time downstream
+601	  uses. For 4M offline pretraining, **non-causal is the default** unless
+602	  there is a downstream use case we know about.
+603	- **Phase 2**: pin `EphysTokenizer` as a second submodule, or reimplement
+604	  the (small) PyTorch tokenizer in-tree? (See §6.)
+605	- **Phase 2**: window THINGS-MEG to 200 samples (match pretraining
+606	  `sequence_length`) or use full 281 (retrain from scratch). Strong prior:
+607	  window for 2a/2b, full length for 2c.
+608	- **Phase 2**: preprocessing match — match Cho 2026&#x27;s pipeline (so the
+609	  pretrained encoder sees in-distribution input) or use our preprocessed
+610	  THINGS-MEG as-is. Strong prior: **as-is for 2a** (cheapest), **match
+611	  their standardize-per-channel step for 2b** (the obvious cheap win),
+612	  **own pipeline for 2c**.
+613	- **4M registration**: per-channel sequence (`num_channels=271,
+614	  max_length=281`) for μ-transform / Cho2026; **separate** `meg_tokens_brainomni`
+615	  for BrainOmni (16 × 8 × 4). **Draft in** `modality_registration.py`; not yet
+616	  in ml-4m.
+617	- **Split policy**: **Resolved in-repo** via `meg/splits.py` +
+618	  `LEARNABLE_SPLIT_DEFAULTS` / `MU_SPLIT_DEFAULTS`. Optional persisted
+619	  `/project/data/things-meg/splits/` still TBD.
+620	
+621	## 11. Engineering norms specific to this subdir
+622	
+623	(Inherits everything from parent §7. The below is additional.)
+624	
+625	- All three phases must satisfy the parent §5 `Tokenizer` protocol and
+626	  pass through `test_tokenizer.py` identically. Do not add MEG-specific
+627	  code paths inside the harness.
+628	- Calibration JSON (`mu_transform/calibration.json`) and finetune
+629	  checkpoints (`brainomni/` on Modal volume at
+630	  `/project/checkpoints/meg/brainomni/&lt;slug&gt;/`; `cho2026/*.ckpt` when
+631	  phase 2 lands) are versioned tokenizer state. JSON/config pointers go
+632	  in git; weight checkpoints go on the Modal Volume.
+633	- No magic numbers: clip percentiles, `μ`, `V`, sampling rate, channel
+634	  counts (271, not 272), anneal schedule all named in `meg_config.py`.
+635	- Phase 1 is testable on a laptop with synthetic `(271, 281)` tensors —
+636	  write the §5 harness wire-up against phase 1 FIRST, then move to phase
+637	  2 on Modal. This proves the harness before we pay for GPU time.
+638	- The modality registration in `modality_registration.py` is the artifact
+639	  4M consumes. It must declare exactly the `(V, max_length, num_channels)`
+640	  produced by whichever tokenizer is loaded. Mismatch here will silently
+641	  break 4M training.
+642	- Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+643	  after any preprocessing pipeline change, and update §3 of this doc with
+644	  the new verified numbers.
+645	
+646	## 12. Automation / `.claude` candidates
+647	
+648	Worth building once the phase-1 recipe stabilizes, not before:
+649	
+650	- A `calibrate-mu-transform` skill: fits clip + max-abs on the
+651	  THINGS-MEG training split (loaded from `/project/data/things-meg/`),
+652	  writes `calibration.json`, and runs the §5 harness on a held-out
+653	  split. One command, reproducible.
+654	- A pre-commit hook that re-runs the §5 harness on any tokenizer touched
+655	  by the diff. Prevents silent regressions.
+656	- A `tokenize-things-meg` slash command that takes a tokenizer name
+657	  (`mu_transform | cho2026 | brainomni`) and produces a token cache on
+658	  the Modal Volume at `/project/data/things-meg/tokens/&lt;tokenizer&gt;/`,
+659	  ready for 4M consumption. Wraps `modal run` so we don&#x27;t retype the
+660	  same incantation.
+661	
+662	Each of these locks in a workflow. Do not build them while the workflow
+663	is still in flux — the global CLAUDE.md&#x27;s &quot;automation should follow
+664	stable recipes&quot; rule applies.
+665	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-14-00-069Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-14-00-069Z" class="timestamp-link"><time datetime="2026-05-23T22:14:00.069Z" data-timestamp="2026-05-23T22:14:00.069Z">2026-05-23T22:14:00.069Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now I have the exact context. Doing 3 surgical edits + appending §13.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-14-05-636Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-14-05-636Z" class="timestamp-link"><time datetime="2026-05-23T22:14:05.636Z" data-timestamp="2026-05-23T22:14:05.636Z">2026-05-23T22:14:05.636Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01T24kemAP4A3JsiBhrAASPo">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- **Phase 3**: 4M token layout. **Open:** flatten 512 seq vs 16×32 2D grid.
+- **Phase 3 → 4M token cache + shard export**: **Resolved (2026-05-23).** See
+  §13 for the production pipeline. BrainOmni 3b tokens for all 98,592 trials
+  are cached on the Volume and packed into `tok_meg/` shards aligned with the
+  RGB train/val split. 28/28 audit checks pass.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-40-17-625Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-40-17-625Z" class="timestamp-link"><time datetime="2026-05-23T22:40:17.625Z" data-timestamp="2026-05-23T22:40:17.625Z">2026-05-23T22:40:17.625Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-40-28-015Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-40-28-015Z" class="timestamp-link"><time datetime="2026-05-23T22:40:28.015Z" data-timestamp="2026-05-23T22:40:28.015Z">2026-05-23T22:40:28.015Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01XRPsaUJJhieRq77QDb8B5v">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+  after any preprocessing pipeline change, and update §3 of this doc with
+  the new verified numbers.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- Re-run [`../../modal/modal_inspect_things_meg.py`](../../modal/modal_inspect_things_meg.py)
+  after any preprocessing pipeline change, and update §3 of this doc with
+  the new verified numbers.
+- After any change to the BrainOmni checkpoint, the bridge, the catalog, or
+  the shard packer, **re-run the full pipeline audit** before considering the
+  cache trustworthy:
+  `cd modal &amp;&amp; modal run modal_meg_pipeline_audit.py::audit`
+  (28 cross-layer checks — structural / consistency / integrity / protocol).
+  Treat any FAIL as a stop-the-world condition.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-40-30-771Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-40-30-771Z" class="timestamp-link"><time datetime="2026-05-23T22:40:30.771Z" data-timestamp="2026-05-23T22:40:30.771Z">2026-05-23T22:40:30.771Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-40-47-066Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-40-47-066Z" class="timestamp-link"><time datetime="2026-05-23T22:40:47.066Z" data-timestamp="2026-05-23T22:40:47.066Z">2026-05-23T22:40:47.066Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01KEMEBXdhTYyw8VZQT2mbeX">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">- A `tokenize-things-meg` slash command that takes a tokenizer name
+  (`mu_transform | cho2026 | brainomni`) and produces a token cache on
+  the Modal Volume at `/project/data/things-meg/tokens/&lt;tokenizer&gt;/`,
+  ready for 4M consumption. Wraps `modal run` so we don&#39;t retype the
+  same incantation.
+
+Each of these locks in a workflow. Do not build them while the workflow
+is still in flux — the global CLAUDE.md&#39;s &#34;automation should follow
+stable recipes&#34; rule applies.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">- A `tokenize-things-meg` slash command that takes a tokenizer name
+  (`mu_transform | cho2026 | brainomni`) and produces a token cache on
+  the Modal Volume at `/project/data/things-meg/tokens/&lt;tokenizer&gt;/`,
+  ready for 4M consumption. **Partially built (2026-05-23):** the
+  BrainOmni 3b recipe is fully scripted in §13 — promoting it to a slash
+  command is now a thin wrapper. The mu_transform and cho2026 token
+  exports are not yet scripted; build those into the same skill when
+  those tokenizers are ready to ship into 4M.
+- A `meg-pipeline-audit` slash command wrapping
+  [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py).
+  This script is already stable; promoting to a skill or a pre-commit hook
+  is now safe.
+
+Each of these locks in a workflow. Do not build them while the workflow
+is still in flux — the global CLAUDE.md&#39;s &#34;automation should follow
+stable recipes&#34; rule applies.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-40-51-159Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-40-51-159Z" class="timestamp-link"><time datetime="2026-05-23T22:40:51.159Z" data-timestamp="2026-05-23T22:40:51.159Z">2026-05-23T22:40:51.159Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-40-58-704Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-40-58-704Z" class="timestamp-link"><time datetime="2026-05-23T22:40:58.704Z" data-timestamp="2026-05-23T22:40:58.704Z">2026-05-23T22:40:58.704Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now appending §13.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-40-59-703Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-40-59-703Z" class="timestamp-link"><time datetime="2026-05-23T22:40:59.703Z" data-timestamp="2026-05-23T22:40:59.703Z">2026-05-23T22:40:59.703Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_0166n974nSQVVo3667yH2dPc">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check end of file for clean append</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">tail -5 /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-40-59-745Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-40-59-745Z" class="timestamp-link"><time datetime="2026-05-23T22:40:59.745Z" data-timestamp="2026-05-23T22:40:59.745Z">2026-05-23T22:40:59.745Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>  is now safe.
+
+Each of these locks in a workflow. Do not build them while the workflow
+is still in flux — the global CLAUDE.md&#x27;s &quot;automation should follow
+stable recipes&quot; rule applies.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-41-41-385Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-41-41-385Z" class="timestamp-link"><time datetime="2026-05-23T22:41:41.385Z" data-timestamp="2026-05-23T22:41:41.385Z">2026-05-23T22:41:41.385Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Lv9WGbRoK9X789b7HR8tXC">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">Each of these locks in a workflow. Do not build them while the workflow
+is still in flux — the global CLAUDE.md&#39;s &#34;automation should follow
+stable recipes&#34; rule applies.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">Each of these locks in a workflow. Do not build them while the workflow
+is still in flux — the global CLAUDE.md&#39;s &#34;automation should follow
+stable recipes&#34; rule applies.
+
+## 13. Production token cache + tok_meg/ shard export (2026-05-23, shipped)
+
+This is the pipeline that turns the BrainOmni 3b finetuned checkpoint into
+4M-consumable shards. Read this before re-tokenizing, switching checkpoints,
+or changing the shard layout. The shared cross-modality data layout is in
+[`../CLAUDE.md`](../CLAUDE.md) §9 — read that first if you&#39;ve never seen the
+`things_catalog.json` / `things_manifest.json` / `things/&lt;modality&gt;/` convention.
+
+### 13.1 Pipeline (four idempotent Modal jobs)
+
+| Step | Script | Cost | Run from | Output |
+|---|---|---|---|---|
+| 1. Bridge | [`modal/modal_download_meg_image_bridge.py`](modal/modal_download_meg_image_bridge.py) `::build` | ~$0.10, ~2 min CPU | inner repo root | `meg_trigger_to_image_id.json` |
+| 2. Tokenize | [`modal/modal_meg_tokenize_all.py`](modal/modal_meg_tokenize_all.py) `::tokenize_all` | ~$1, ~6 min L40S | inner repo root | `tokens/brainomni/&lt;slug&gt;/{config,P1..P4}.{json,npz}` |
+| 3. Pack shards | [`../../modal/modal_meg_pack_shards.py`](../../modal/modal_meg_pack_shards.py) `::{plan,pack,verify}` | ~$0.30, ~5 min CPU | `modal/` subdir | `train/things/tok_meg/`, `val/things/tok_meg/` |
+| 4. Audit | [`../../modal/modal_meg_pipeline_audit.py`](../../modal/modal_meg_pipeline_audit.py) `::audit` | ~$0.10, ~3 min CPU | `modal/` subdir | 28-check report (PASS/FAIL per check) |
+
+All four are idempotent — re-running on a clean Volume produces the same
+artifacts (modulo non-determinism in any future stochastic step, of which
+there are none today).
+
+### 13.2 On-Volume artifacts
+
+```
+/project/data/things-meg/
+  labels/meg_trigger_to_image_id.json    # 22,448 triggers → 9-digit image_ids
+                                         # built from OpenNeuro sample_attributes_P*.csv
+                                         # 100% catalog coverage (no orphans)
+  tokens/brainomni/V512_rvq4_win512_sf256_3b/   # slug == producing checkpoint
+    config.json                          # tokenizer + checkpoint metadata
+    P{1..4}.npz                          # per-subject cache:
+                                         #   tokens             (24648, 16, 8, 4) int16
+                                         #   meg_trigger_codes  (24648,)         int64
+                                         #   trial_idx          (24648,)         int64
+                                         #   subject            ()                str
+
+/project/data/train/things/tok_meg/shard_NNN.tar     # 23 shards, 83,456 entries
+/project/data/val/things/tok_meg/shard_NNN.tar       # 4 shards,  15,136 entries
+/project/data/{train,val}/things_meg_manifest.json   # per-shard entry counts + tokenizer cfg
+```
+
+Per-tar entry: `&lt;image_id&gt;_&lt;subject&gt;_t&lt;trial_idx&gt;.meg.npy`, shape `(16,8,4) int16`.
+Aligns with the RGB shards by `image_id // 1000`-within-split (the canonical
+catalog ID lookup is the manifest JSON, not arithmetic).
+
+### 13.3 Filtering policy + corpus counts
+
+- **Catch trials** (artificial oddball stimuli, ~2400/subject) are filtered out
+  at tokenize time. They&#39;re not THINGS images and have no entry in the
+  trigger→image_id bridge.
+- **exp images** (~22,248): each shown 1× per subject → **88,992 trials total**
+  (4 per image). Filename pattern: `&lt;id&gt;_&lt;subj&gt;_t0.meg.npy`.
+- **test images** (200, used for within-subject reliability analysis): each
+  shown 12× per subject → **9,600 trials total** (48 per image). Filename
+  pattern: `&lt;id&gt;_&lt;subj&gt;_t{0..11}.meg.npy`.
+- **Total: 98,592 trials** across all 4 subjects, **24,648 per subject**.
+
+### 13.4 4M-side consumption (how to pair RGB ↔ MEG)
+
+```python
+# WebDataset pseudo-code (4M ingest):
+rgb_sample = next(wds.WebDataset(&#34;train/things/rgb/shard_005.tar&#34;))
+# rgb_sample[&#34;__key__&#34;] = &#34;000005847&#34;, rgb_sample[&#34;jpg&#34;] = &lt;bytes&gt;
+
+meg_sample = next(wds.WebDataset(&#34;train/things/tok_meg/shard_005.tar&#34;))
+# meg_sample[&#34;__key__&#34;] = &#34;000005847_P1_t0&#34;, meg_sample[&#34;meg.npy&#34;] = &lt;(16,8,4) int16&gt;
+
+# Pair by stripping everything after the first &#39;_&#39; in the MEG key:
+image_id = meg_sample[&#34;__key__&#34;].split(&#34;_&#34;, 1)[0]   # &#34;000005847&#34;
+# Then look up rgb_sample[image_id] from the RGB shard or zip across both
+# WebDatasets with a custom collator.
+```
+
+### 13.5 Re-running triggers
+
+| Change | Steps to re-run |
+|---|---|
+| BrainOmni 3b checkpoint moves or is replaced | Update `CHECKPOINT_SLUG` constant in both `modal/modal_meg_tokenize_all.py` AND `../../modal/modal_meg_pack_shards.py`, then re-run Steps 2, 3, 4. New tokens dir slug → old cache stays intact for comparison. |
+| New finetune (3c, 3d, …) | Tokenize step writes to a new slug-named dir, leaving existing cache untouched. Pack step&#39;s `CHECKPOINT_SLUG` constant determines which cache feeds the shards. |
+| RGB split (`things_manifest.json`) changes | Re-run Step 3 only — no GPU re-cost. Cache is split-invariant. |
+| Bridge file regenerated | Re-run Step 3. Step 2 is bridge-aware at filter time, so the cache may also need rebuild if the bridge gained/lost triggers. |
+
+### 13.6 The audit (mandatory after any change to the pipeline)
+
+[`../../modal/modal_meg_pipeline_audit.py::audit`](../../modal/modal_meg_pipeline_audit.py)
+runs 28 cross-layer checks in 4 categories. Last run: **2026-05-23, 28/28 pass**:
+
+- **Layer 1 — Structural (9 checks):** file presence, JSON schema, shard count
+  vs manifest.
+- **Layer 2 — Cross-artifact consistency (6 checks):** bridge ⊆ catalog,
+  cache triggers ⊆ bridge, MEG image_ids ⊆ matching RGB shard,
+  train ∩ val = ∅ (both RGB and MEG), cache total == shard total.
+- **Layer 3 — Data integrity (5 checks):** every filename parses, every
+  tensor is `(16,8,4) int16`, all values in `[0, 512)`, no duplicate
+  `(image_id, subject, trial_idx)` anywhere, 200-sample cache↔shard
+  byte-identical round trip.
+- **Layer 4 — THINGS-MEG protocol (8 checks):** total 98,592 trials,
+  per-subject 24,648, distribution `[(1, 88992), (12, 800)]` (exp singletons
+  + test 12-repeats), all 512 codes used on all 4 RVQ layers.
+
+Treat any FAIL as stop-the-world.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-41-44-442Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-41-44-442Z" class="timestamp-link"><time datetime="2026-05-23T22:41:44.442Z" data-timestamp="2026-05-23T22:41:44.442Z">2026-05-23T22:41:44.442Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-41-49-663Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-41-49-663Z" class="timestamp-link"><time datetime="2026-05-23T22:41:49.663Z" data-timestamp="2026-05-23T22:41:49.663Z">2026-05-23T22:41:49.663Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01R1Faw7EBWK1QgrnkwPKfdp">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Verify section structure after edits</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;^## &#34; /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-41-49-699Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-41-49-699Z" class="timestamp-link"><time datetime="2026-05-23T22:41:49.699Z" data-timestamp="2026-05-23T22:41:49.699Z">2026-05-23T22:41:49.699Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:11:## 1. Goal
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:19:## 2. What 4M expects from a new modality — the binding constraint
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:75:## 3. Data — verified, not assumed
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:143:## 4. Why three phases, in this order
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:162:## 5. What &quot;recalibration&quot; / &quot;finetuning&quot; actually mean here
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:373:## 6. External code — Cho 2026 is TensorFlow; the real integration is EphysTokenizer
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:402:## 7. File layout under `meg/`
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:467:## 8. Evaluation contract
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:513:## 9. §5 leaderboard — μ-transform vs BrainOmni (2026-05-22)
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:587:## 10. Open decisions
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:625:## 11. Engineering norms specific to this subdir
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:656:## 12. Automation / `.claude` candidates
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/meg/CLAUDE.md:683:## 13. Production token cache + tok_meg/ shard export (2026-05-23, shipped)
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:15:## 1. Goal
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:29:## 2. System-level framing — why VQ-VAE per modality
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:61:## 3. Data — working assumptions
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:81:## 4. Architecture — baseline vs target
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:154:## 5. Evaluation contract — what `test_tokenizer.py` must enforce
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:253:## 6. Open architectural decisions
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:282:## 7. Engineering norms specific to this subdir
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:300:## 8. MEG progress (2026-05)
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:319:## 9. Shared THINGS data layout on the `project` Volume (2026-05-23)
+/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md:383:## 10. Notes on automation / `.claude` layering</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-41-55-861Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-41-55-861Z" class="timestamp-link"><time datetime="2026-05-23T22:41:55.861Z" data-timestamp="2026-05-23T22:41:55.861Z">2026-05-23T22:41:55.861Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-41-57-017Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-41-57-017Z" class="timestamp-link"><time datetime="2026-05-23T22:41:57.017Z" data-timestamp="2026-05-23T22:41:57.017Z">2026-05-23T22:41:57.017Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_016KfpsQ7RhLvWqCkhVECPDi"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md&#34;,
+  &#34;offset&#34;: 300,
+  &#34;limit&#34;: 22
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-41-57-027Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-41-57-027Z" class="timestamp-link"><time datetime="2026-05-23T22:41:57.027Z" data-timestamp="2026-05-23T22:41:57.027Z">2026-05-23T22:41:57.027Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>300	## 8. MEG progress (2026-05)
+301	
+302	MEG-specific detail lives in [`meg/CLAUDE.md`](meg/CLAUDE.md). Current state:
+303	
+304	| Phase | Tokenizer | Status |
+305	|-------|-----------|--------|
+306	| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+307	| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+308	| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+309	
+310	**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+311	nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+312	BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+313	post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+314	See `meg/CLAUDE.md` §9 for the full metric table.
+315	
+316	**Pending for 4M:** token-cache export script; wire `meg_tokens_brainomni` in
+317	ml-4m `modality_info.py` (draft in `meg/modality_registration.py`).
+318	
+319	## 9. Shared THINGS data layout on the `project` Volume (2026-05-23)
+320	
+321	This section is cross-modality — every modality owner needs to read it. The</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-42-13-559Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-42-13-559Z" class="timestamp-link"><time datetime="2026-05-23T22:42:13.559Z" data-timestamp="2026-05-23T22:42:13.559Z">2026-05-23T22:42:13.559Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01A6JRZ4BUGh21D8E3mrqv7Y">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">CLAUDE.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">| Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** token-cache export script; wire `meg_tokens_brainomni` in
+ml-4m `modality_info.py` (draft in `meg/modality_registration.py`).</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">| Phase | Tokenizer | Status |
+|-------|-----------|--------|
+| 1 | μ-transform (V=256, per-channel calibration) | **Done** — §5 harness on THINGS-MEG |
+| 2 | Cho2026 learnable AE (EphysTokenizer) | Not started |
+| 3 | BrainOmni BrainTokenizer (RVQ, finetuned) | **Done** — 3a zero-shot + 3b full finetune |
+| 4 | Production token cache + `tok_meg/` shards aligned with RGB split | **Done (2026-05-23)** — 98,592 trials, 27 shards, 28/28 audit pass; see [`meg/CLAUDE.md`](meg/CLAUDE.md) §13 |
+
+**Headline from §5 eval (n=3000 test, seed=0, identical split):** neither μ-transform
+nor BrainOmni passes the linear-probe gate (~chance top-1 on object labels).
+BrainOmni 3b wins on meaningful compression (512 tokens/trial vs ~76k) and
+post-finetune reconstruction; μ-transform wins trivial round-trip fidelity.
+See `meg/CLAUDE.md` §9 for the full metric table.
+
+**Pending for 4M:** wire `meg_tokens_brainomni` in ml-4m `modality_info.py`
+(draft in `meg/modality_registration.py`). Token cache + shard export is
+shipped — see [`meg/CLAUDE.md`](meg/CLAUDE.md) §13.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-42-18-411Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-42-18-411Z" class="timestamp-link"><time datetime="2026-05-23T22:42:18.411Z" data-timestamp="2026-05-23T22:42:18.411Z">2026-05-23T22:42:18.411Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural-foundation-model/neural_tokenizers/CLAUDE.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-42-25-841Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-42-25-841Z" class="timestamp-link"><time datetime="2026-05-23T22:42:25.841Z" data-timestamp="2026-05-23T22:42:25.841Z">2026-05-23T22:42:25.841Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_018wNEL2aLbK1MdjeKYdKEir"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 1: THINGS RGB train/val split + manifests</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Step 2: MEG tokenization pipeline (bridge → tokenize → pack → rename)</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Full 4-layer audit: 28/28 checks pass</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Update parent + meg CLAUDE.md to reflect shipped state</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-23T22-42-25-844Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-23T22-42-25-844Z" class="timestamp-link"><time datetime="2026-05-23T22:42:25.844Z" data-timestamp="2026-05-23T22:42:25.844Z">2026-05-23T22:42:25.844Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-23T22-42-39-430Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-23T22-42-39-430Z" class="timestamp-link"><time datetime="2026-05-23T22:42:39.430Z" data-timestamp="2026-05-23T22:42:39.430Z">2026-05-23T22:42:39.430Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Both docs updated. Summary of edits:</p>
+<p><strong><code>neural_tokenizers/CLAUDE.md</code></strong> (parent):
+- §8 progress table — added Phase 4 row (<code>tok_meg/</code> shards shipped, 28/28 audit), removed "token-cache export script" from pending
+- <strong>New §9</strong> — "Shared THINGS data layout on the <code>project</code> Volume" — modality-agnostic doc of <code>things_catalog.json</code> + per-split manifests + <code>things/&lt;modality&gt;/</code> convention + WebDataset key rules + source files in top-level <code>modal/</code>. Sets expectations for the EEG owner and any future modality
+- §10 — old "Notes on automation" renumbered (was §9)</p>
+<p><strong><code>neural_tokenizers/meg/CLAUDE.md</code></strong>:
+- §10 open decisions — added "Phase 3 → 4M token cache + shard export: <strong>Resolved (2026-05-23)</strong>" pointing to §13
+- §11 engineering norms — added "re-run audit after any pipeline change" rule
+- §12 automation candidates — marked <code>tokenize-things-meg</code> as partially built (BrainOmni done, mu_transform/cho2026 pending); added <code>meg-pipeline-audit</code> as ready-to-promote
+- <strong>New §13</strong> — full operational doc: 4-step pipeline table, on-Volume artifact map, filtering policy + corpus counts (88,992 exp + 9,600 test = 98,592 total), 4M consumption example with WebDataset key-pairing code, re-run triggers, audit summary (all 28 checks listed)</p>
+<p>The two docs now read coherently: parent §9 covers the cross-modality convention; meg §13 is the MEG-specific export recipe, and links to parent §9 for the shared bits so they aren't duplicated.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-003.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<span class="current">4</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

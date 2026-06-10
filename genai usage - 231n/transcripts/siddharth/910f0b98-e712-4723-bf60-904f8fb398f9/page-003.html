@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 3</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 3/9</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-002.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<span class="current">3</span>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-004.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-05-31T23-08-46-234Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-31T23-08-46-234Z" class="timestamp-link"><time datetime="2026-05-31T23:08:46.234Z" data-timestamp="2026-05-31T23:08:46.234Z">2026-05-31T23:08:46.234Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>but isn't the problem here perhaps possibly not with the fact that the tokens don't carry information but rather the fact that we're just not training our linear classified properly we're just giving it a really biased data set and therefore the best way during back prop for it to understand and minimize the law is actually just becoming an arbitrary classier isn't the problem here actually training and the solution here is to sub sample to balance right or actually we could run option C with the class weighted loss. First go ahead and try option a and if it doesn't work, let's step back and consider BRC you can run everything yourself.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-09-923Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-09-923Z" class="timestamp-link"><time datetime="2026-05-31T23:09:09.923Z" data-timestamp="2026-05-31T23:09:09.923Z">2026-05-31T23:09:09.923Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-10-930Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-10-930Z" class="timestamp-link"><time datetime="2026-05-31T23:09:10.930Z" data-timestamp="2026-05-31T23:09:10.930Z">2026-05-31T23:09:10.930Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>You're right — that's a sharper framing than my "metric alone is enough" answer. Let me track this properly and implement option A, then we'll judge whether to step back to B/C from the actual numbers.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-13-760Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-13-760Z" class="timestamp-link"><time datetime="2026-05-31T23:09:13.760Z" data-timestamp="2026-05-31T23:09:13.760Z">2026-05-31T23:09:13.760Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01LmV9x48nhMdwiBVerq6kPD"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Add balanced accuracy to probe.py (option A)</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Add unit test for balanced accuracy chance behavior</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Re-run full BrainOmni 3b eval, read balanced accuracy</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Decide based on results: stop at A, or proceed to B (subsample) / C (class weights)</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-09-13-764Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-09-13-764Z" class="timestamp-link"><time datetime="2026-05-31T23:09:13.764Z" data-timestamp="2026-05-31T23:09:13.764Z">2026-05-31T23:09:13.764Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-21-991Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-21-991Z" class="timestamp-link"><time datetime="2026-05-31T23:09:21.991Z" data-timestamp="2026-05-31T23:09:21.991Z">2026-05-31T23:09:21.991Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_0115vPEHY9xAaGqGNVXC8isb">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">probe.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    values: dict[str, float] = {}
+    for name, feats in feature_sets.items():
+        per_fold: dict[int, list[float]] = {k: [] for k in config.probe_top_k}
+        for train_idx, test_idx in folds:
+            accs = _train_and_score_probe(feats, y, train_idx, test_idx, n_classes, config)
+            for k, acc in accs.items():
+                per_fold[k].append(acc)
+        for k, vals in per_fold.items():
+            values[f&#34;top{k}_{name}_mean&#34;] = float(statistics.mean(vals))
+            values[f&#34;top{k}_{name}_std&#34;] = (
+                float(statistics.stdev(vals)) if len(vals) &gt;= 2 else 0.0
+            )
+    return MetricResult(name=&#34;probe&#34;, values=values)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    values: dict[str, float] = {}
+    for name, feats in feature_sets.items():
+        per_fold: dict[str, list[float]] = {}
+        for train_idx, test_idx in folds:
+            accs = _train_and_score_probe(feats, y, train_idx, test_idx, n_classes, config)
+            for metric_name, acc in accs.items():
+                per_fold.setdefault(metric_name, []).append(acc)
+        for metric_name, vals in per_fold.items():
+            values[f&#34;{metric_name}_{name}_mean&#34;] = float(statistics.mean(vals))
+            values[f&#34;{metric_name}_{name}_std&#34;] = (
+                float(statistics.stdev(vals)) if len(vals) &gt;= 2 else 0.0
+            )
+    return MetricResult(name=&#34;probe&#34;, values=values)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-09-23-018Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-09-23-018Z" class="timestamp-link"><time datetime="2026-05-31T23:09:23.018Z" data-timestamp="2026-05-31T23:09:23.018Z">2026-05-31T23:09:23.018Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-44-099Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-44-099Z" class="timestamp-link"><time datetime="2026-05-31T23:09:44.099Z" data-timestamp="2026-05-31T23:09:44.099Z">2026-05-31T23:09:44.099Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01EgbPFK9QGXdEhL2RgtAewR">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">probe.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def _train_and_score_probe(
+    feats: torch.Tensor,
+    labels: torch.Tensor,
+    train_idx: torch.Tensor,
+    test_idx: torch.Tensor,
+    n_classes: int,
+    config: EvalConfig,
+) -&gt; dict[int, float]:
+    &#34;&#34;&#34;Fit a single nn.Linear with full-batch gradient descent; return top-k acc.&#34;&#34;&#34;
+    device = config.device
+    X_train = feats[train_idx].to(device)
+    y_train = labels[train_idx].to(device)
+    X_test = feats[test_idx].to(device)
+    y_test = labels[test_idx].to(device)
+
+    feat_dim = feats.shape[1]
+    torch.manual_seed(config.seed)
+    head = torch.nn.Linear(feat_dim, n_classes).to(device)
+    opt = torch.optim.AdamW(
+        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+    )
+
+    head.train()
+    for _ in range(config.probe_epochs):
+        opt.zero_grad()
+        loss = F.cross_entropy(head(X_train), y_train)
+        loss.backward()
+        opt.step()
+
+    head.eval()
+    with torch.no_grad():
+        logits = head(X_test)
+    return _topk_accuracy(logits, y_test, config.probe_top_k)
+
+
+def _topk_accuracy(
+    logits: torch.Tensor, labels: torch.Tensor, ks: tuple[int, ...]
+) -&gt; dict[int, float]:
+    &#34;&#34;&#34;Top-k accuracy. Falls back to top-min(k, n_classes) silently.&#34;&#34;&#34;
+    n_classes = logits.shape[1]
+    out: dict[int, float] = {}
+    for k in ks:
+        k_eff = min(k, n_classes)
+        top = logits.topk(k_eff, dim=1).indices
+        correct = (top == labels.unsqueeze(1)).any(dim=1).to(torch.float64)
+        out[k] = float(correct.mean().item())
+    return out</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def _train_and_score_probe(
+    feats: torch.Tensor,
+    labels: torch.Tensor,
+    train_idx: torch.Tensor,
+    test_idx: torch.Tensor,
+    n_classes: int,
+    config: EvalConfig,
+) -&gt; dict[str, float]:
+    &#34;&#34;&#34;Fit a single nn.Linear with full-batch gradient descent.
+
+    Returns a dict of named metrics: `top{k}` for each k in probe_top_k, and
+    `bal_acc` (balanced accuracy = mean of per-class recalls). Balanced acc
+    is the imbalance-invariant diagnostic: chance is exactly 1/n_classes
+    regardless of class frequencies, whereas top-1 floor is `max(class_freq)`
+    once a classifier collapses to majority prediction.
+    &#34;&#34;&#34;
+    device = config.device
+    X_train = feats[train_idx].to(device)
+    y_train = labels[train_idx].to(device)
+    X_test = feats[test_idx].to(device)
+    y_test = labels[test_idx].to(device)
+
+    feat_dim = feats.shape[1]
+    torch.manual_seed(config.seed)
+    head = torch.nn.Linear(feat_dim, n_classes).to(device)
+    opt = torch.optim.AdamW(
+        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+    )
+
+    head.train()
+    for _ in range(config.probe_epochs):
+        opt.zero_grad()
+        loss = F.cross_entropy(head(X_train), y_train)
+        loss.backward()
+        opt.step()
+
+    head.eval()
+    with torch.no_grad():
+        logits = head(X_test)
+    out: dict[str, float] = {
+        f&#34;top{k}&#34;: acc
+        for k, acc in _topk_accuracy(logits, y_test, config.probe_top_k).items()
+    }
+    out[&#34;bal_acc&#34;] = _balanced_accuracy(logits, y_test, n_classes)
+    return out
+
+
+def _topk_accuracy(
+    logits: torch.Tensor, labels: torch.Tensor, ks: tuple[int, ...]
+) -&gt; dict[int, float]:
+    &#34;&#34;&#34;Top-k accuracy. Falls back to top-min(k, n_classes) silently.&#34;&#34;&#34;
+    n_classes = logits.shape[1]
+    out: dict[int, float] = {}
+    for k in ks:
+        k_eff = min(k, n_classes)
+        top = logits.topk(k_eff, dim=1).indices
+        correct = (top == labels.unsqueeze(1)).any(dim=1).to(torch.float64)
+        out[k] = float(correct.mean().item())
+    return out
+
+
+def _balanced_accuracy(
+    logits: torch.Tensor, labels: torch.Tensor, n_classes: int
+) -&gt; float:
+    &#34;&#34;&#34;Mean of per-class recalls. Invariant to class imbalance.
+
+    Classes absent from the test set contribute nothing (averaged over
+    only the classes that *do* appear). This matters when a fold happens
+    to miss a tiny class — the alternative (count 0 recall for missing
+    classes) penalizes folds for sampling variance, not classifier quality.
+    &#34;&#34;&#34;
+    preds = logits.argmax(dim=1)
+    per_class_recall: list[float] = []
+    for c in range(n_classes):
+        mask = labels == c
+        if mask.any():
+            per_class_recall.append((preds[mask] == c).to(torch.float64).mean().item())
+    return float(sum(per_class_recall) / len(per_class_recall)) if per_class_recall else 0.0</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-09-45-114Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-09-45-114Z" class="timestamp-link"><time datetime="2026-05-31T23:09:45.114Z" data-timestamp="2026-05-31T23:09:45.114Z">2026-05-31T23:09:45.114Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-48-396Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-48-396Z" class="timestamp-link"><time datetime="2026-05-31T23:09:48.396Z" data-timestamp="2026-05-31T23:09:48.396Z">2026-05-31T23:09:48.396Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now add a test that verifies the chance behavior of balanced accuracy.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-09-57-447Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-09-57-447Z" class="timestamp-link"><time datetime="2026-05-31T23:09:57.447Z" data-timestamp="2026-05-31T23:09:57.447Z">2026-05-31T23:09:57.447Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01NjvdzK5qGBkfm2fjB9hMHi">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">test_tokenizer.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def test_probe_layered_embedding_emits_per_subset_keys():</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def test_probe_balanced_accuracy_at_chance_when_random():
+    &#34;&#34;&#34;On uninformative features, balanced accuracy must sit at ~1/n_classes,
+    not at the majority-class frequency. This is what top-1 alone cannot do
+    on imbalanced datasets — see notes/linear_probe_design.md.&#34;&#34;&#34;
+    # Heavily imbalanced 3-class problem: class 0 dominates (80%).
+    torch.manual_seed(0)
+    B = 300
+    classes = torch.cat([
+        torch.zeros(int(B * 0.8), dtype=torch.long),
+        torch.ones(int(B * 0.15), dtype=torch.long),
+        torch.full((int(B * 0.05),), 2, dtype=torch.long),
+    ])
+    signal = torch.randn(B, 2, 8)  # truly random, no class info
+    tok = RandomTokenizer(codebook_size=16, seq_len=4, signal_shape=(2, 8))
+    cfg = EvalConfig(
+        sample_rate_hz=100.0,
+        batch_size=32,
+        seed=0,
+        probe_epochs=80,
+        probe_top_k=(1,),
+        probe_n_folds=3,
+    )
+    result = compute_probe_metrics(tok, signal, classes, cfg)
+    # Top-1 collapses to majority class ≈ 80% on imbalanced data.
+    # Balanced accuracy collapses to 1/n_classes ≈ 33% (recall(class 0)=1, others=0).
+    assert result.values[&#34;top1_random_mean&#34;] &gt; 0.6  # majority-floor behavior
+    assert result.values[&#34;bal_acc_random_mean&#34;] &lt; 0.45  # below honest chance + slack
+    assert result.values[&#34;bal_acc_random_mean&#34;] &gt; 0.20  # above pathologically wrong
+
+
+def test_probe_layered_embedding_emits_per_subset_keys():</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-09-58-483Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-09-58-483Z" class="timestamp-link"><time datetime="2026-05-31T23:09:58.483Z" data-timestamp="2026-05-31T23:09:58.483Z">2026-05-31T23:09:58.483Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-10-01-115Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-10-01-115Z" class="timestamp-link"><time datetime="2026-05-31T23:10:01.115Z" data-timestamp="2026-05-31T23:10:01.115Z">2026-05-31T23:10:01.115Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01C2KWycmhq3k5kmZqSSZSvx">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Run full test suite</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural_tokenizers &amp;&amp; python -m pytest -q 2&gt;&amp;1 | tail -6</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-11-15-010Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-11-15-010Z" class="timestamp-link"><time datetime="2026-05-31T23:11:15.010Z" data-timestamp="2026-05-31T23:11:15.010Z">2026-05-31T23:11:15.010Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>meg/brainomni/test_brainomni.py::test_braintokenizer_roundtrip
+  /opt/anaconda3/lib/python3.13/site-packages/torch/nn/utils/weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+    WeightNorm.apply(module, name, dim)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+53 passed, 1 skipped, 1 warning in 4.79s</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-11-18-774Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-11-18-774Z" class="timestamp-link"><time datetime="2026-05-31T23:11:18.774Z" data-timestamp="2026-05-31T23:11:18.774Z">2026-05-31T23:11:18.774Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>53 tests pass. Now kicking off the eval re-run on the full test split.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-11-21-592Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-11-21-592Z" class="timestamp-link"><time datetime="2026-05-31T23:11:21.592Z" data-timestamp="2026-05-31T23:11:21.592Z">2026-05-31T23:11:21.592Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01MomLMMbVKGm3JYUxwgp16e"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add balanced accuracy to probe.py (option A)</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add unit test for balanced accuracy chance behavior</span></li><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Re-run full BrainOmni 3b eval, read balanced accuracy</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Decide based on results: stop at A, or proceed to B (subsample) / C (class weights)</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-11-21-600Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-11-21-600Z" class="timestamp-link"><time datetime="2026-05-31T23:11:21.600Z" data-timestamp="2026-05-31T23:11:21.600Z">2026-05-31T23:11:21.600Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-11-26-321Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-11-26-321Z" class="timestamp-link"><time datetime="2026-05-31T23:11:26.321Z" data-timestamp="2026-05-31T23:11:26.321Z">2026-05-31T23:11:26.321Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01AW5XFgktWqsMRryvjuqrWn">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Re-run full-test-set eval with balanced accuracy</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model &amp;&amp; modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+    --tokenizer brainomni \
+    --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+    --n-test 0 --seed 0 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-11-26-331Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-11-26-331Z" class="timestamp-link"><time datetime="2026-05-31T23:11:26.331Z" data-timestamp="2026-05-31T23:11:26.331Z">2026-05-31T23:11:26.331Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: bkxer09od. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bkxer09od.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-11-28-955Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-11-28-955Z" class="timestamp-link"><time datetime="2026-05-31T23:11:28.955Z" data-timestamp="2026-05-31T23:11:28.955Z">2026-05-31T23:11:28.955Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Eval kicked off (ID <code>bkxer09od</code>). I'll wait for the notification and then report the balanced accuracy numbers — they'll tell us whether to stop at A or step back to B/C.</p></div></div></div>
+<div class="message user" id="msg-2026-05-31T23-13-40-310Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-31T23-13-40-310Z" class="timestamp-link"><time datetime="2026-05-31T23:13:40.310Z" data-timestamp="2026-05-31T23:13:40.310Z">2026-05-31T23:13:40.310Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bkxer09od</task-id>
+<tool-use-id>toolu_01AW5XFgktWqsMRryvjuqrWn</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bkxer09od.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Re-run full-test-set eval with balanced accuracy" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-13-43-035Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-13-43-035Z" class="timestamp-link"><time datetime="2026-05-31T23:13:43.035Z" data-timestamp="2026-05-31T23:13:43.035Z">2026-05-31T23:13:43.035Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-13-44-106Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-13-44-106Z" class="timestamp-link"><time datetime="2026-05-31T23:13:44.106Z" data-timestamp="2026-05-31T23:13:44.106Z">2026-05-31T23:13:44.106Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01CgXUusyfQxbjGJN8J3VMEK">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Extract the probe results section</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -A 30 &#34;\[probe\]&#34; /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bkxer09od.output | tail -35</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-13-44-143Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-13-44-143Z" class="timestamp-link"><time datetime="2026-05-31T23:13:44.143Z" data-timestamp="2026-05-31T23:13:44.143Z">2026-05-31T23:13:44.143Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>    mse                              1.0695
+    channel_corr_mean                0.8699
+    psd_mse                          27748961.1188
+--
+  [probe]
+    top1_tokens_all_mean             0.1240
+    top1_tokens_all_std              0.0065
+    top5_tokens_all_mean             0.4139
+    top5_tokens_all_std              0.0134
+    bal_acc_tokens_all_mean          0.0376
+    bal_acc_tokens_all_std           0.0007
+    top1_tokens_rvq0_mean            0.1238
+    top1_tokens_rvq0_std             0.0066
+    top5_tokens_rvq0_mean            0.4225
+    top5_tokens_rvq0_std             0.0155
+    bal_acc_tokens_rvq0_mean         0.0371
+    bal_acc_tokens_rvq0_std          0.0001
+    top1_raw_mean                    0.0998
+    top1_raw_std                     0.0043
+    top5_raw_mean                    0.3257
+    top5_raw_std                     0.0205
+    bal_acc_raw_mean                 0.0614
+    bal_acc_raw_std                  0.0044
+    top1_random_mean                 0.1240
+    top1_random_std                  0.0070
+    top5_random_mean                 0.4191
+    top5_random_std                  0.0148
+    bal_acc_random_mean              0.0370
+    bal_acc_random_std               0.0000
+  [sequence]
+    unigram_entropy                  6.2016
+    bigram_conditional_entropy       5.8891
+    entropy_gap_pct                  5.0396
+    mean_run_length                  1.0019
+    frac_runs_ge_2                   0.6292</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-14-21-967Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-14-21-967Z" class="timestamp-link"><time datetime="2026-05-31T23:14:21.967Z" data-timestamp="2026-05-31T23:14:21.967Z">2026-05-31T23:14:21.967Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-14-42-808Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-14-42-808Z" class="timestamp-link"><time datetime="2026-05-31T23:14:42.808Z" data-timestamp="2026-05-31T23:14:42.808Z">2026-05-31T23:14:42.808Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The numbers came back and they're decisive.</p>
+<h2>The verdict</h2>
+<table>
+<thead>
+<tr>
+<th>Feature set</th>
+<th>Balanced accuracy</th>
+<th>std</th>
+<th>vs chance (3.70%)</th>
+<th>Signal?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>raw</code></strong> (the upper bound)</td>
+<td><strong>6.14%</strong></td>
+<td>0.44%</td>
+<td><strong>+2.4pp, ~5.5σ</strong></td>
+<td>✅ YES</td>
+</tr>
+<tr>
+<td><code>tokens_all</code></td>
+<td>3.76%</td>
+<td>0.07%</td>
+<td>+0.06pp, ~0.9σ</td>
+<td>❌ no</td>
+</tr>
+<tr>
+<td><code>tokens_rvq0</code></td>
+<td>3.71%</td>
+<td>0.01%</td>
+<td>+0.01pp, ~0.1σ</td>
+<td>❌ no</td>
+</tr>
+<tr>
+<td><code>random</code> (the lower bound)</td>
+<td>3.70%</td>
+<td>0.00%</td>
+<td>0.00pp</td>
+<td>(floor)</td>
+</tr>
+</tbody>
+</table>
+<p>Chance for 27-way = 1/27 = <strong>3.70%</strong>. Both <code>random</code> and <code>tokens_*</code> are at chance. <code>raw</code> is 5.5 standard deviations above chance.</p>
+<h2>What this means</h2>
+<p><strong>Your hypothesis was testable, and the data answers it cleanly.</strong></p>
+<p>You asked whether the issue might be that the classifier never <em>tried</em> to use token signal because the imbalanced loss landscape pulls it to majority-prediction. If that were the case, raw MEG features — which see the <em>same imbalanced training loss</em> — would also collapse to chance. They don't. They lift to 6.14%.</p>
+<p>That's the decisive evidence: <strong>the classifier is perfectly capable of finding signal when signal exists.</strong> Same probe, same loss, same imbalance, same trial count — <code>raw</code> finds it, <code>tokens</code> don't. The classifier isn't broken; the tokens are.</p>
+<p>So we <strong>don't</strong> need to step back to B (subsample) or C (class weights). The diagnostic question — "do the tokens carry linearly-decodable category info?" — now has a robust answer: <strong>no, BrainOmni 3b's tokens have effectively destroyed the category-decodable signal that was present in the raw MEG.</strong></p>
+<h2>A useful side effect: the upper bound is now informative</h2>
+<p>The old top-1 made <code>raw</code> look <em>worse</em> than tokens (10% vs 12%) because raw was overfitting and underperforming the majority predictor. With balanced accuracy, raw correctly emerges as the ceiling: it has signal (small but real), while tokens are floor-level.</p>
+<p>This is exactly the failure mode §5.3 in <a href="neural_tokenizers/CLAUDE.md">neural_tokenizers/CLAUDE.md</a> was designed to catch:</p>
+<blockquote>
+<p><em>"a tokenizer can have low reconstruction MSE (passes §5.1) and good codebook utilization (passes §5.2) while having silently thrown away the task-relevant signal. Reconstruction looks great; the tokens are useless to 4M."</em></p>
+</blockquote>
+<p>BrainOmni 3b: passes §5.1 (channel correlation 0.87, post-finetune), passes §5.2 (100% utilization, perplexity 494), <strong>fails §5.3</strong> (tokens at random-token floor while raw shows signal).</p>
+<h2>What I'd do next</h2>
+<p>You have your answer. The natural follow-ups depend on what you want to do with this:</p>
+<ol>
+<li>
+<p><strong>Move on to Stage 2 (Cho2026 / EphysTokenizer)</strong> — BrainOmni 3b in its current configuration is not ready for 4M. If the goal is shipping into 4M, the gate just said no.</p>
+</li>
+<li>
+<p><strong>Sanity-check by training BrainOmni differently</strong> — the failure here is reconstruction-objective training producing tokens that look pretty but lose semantics. A different finetune objective (e.g. add a contrastive loss on category labels) might rescue it. But this is a real research detour.</p>
+</li>
+<li>
+<p><strong>Update the leaderboard in <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §9</a></strong> with the new balanced-accuracy numbers and a clear "tokens FAIL §5.3" verdict so future-you doesn't accidentally re-run the same checkpoint.</p>
+</li>
+<li>
+<p><em>(Optional)</em> Run mu_transform through the same probe for direct comparison — it doesn't have <code>tokens_to_embedding</code> so it'll use bag-of-codes featurization, which is a different story. The current §9 table claims both fail; balanced accuracy may sharpen that picture.</p>
+</li>
+</ol>
+<p>Want me to (3) update the leaderboard with these numbers, (4) run mu_transform on the new probe, or step into the actual Stage 2 decision?</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-14-44-754Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-14-44-754Z" class="timestamp-link"><time datetime="2026-05-31T23:14:44.754Z" data-timestamp="2026-05-31T23:14:44.754Z">2026-05-31T23:14:44.754Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01XPequJGP5aqME7E26BoccZ"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add balanced accuracy to probe.py (option A)</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add unit test for balanced accuracy chance behavior</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Re-run full BrainOmni 3b eval, read balanced accuracy</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Decide based on results: stop at A, or proceed to B (subsample) / C (class weights)</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-14-44-759Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-14-44-759Z" class="timestamp-link"><time datetime="2026-05-31T23:14:44.759Z" data-timestamp="2026-05-31T23:14:44.759Z">2026-05-31T23:14:44.759Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message user" id="msg-2026-05-31T23-15-40-788Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-31T23-15-40-788Z" class="timestamp-link"><time datetime="2026-05-31T23:15:40.788Z" data-timestamp="2026-05-31T23:15:40.788Z">2026-05-31T23:15:40.788Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_selection>The user selected the lines 22 to 22 from /temp/readonly/Bash tool output (qormkx):
+bal_acc_raw_mean                 0.0614</p>
+<p>This may or may not be related to the current task.</ide_selection></p></div>
+<div class="assistant-text"><p>Can we think about whether to follow option B or C now I'm leaning towards option C, but tell me which one would be better in this case for the linear probe</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-16-11-469Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-16-11-469Z" class="timestamp-link"><time datetime="2026-05-31T23:16:11.469Z" data-timestamp="2026-05-31T23:16:11.469Z">2026-05-31T23:16:11.469Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-16-29-105Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-16-29-105Z" class="timestamp-link"><time datetime="2026-05-31T23:16:29.105Z" data-timestamp="2026-05-31T23:16:29.105Z">2026-05-31T23:16:29.105Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Your lean toward C is correct. Here's the analysis with our specific data in mind.</p>
+<h2>C dominates B on every axis</h2>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>B (subsample)</th>
+<th>C (class weights)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data efficiency</strong></td>
+<td>Subsamples to smallest class. With drink ≈ 1.6% of trials and 27 classes, we'd cap at ~60 train trials/class → ~1620 total per fold. <strong>~60% data loss.</strong></td>
+<td>Uses all 4,000 training trials per fold. <strong>Zero data loss.</strong></td>
+</tr>
+<tr>
+<td><strong>Variance</strong></td>
+<td>High — result depends on which random subset got drawn</td>
+<td>Low — every sample contributes</td>
+</tr>
+<tr>
+<td><strong>Conceptual effect on gradients</strong></td>
+<td>Each class gets equal <em>sample count</em> in the loss</td>
+<td>Each class gets equal <em>gradient mass</em> in the loss (mathematically equivalent in expectation)</td>
+</tr>
+<tr>
+<td><strong>Compute</strong></td>
+<td>Same forward/backward, fewer batches</td>
+<td>Same forward/backward, all batches</td>
+</tr>
+<tr>
+<td><strong>Code change</strong></td>
+<td>Subsample indices per fold before training</td>
+<td>One <code>weight=</code> kwarg to <code>F.cross_entropy</code></td>
+</tr>
+<tr>
+<td><strong>Standard ML practice</strong></td>
+<td>Rarely used outside very imbalanced settings</td>
+<td>sklearn / PyTorch default for imbalance</td>
+</tr>
+</tbody>
+</table>
+<p>The key statistical fact: <strong>C and B optimize the same objective in expectation</strong>, but C does it with the lower-variance estimator. Subsampling literally throws away information that class weights preserve.</p>
+<p>The only scenarios B beats C:
+- Framework doesn't support sample weights (PyTorch obviously does)
+- You want exact-symmetric class counts for some downstream test (we don't)
+- Class-conditional feature distributions are <em>so</em> different that reweighting is dangerous (not our case — same features, just different label frequencies)</p>
+<p>None of these apply.</p>
+<h2>What I expect the C result to show</h2>
+<p>Honestly: probably the same diagnosis. Here's why.</p>
+<p>The current evidence is that <strong>the classifier already CAN find signal when it exists</strong> — <code>raw</code> lifts to 6.14% balanced accuracy with the same imbalanced training that <code>tokens</code> get. If imbalance were the bottleneck, raw would also collapse to chance.</p>
+<p>So I'd predict:
+- <code>bal_acc_raw</code> with class weights: marginally higher (~6.5-7%), maybe a bit more variance per fold
+- <code>bal_acc_tokens_*</code> with class weights: stays at ~3.70% chance
+- The relative ordering is unchanged</p>
+<p>But that's exactly why C is the right experiment: <strong>it removes the "the imbalanced training masked the signal" hypothesis as an alternative explanation.</strong> If tokens stay at chance with class-weighted training, the diagnosis "tokens carry no linearly-decodable category info" becomes essentially unfalsifiable on this data.</p>
+<p>That's worth the ~10-line change and one re-run.</p>
+<h2>One implementation detail worth flagging</h2>
+<p>Class weights should be computed <strong>per fold</strong>, from the training labels of that fold — not globally from all labels. sklearn's "balanced" formula:</p>
+<pre><code class="language-python"># n_classes = 27, train_labels of shape (4000,)
+counts = torch.bincount(train_labels, minlength=n_classes).float()
+weights = train_labels.shape[0] / (n_classes * counts.clamp(min=1))
+# any class missing from this fold gets weight = N_train / N_classes (defensive)
+loss = F.cross_entropy(logits, train_labels, weight=weights.to(device))
+</code></pre>
+<p>This is the most common formula and is what sklearn applies under <code>class_weight='balanced'</code>.</p>
+<h2>Recommendation</h2>
+<p>Go with <strong>C</strong>. I'll:</p>
+<ol>
+<li>Add a <code>probe_class_weighted: bool = True</code> knob to <code>EvalConfig</code> (default on, since chance line is now what we want)</li>
+<li>Update <code>_train_and_score_probe</code> to compute per-fold class weights and pass them into <code>F.cross_entropy</code></li>
+<li>Add a test that class-weighted random tokenizer keeps <code>bal_acc ≈ 1/n_classes</code></li>
+<li>Re-run the full BrainOmni 3b eval</li>
+<li>Report whether the picture changed</li>
+</ol>
+<p>Should I proceed?</p></div></div></div>
+<div class="message user" id="msg-2026-05-31T23-18-54-776Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-31T23-18-54-776Z" class="timestamp-link"><time datetime="2026-05-31T23:18:54.776Z" data-timestamp="2026-05-31T23:18:54.776Z">2026-05-31T23:18:54.776Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>proceed with option C</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-18-58-566Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-18-58-566Z" class="timestamp-link"><time datetime="2026-05-31T23:18:58.566Z" data-timestamp="2026-05-31T23:18:58.566Z">2026-05-31T23:18:58.566Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-01-057Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-01-057Z" class="timestamp-link"><time datetime="2026-05-31T23:19:01.057Z" data-timestamp="2026-05-31T23:19:01.057Z">2026-05-31T23:19:01.057Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01BeT8j6Gsksw8QpEESx5UVU"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Add probe_class_weighted knob to EvalConfig</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Implement per-fold class-weighted cross-entropy in probe.py</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Add test for class-weighted training behavior</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Re-run full BrainOmni 3b eval with class weights</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Report and interpret results</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-19-01-064Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-19-01-064Z" class="timestamp-link"><time datetime="2026-05-31T23:19:01.064Z" data-timestamp="2026-05-31T23:19:01.064Z">2026-05-31T23:19:01.064Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-09-465Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-09-465Z" class="timestamp-link"><time datetime="2026-05-31T23:19:09.465Z" data-timestamp="2026-05-31T23:19:09.465Z">2026-05-31T23:19:09.465Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_018yaDxvLYoBFMsD25Zwy3r7">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">protocol.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    probe_epochs: int = 100
+    probe_lr: float = 1e-2
+    probe_weight_decay: float = 1e-4
+    probe_top_k: tuple[int, ...] = (1, 5)
+    probe_test_frac: float = 0.2</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    probe_epochs: int = 100
+    probe_lr: float = 1e-2
+    probe_weight_decay: float = 1e-4
+    probe_top_k: tuple[int, ...] = (1, 5)
+    probe_test_frac: float = 0.2
+    # Class-balanced cross-entropy (per-fold weights = N / (n_classes * count_c)).
+    # On (real) imbalanced THINGS labels the unweighted optimum collapses to
+    # majority prediction even when features carry signal in minority classes
+    # — weighting equalizes gradient mass across classes so the head is given
+    # a fair shot at finding signal everywhere. Same data, lower-variance than
+    # subsampling-to-balance.
+    probe_class_weighted: bool = True</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-19-10-517Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-19-10-517Z" class="timestamp-link"><time datetime="2026-05-31T23:19:10.517Z" data-timestamp="2026-05-31T23:19:10.517Z">2026-05-31T23:19:10.517Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-17-132Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-17-132Z" class="timestamp-link"><time datetime="2026-05-31T23:19:17.132Z" data-timestamp="2026-05-31T23:19:17.132Z">2026-05-31T23:19:17.132Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01VNQMUyDdCtXr7ugovmAmuC">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">probe.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    feat_dim = feats.shape[1]
+    torch.manual_seed(config.seed)
+    head = torch.nn.Linear(feat_dim, n_classes).to(device)
+    opt = torch.optim.AdamW(
+        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+    )
+
+    head.train()
+    for _ in range(config.probe_epochs):
+        opt.zero_grad()
+        loss = F.cross_entropy(head(X_train), y_train)
+        loss.backward()
+        opt.step()</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    feat_dim = feats.shape[1]
+    torch.manual_seed(config.seed)
+    head = torch.nn.Linear(feat_dim, n_classes).to(device)
+    opt = torch.optim.AdamW(
+        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+    )
+
+    class_weights = _class_weights(y_train, n_classes, device) if config.probe_class_weighted else None
+
+    head.train()
+    for _ in range(config.probe_epochs):
+        opt.zero_grad()
+        loss = F.cross_entropy(head(X_train), y_train, weight=class_weights)
+        loss.backward()
+        opt.step()</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-19-18-157Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-19-18-157Z" class="timestamp-link"><time datetime="2026-05-31T23:19:18.157Z" data-timestamp="2026-05-31T23:19:18.157Z">2026-05-31T23:19:18.157Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-27-969Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-27-969Z" class="timestamp-link"><time datetime="2026-05-31T23:19:27.969Z" data-timestamp="2026-05-31T23:19:27.969Z">2026-05-31T23:19:27.969Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_012QfaaTZwvC5UdvNUW5c4iy">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">probe.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def _balanced_accuracy(</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def _class_weights(
+    y_train: torch.Tensor, n_classes: int, device: torch.device | str
+) -&gt; torch.Tensor:
+    &#34;&#34;&#34;sklearn-style balanced weights: w_c = N_total / (n_classes * count_c).
+
+    Computed per-fold from the training labels (not globally), so each fold&#39;s
+    weights match its own class distribution. Classes absent from this fold
+    fall back to the unweighted-uniform default (N_total / n_classes) — a
+    defensive choice that prevents `0 * +inf` if any class happens to be
+    missing on a small fold.
+    &#34;&#34;&#34;
+    counts = torch.bincount(y_train, minlength=n_classes).to(torch.float64)
+    n_total = float(y_train.shape[0])
+    default = n_total / n_classes
+    weights = torch.where(
+        counts &gt; 0,
+        n_total / (n_classes * counts.clamp(min=1.0)),
+        torch.full_like(counts, default),
+    )
+    return weights.to(device=device, dtype=torch.float32)
+
+
+def _balanced_accuracy(</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-19-28-989Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-19-28-989Z" class="timestamp-link"><time datetime="2026-05-31T23:19:28.989Z" data-timestamp="2026-05-31T23:19:28.989Z">2026-05-31T23:19:28.989Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-32-127Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-32-127Z" class="timestamp-link"><time datetime="2026-05-31T23:19:32.127Z" data-timestamp="2026-05-31T23:19:32.127Z">2026-05-31T23:19:32.127Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now add a test that the class-weighted helper produces the right weights, plus a smoke test that informative tokens still beat random under class-weighted training.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-38-138Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-38-138Z" class="timestamp-link"><time datetime="2026-05-31T23:19:38.138Z" data-timestamp="2026-05-31T23:19:38.138Z">2026-05-31T23:19:38.138Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01ACabrxW1F414Kd7qGXaGCv">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">test_tokenizer.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def test_probe_balanced_accuracy_at_chance_when_random():</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def test_class_weights_match_sklearn_formula():
+    &#34;&#34;&#34;Per-fold weights = N / (n_classes * count_c) for sklearn &#39;balanced&#39;.&#34;&#34;&#34;
+    from evaluation.probe import _class_weights
+
+    y = torch.tensor([0, 0, 0, 0, 1, 1, 2], dtype=torch.long)
+    w = _class_weights(y, n_classes=3, device=&#34;cpu&#34;)
+    # N=7, n_classes=3
+    # w[0] = 7 / (3 * 4) = 0.5833
+    # w[1] = 7 / (3 * 2) = 1.1667
+    # w[2] = 7 / (3 * 1) = 2.3333
+    assert w.shape == (3,)
+    assert abs(w[0].item() - 7 / 12) &lt; 1e-5
+    assert abs(w[1].item() - 7 / 6) &lt; 1e-5
+    assert abs(w[2].item() - 7 / 3) &lt; 1e-5
+
+
+def test_class_weights_default_for_missing_class():
+    &#34;&#34;&#34;If a class is absent in a fold, weight falls back to N / n_classes (defensive).&#34;&#34;&#34;
+    from evaluation.probe import _class_weights
+
+    y = torch.tensor([0, 0, 0, 0, 1, 1], dtype=torch.long)  # class 2 absent
+    w = _class_weights(y, n_classes=3, device=&#34;cpu&#34;)
+    # Missing class 2: default = 6 / 3 = 2.0
+    assert abs(w[2].item() - 2.0) &lt; 1e-5
+
+
+def test_probe_balanced_accuracy_at_chance_when_random():</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-19-39-168Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-19-39-168Z" class="timestamp-link"><time datetime="2026-05-31T23:19:39.168Z" data-timestamp="2026-05-31T23:19:39.168Z">2026-05-31T23:19:39.168Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-53-076Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-53-076Z" class="timestamp-link"><time datetime="2026-05-31T23:19:53.076Z" data-timestamp="2026-05-31T23:19:53.076Z">2026-05-31T23:19:53.076Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-19-54-571Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-19-54-571Z" class="timestamp-link"><time datetime="2026-05-31T23:19:54.571Z" data-timestamp="2026-05-31T23:19:54.571Z">2026-05-31T23:19:54.571Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The existing imbalance test (which expects top-1 to collapse to majority class on random features) will break with class weights enabled by default — that's the whole point of class weights. Let me update it and add a complementary test.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-11-816Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-11-816Z" class="timestamp-link"><time datetime="2026-05-31T23:20:11.816Z" data-timestamp="2026-05-31T23:20:11.816Z">2026-05-31T23:20:11.816Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01PgPJSqaA5z9KzjePp4GWbq">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">test_tokenizer.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def test_probe_balanced_accuracy_at_chance_when_random():
+    &#34;&#34;&#34;On uninformative features, balanced accuracy must sit at ~1/n_classes,
+    not at the majority-class frequency. This is what top-1 alone cannot do
+    on imbalanced datasets — see notes/linear_probe_design.md.&#34;&#34;&#34;
+    # Heavily imbalanced 3-class problem: class 0 dominates (80%).
+    torch.manual_seed(0)
+    B = 300
+    classes = torch.cat([
+        torch.zeros(int(B * 0.8), dtype=torch.long),
+        torch.ones(int(B * 0.15), dtype=torch.long),
+        torch.full((int(B * 0.05),), 2, dtype=torch.long),
+    ])
+    signal = torch.randn(B, 2, 8)  # truly random, no class info
+    tok = RandomTokenizer(codebook_size=16, seq_len=4, signal_shape=(2, 8))
+    cfg = EvalConfig(
+        sample_rate_hz=100.0,
+        batch_size=32,
+        seed=0,
+        probe_epochs=80,
+        probe_top_k=(1,),
+        probe_n_folds=3,
+    )
+    result = compute_probe_metrics(tok, signal, classes, cfg)
+    # Top-1 collapses to majority class ≈ 80% on imbalanced data.
+    # Balanced accuracy collapses to 1/n_classes ≈ 33% (recall(class 0)=1, others=0).
+    assert result.values[&#34;top1_random_mean&#34;] &gt; 0.6  # majority-floor behavior
+    assert result.values[&#34;bal_acc_random_mean&#34;] &lt; 0.45  # below honest chance + slack
+    assert result.values[&#34;bal_acc_random_mean&#34;] &gt; 0.20  # above pathologically wrong</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def _imbalanced_random_setup():
+    &#34;&#34;&#34;Heavily imbalanced 3-class problem with random features. Shared by the
+    weighted / unweighted regression tests below.&#34;&#34;&#34;
+    torch.manual_seed(0)
+    B = 300
+    classes = torch.cat([
+        torch.zeros(int(B * 0.8), dtype=torch.long),
+        torch.ones(int(B * 0.15), dtype=torch.long),
+        torch.full((int(B * 0.05),), 2, dtype=torch.long),
+    ])
+    signal = torch.randn(B, 2, 8)  # truly random, no class info
+    tok = RandomTokenizer(codebook_size=16, seq_len=4, signal_shape=(2, 8))
+    return signal, classes, tok
+
+
+def test_probe_unweighted_collapses_to_majority_on_imbalanced():
+    &#34;&#34;&#34;Unweighted CE + imbalanced labels + random features → majority-predict.
+
+    This is the failure mode that motivates `probe_class_weighted` and is the
+    reason raw top-1 is not a reliable diagnostic on THINGS&#39; 27-class scheme.
+    &#34;&#34;&#34;
+    signal, classes, tok = _imbalanced_random_setup()
+    cfg = EvalConfig(
+        sample_rate_hz=100.0,
+        batch_size=32,
+        seed=0,
+        probe_epochs=80,
+        probe_top_k=(1,),
+        probe_n_folds=3,
+        probe_class_weighted=False,
+    )
+    result = compute_probe_metrics(tok, signal, classes, cfg)
+    # Top-1 collapses to majority class ≈ 80%.
+    # Balanced accuracy collapses to 1/n_classes ≈ 33% (recall(class 0)=1, others=0).
+    assert result.values[&#34;top1_random_mean&#34;] &gt; 0.6
+    assert result.values[&#34;bal_acc_random_mean&#34;] &lt; 0.45
+    assert result.values[&#34;bal_acc_random_mean&#34;] &gt; 0.20
+
+
+def test_probe_class_weighted_prevents_majority_collapse():
+    &#34;&#34;&#34;Class-weighted CE + same setup → classifier predicts ~uniformly, so
+    top-1 drops from majority floor to roughly 1/n_classes and balanced
+    accuracy is still at chance (no signal to find).&#34;&#34;&#34;
+    signal, classes, tok = _imbalanced_random_setup()
+    cfg = EvalConfig(
+        sample_rate_hz=100.0,
+        batch_size=32,
+        seed=0,
+        probe_epochs=80,
+        probe_top_k=(1,),
+        probe_n_folds=3,
+        probe_class_weighted=True,
+    )
+    result = compute_probe_metrics(tok, signal, classes, cfg)
+    # Class weights break the majority-collapse. Top-1 should be FAR below
+    # the 80% majority floor — closer to 1/3 with some noise.
+    assert result.values[&#34;top1_random_mean&#34;] &lt; 0.5
+    # Balanced accuracy is still at chance — no signal, weighting doesn&#39;t
+    # create signal where there is none.
+    assert 0.20 &lt; result.values[&#34;bal_acc_random_mean&#34;] &lt; 0.45</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-12-843Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-12-843Z" class="timestamp-link"><time datetime="2026-05-31T23:20:12.843Z" data-timestamp="2026-05-31T23:20:12.843Z">2026-05-31T23:20:12.843Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-16-197Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-16-197Z" class="timestamp-link"><time datetime="2026-05-31T23:20:16.197Z" data-timestamp="2026-05-31T23:20:16.197Z">2026-05-31T23:20:16.197Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_019QeFXQiNWmNVLdxGpyBLJY">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Run full test suite</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model/neural_tokenizers &amp;&amp; python -m pytest -q 2&gt;&amp;1 | tail -8</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-22-083Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-22-083Z" class="timestamp-link"><time datetime="2026-05-31T23:20:22.083Z" data-timestamp="2026-05-31T23:20:22.083Z">2026-05-31T23:20:22.083Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>..................s......................................                [100%]
+=============================== warnings summary ===============================
+meg/brainomni/test_brainomni.py::test_braintokenizer_roundtrip
+  /opt/anaconda3/lib/python3.13/site-packages/torch/nn/utils/weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+    WeightNorm.apply(module, name, dim)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+56 passed, 1 skipped, 1 warning in 5.19s</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-25-325Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-25-325Z" class="timestamp-link"><time datetime="2026-05-31T23:20:25.325Z" data-timestamp="2026-05-31T23:20:25.325Z">2026-05-31T23:20:25.325Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-25-791Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-25-791Z" class="timestamp-link"><time datetime="2026-05-31T23:20:25.791Z" data-timestamp="2026-05-31T23:20:25.791Z">2026-05-31T23:20:25.791Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now wire <code>probe_class_weighted</code> through the MEG eval defaults so it propagates to the Modal run.</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-28-898Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-28-898Z" class="timestamp-link"><time datetime="2026-05-31T23:20:28.898Z" data-timestamp="2026-05-31T23:20:28.898Z">2026-05-31T23:20:28.898Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01MAe1WB1jsaUaci74hyqetE">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_config.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    # See evaluation/protocol.py::EvalConfig docstrings.
+    probe_n_folds: int = 5
+    probe_rvq_layers: tuple[tuple[int, ...] | None, ...] = (None, (0,))</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    # See evaluation/protocol.py::EvalConfig docstrings.
+    probe_n_folds: int = 5
+    probe_rvq_layers: tuple[tuple[int, ...] | None, ...] = (None, (0,))
+    probe_class_weighted: bool = True</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-29-933Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-29-933Z" class="timestamp-link"><time datetime="2026-05-31T23:20:29.933Z" data-timestamp="2026-05-31T23:20:29.933Z">2026-05-31T23:20:29.933Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-35-372Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-35-372Z" class="timestamp-link"><time datetime="2026-05-31T23:20:35.372Z" data-timestamp="2026-05-31T23:20:35.372Z">2026-05-31T23:20:35.372Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_012HsMtge1NkFs9q4jVFEMEC">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">modal_meg_eval.py</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_eval.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">        probe_n_folds=eval_defaults.probe_n_folds,
+        probe_rvq_layers=eval_defaults.probe_rvq_layers,
+    )</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">        probe_n_folds=eval_defaults.probe_n_folds,
+        probe_rvq_layers=eval_defaults.probe_rvq_layers,
+        probe_class_weighted=eval_defaults.probe_class_weighted,
+    )</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-36-390Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-36-390Z" class="timestamp-link"><time datetime="2026-05-31T23:20:36.390Z" data-timestamp="2026-05-31T23:20:36.390Z">2026-05-31T23:20:36.390Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_eval.py has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-42-169Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-42-169Z" class="timestamp-link"><time datetime="2026-05-31T23:20:42.169Z" data-timestamp="2026-05-31T23:20:42.169Z">2026-05-31T23:20:42.169Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01Df4xWR69Y26JJdi6FTRUes"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add probe_class_weighted knob to EvalConfig</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Implement per-fold class-weighted cross-entropy in probe.py</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add tests for class-weighted training behavior</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Wire probe_class_weighted through MEG EvalDefaults + modal_meg_eval.py</span></li><li class="todo-item todo-in-progress"><span class="todo-icon">→</span><span class="todo-content">Re-run full BrainOmni 3b eval with class weights</span></li><li class="todo-item todo-pending"><span class="todo-icon">○</span><span class="todo-content">Report and interpret results</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-42-175Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-42-175Z" class="timestamp-link"><time datetime="2026-05-31T23:20:42.175Z" data-timestamp="2026-05-31T23:20:42.175Z">2026-05-31T23:20:42.175Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-46-397Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-46-397Z" class="timestamp-link"><time datetime="2026-05-31T23:20:46.397Z" data-timestamp="2026-05-31T23:20:46.397Z">2026-05-31T23:20:46.397Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01LCSrwVdrQYKLBLm1aZoXmA">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Re-run full eval with class-weighted probe</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">cd /Users/Siddharth/neural-foundation-model &amp;&amp; modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+    --tokenizer brainomni \
+    --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/config.json \
+    --n-test 0 --seed 0 2&gt;&amp;1</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-20-46-407Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-20-46-407Z" class="timestamp-link"><time datetime="2026-05-31T23:20:46.407Z" data-timestamp="2026-05-31T23:20:46.407Z">2026-05-31T23:20:46.407Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: bcs8nacbm. Output is being written to: /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bcs8nacbm.output. You will be notified when it completes. To check interim output, use Read on that file path.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-20-49-173Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-20-49-173Z" class="timestamp-link"><time datetime="2026-05-31T23:20:49.173Z" data-timestamp="2026-05-31T23:20:49.173Z">2026-05-31T23:20:49.173Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Class-weighted eval kicked off (ID <code>bcs8nacbm</code>). I'll wait for the notification and then compare the new numbers against the unweighted baseline to decide whether the diagnosis holds.</p></div></div></div>
+<div class="message user" id="msg-2026-05-31T23-23-02-808Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-31T23-23-02-808Z" class="timestamp-link"><time datetime="2026-05-31T23:23:02.808Z" data-timestamp="2026-05-31T23:23:02.808Z">2026-05-31T23:23:02.808Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bcs8nacbm</task-id>
+<tool-use-id>toolu_01LCSrwVdrQYKLBLm1aZoXmA</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bcs8nacbm.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Re-run full eval with class-weighted probe" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-23-06-533Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-23-06-533Z" class="timestamp-link"><time datetime="2026-05-31T23:23:06.533Z" data-timestamp="2026-05-31T23:23:06.533Z">2026-05-31T23:23:06.533Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01DdaE5bMTToQVvvRq2a4Ejs">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Read the class-weighted probe results</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -A 30 &#34;\[probe\]&#34; /private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/910f0b98-e712-4723-bf60-904f8fb398f9/tasks/bcs8nacbm.output | tail -30</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-23-06-574Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-23-06-574Z" class="timestamp-link"><time datetime="2026-05-31T23:23:06.574Z" data-timestamp="2026-05-31T23:23:06.574Z">2026-05-31T23:23:06.574Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>  [probe]
+    top1_tokens_all_mean             0.0282
+    top1_tokens_all_std              0.0056
+    top5_tokens_all_mean             0.1685
+    top5_tokens_all_std              0.0080
+    bal_acc_tokens_all_mean          0.0335
+    bal_acc_tokens_all_std           0.0091
+    top1_tokens_rvq0_mean            0.0292
+    top1_tokens_rvq0_std             0.0033
+    top5_tokens_rvq0_mean            0.1653
+    top5_tokens_rvq0_std             0.0082
+    bal_acc_tokens_rvq0_mean         0.0342
+    bal_acc_tokens_rvq0_std          0.0038
+    top1_raw_mean                    0.0924
+    top1_raw_std                     0.0042
+    top5_raw_mean                    0.3211
+    top5_raw_std                     0.0228
+    bal_acc_raw_mean                 0.0516
+    bal_acc_raw_std                  0.0021
+    top1_random_mean                 0.0374
+    top1_random_std                  0.0090
+    top5_random_mean                 0.1896
+    top5_random_std                  0.0115
+    bal_acc_random_mean              0.0364
+    bal_acc_random_std               0.0073
+[eval] wrote report to neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=full_s0.json
+Stopping app - local entrypoint completed.
+    max_possible_entropy             6.2383
+✓ App completed. View run at 
+https://modal.com/apps/neural-fm/main/ap-5F0uJPzv9etaqYaKgTI1ZT</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-23-25-682Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-23-25-682Z" class="timestamp-link"><time datetime="2026-05-31T23:23:25.682Z" data-timestamp="2026-05-31T23:23:25.682Z">2026-05-31T23:23:25.682Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-23-51-163Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-23-51-163Z" class="timestamp-link"><time datetime="2026-05-31T23:23:51.163Z" data-timestamp="2026-05-31T23:23:51.163Z">2026-05-31T23:23:51.163Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The class-weighted run is back. Here's the head-to-head with the unweighted baseline.</p>
+<h2>Side-by-side</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Unweighted</th>
+<th>Class-weighted</th>
+<th>Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>top1_random_mean</code></td>
+<td><strong>12.40%</strong></td>
+<td><strong>3.74%</strong></td>
+<td>-8.7pp ← majority-collapse killed</td>
+</tr>
+<tr>
+<td><code>bal_acc_random_mean</code></td>
+<td>3.70% ± 0.00</td>
+<td>3.64% ± 0.73</td>
+<td>~0</td>
+</tr>
+<tr>
+<td><code>bal_acc_raw_mean</code></td>
+<td><strong>6.14%</strong> ± 0.44</td>
+<td><strong>5.16%</strong> ± 0.21</td>
+<td>-1.0pp but still ~7σ above chance</td>
+</tr>
+<tr>
+<td><code>bal_acc_tokens_all_mean</code></td>
+<td>3.76% ± 0.07</td>
+<td>3.35% ± 0.91</td>
+<td>~0</td>
+</tr>
+<tr>
+<td><code>bal_acc_tokens_rvq0_mean</code></td>
+<td>3.71% ± 0.01</td>
+<td>3.42% ± 0.38</td>
+<td>~0</td>
+</tr>
+</tbody>
+</table>
+<p>Chance = 1/27 = <strong>3.70%</strong>.</p>
+<h2>What this confirms</h2>
+<p><strong>1. Class weights worked exactly as predicted.</strong> <code>top1_random</code> dropped from 12.40% to 3.74% — that's the majority-class collapse breaking. The classifier no longer just predicts <code>food</code> when given uninformative features; it now predicts ~uniformly, hitting <code>1/27 = 3.7%</code> on top-1 random. This is the textbook signature of correctly-weighted training on imbalanced labels.</p>
+<p><strong>2. The diagnosis is unchanged.</strong> The conclusion from option A holds with even more confidence:
+- <strong>Raw MEG:</strong> 5.16% ± 0.21% → ~7σ above 3.70% chance → has linearly-decodable category signal
+- <strong>BrainOmni 3b tokens:</strong> 3.35-3.42% → at or slightly below chance (within fold std)
+- <strong>Random tokens:</strong> 3.64% → at chance</p>
+<p>The relative ordering <code>raw &gt;&gt; tokens ≈ random ≈ chance</code> is preserved.</p>
+<p><strong>3. The "imbalance masked the signal" hypothesis is now falsified.</strong> This was the legitimate concern that motivated option C. The experimental test:
+- If imbalanced training was the bottleneck, removing it (class weights) should make tokens reveal signal.
+- It didn't. Tokens stayed at chance.
+- → The bottleneck is the tokens, not the training.</p>
+<h2>Why bal_acc_raw dropped slightly (6.14% → 5.16%) under weighting</h2>
+<p>This is expected and actually <em>more honest</em>. Under unweighted training, the linear head learns a mix of (a) feature-driven decoding and (b) leaning on class priors. Some per-class recalls were inflated because the prior happened to align with weak feature signal. Class weights strip the prior contribution — what's left (5.16%) is the <strong>prior-independent decoding rate</strong>. That's the cleaner number to report going forward.</p>
+<h2>Final verdict</h2>
+<p>You can stop here with full confidence:</p>
+<ul>
+<li>BrainOmni 3b's tokens carry <strong>no linearly-decodable 27-way category signal</strong> above what random tokens would produce.</li>
+<li>Raw MEG carries signal; the tokenizer destroyed it.</li>
+<li>This holds under both unweighted (imbalanced-friendly) and class-weighted (prior-stripped) training regimes.</li>
+<li>The probe is correctly diagnosing what §5.3 was designed to catch.</li>
+</ul>
+<h2>Suggested next steps</h2>
+<p>In rough priority order:</p>
+<ol>
+<li>
+<p><strong>Update <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §9</a> leaderboard</strong> with new numbers + a clear "§5.3 FAIL" verdict for BrainOmni 3b. Otherwise future-you will re-run and rediscover this.</p>
+</li>
+<li>
+<p><strong>Run mu_transform through the same probe.</strong> Different feature type (bag-of-codes, no embedding pooling) — would tell us whether the failure is BrainOmni-specific or a property of the data/preprocessing.</p>
+</li>
+<li>
+<p><strong>System-level decision: Stage 2 priorities.</strong> The §5.3 result is the actionable signal that says BrainOmni's reconstruction-only objective is insufficient. Options:</p>
+</li>
+<li><strong>Quick:</strong> Try BrainOmni <code>full</code> finetune (more params trainable) — might recover signal.</li>
+<li><strong>Medium:</strong> Add a contrastive auxiliary loss during BrainOmni finetune (anchors per-class).</li>
+<li>
+<p><strong>Real Stage 2:</strong> Cho2026 / EphysTokenizer adapter (per <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §4</a>).</p>
+</li>
+<li>
+<p><strong>Bigger system-level question (for <a href="notes/">notes/</a>):</strong> is 5.16% balanced accuracy on raw MEG actually a meaningful ceiling? It's ~7σ above chance but in absolute terms still very low. THINGS-MEG decoding papers report higher numbers but use nonlinear classifiers + careful preprocessing. The probe's <em>relative</em> gap (raw vs tokens) is the gate; the absolute number tells you the upper bound for any <em>linear</em> read of object category from MEG with our preprocessing. Worth noting in the design doc — the "raw" bracket is not "what's decodable from MEG" in general, it's "what's <em>linearly</em> decodable from our preprocessed (271ch, 200Hz, 1.4s) raw MEG."</p>
+</li>
+</ol></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-23-54-099Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-23-54-099Z" class="timestamp-link"><time datetime="2026-05-31T23:23:54.099Z" data-timestamp="2026-05-31T23:23:54.099Z">2026-05-31T23:23:54.099Z</time></a></div><div class="message-content">
+<div class="todo-list" data-tool-id="toolu_01Q69jRPGzeurUT1u9LjZJ2S"><div class="todo-header"><span class="todo-header-icon">☰</span> Task List</div><ul class="todo-items"><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add probe_class_weighted knob to EvalConfig</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Implement per-fold class-weighted cross-entropy in probe.py</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Add tests for class-weighted training behavior</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Wire probe_class_weighted through MEG EvalDefaults + modal_meg_eval.py</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Re-run full BrainOmni 3b eval with class weights</span></li><li class="todo-item todo-completed"><span class="todo-icon">✓</span><span class="todo-content">Report and interpret results</span></li></ul></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-31T23-23-54-104Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-31T23-23-54-104Z" class="timestamp-link"><time datetime="2026-05-31T23:23:54.104Z" data-timestamp="2026-05-31T23:23:54.104Z">2026-05-31T23:23:54.104Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-31T23-23-57-723Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-31T23-23-57-723Z" class="timestamp-link"><time datetime="2026-05-31T23:23:57.723Z" data-timestamp="2026-05-31T23:23:57.723Z">2026-05-31T23:23:57.723Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Want me to do (1) — update the <a href="neural_tokenizers/meg/CLAUDE.md">meg/CLAUDE.md §9</a> leaderboard with the new numbers and the "§5.3 FAIL" verdict — and (2) — re-run mu_transform through the same probe in parallel? Those are the two things that lock in this finding before any Stage 2 decision.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-002.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<span class="current">3</span>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<a href="page-004.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

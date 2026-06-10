@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 2</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 2/2</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-001.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<span class="current">2</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+        
+<div class="message user" id="msg-2026-05-29T20-28-42-586Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-29T20-28-42-586Z" class="timestamp-link"><time datetime="2026-05-29T20:28:42.586Z" data-timestamp="2026-05-29T20:28:42.586Z">2026-05-29T20:28:42.586Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Explain to me clearly what perplexity and entropy means in the codebook usage here</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-28-51-787Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-28-51-787Z" class="timestamp-link"><time datetime="2026-05-29T20:28:51.787Z" data-timestamp="2026-05-29T20:28:51.787Z">2026-05-29T20:28:51.787Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-29-24-051Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-29-24-051Z" class="timestamp-link"><time datetime="2026-05-29T20:29:24.051Z" data-timestamp="2026-05-29T20:29:24.051Z">2026-05-29T20:29:24.051Z</time></a></div><div class="message-content">
+<div class="assistant-text"><h1>Perplexity and entropy in the codebook context</h1>
+<p>These two numbers are answering the same question — "how evenly is the tokenizer using its codebook?" — but in different units. Perplexity is the one that translates directly into intuition; entropy is the mathematically cleaner version that perplexity is built from.</p>
+<hr />
+<h2>The setup</h2>
+<p>You tokenize a big batch of MEG trials and count how often each of the 512 codebook entries gets selected. That gives you an empirical distribution <code>p</code> over the 512 codes:</p>
+<pre><code>p(code_0)   = fraction of all tokens that were code 0
+p(code_1)   = fraction of all tokens that were code 1
+...
+p(code_511) = fraction of all tokens that were code 511
+</code></pre>
+<p>These 512 numbers sum to 1. Entropy and perplexity are summary statistics of this distribution.</p>
+<hr />
+<h2>Entropy: "how spread out is the distribution?"</h2>
+<p>Shannon entropy (in nats, since we use natural log):</p>
+<pre><code>H(p) = − Σᵢ p(i) · ln p(i)
+</code></pre>
+<p>Two extremes:</p>
+<ul>
+<li><strong>Uniform distribution</strong> (<code>p(i) = 1/512</code> for every code): every code gets equal usage. <code>H = ln(512) ≈ 6.238 nats</code>. This is the <strong>maximum possible</strong> entropy.</li>
+<li><strong>Collapsed distribution</strong> (only one code ever gets used, <code>p(0) = 1</code>): <code>H = 0 nats</code>.</li>
+</ul>
+<p>So <code>H</code> ranges from <code>0</code> (collapsed) to <code>ln(V) ≈ 6.238</code> (perfectly uniform). The closer to <code>ln(V)</code>, the better.</p>
+<p>Our numbers (<a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=n3000_s0.json">eval JSONs</a>):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Entropy (nats)</th>
+<th>Fraction of max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3a (frozen)</td>
+<td>6.094</td>
+<td>97.7%</td>
+</tr>
+<tr>
+<td>3b (finetuned)</td>
+<td>6.202</td>
+<td>99.4%</td>
+</tr>
+<tr>
+<td>Max (uniform)</td>
+<td>6.238</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<p>Both runs are very close to maximum-entropy. Finetuning closed about 70% of the remaining gap.</p>
+<hr />
+<h2>Perplexity: "effective number of codes in use"</h2>
+<p>Perplexity is just entropy run through <code>exp</code>:</p>
+<pre><code>perplexity = exp(H(p))
+</code></pre>
+<p>That looks like a random transform, but it gives you a much more interpretable number: <strong>perplexity is the size of a uniform distribution that would have the same entropy as <code>p</code></strong>.</p>
+<p>Concretely:</p>
+<ul>
+<li>If <code>H = ln(512)</code>, perplexity = 512 → the distribution is "as spread out as a uniform over 512 codes." You're effectively using all 512.</li>
+<li>If <code>H = ln(100)</code>, perplexity = 100 → your distribution is "as spread out as a uniform over 100 codes." Even if all 512 are technically used, the rare ones contribute so little that the effective vocabulary is only 100.</li>
+<li>If <code>H = 0</code>, perplexity = 1 → "as spread out as a uniform over 1 code" = degenerate, one code dominates.</li>
+</ul>
+<p>Our numbers:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Perplexity</th>
+<th>Fraction of V=512</th>
+<th>Wasted codebook capacity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3a (frozen)</td>
+<td>443.3</td>
+<td>86.6%</td>
+<td>~69 codes worth</td>
+</tr>
+<tr>
+<td>3b (finetuned)</td>
+<td>493.5</td>
+<td>96.4%</td>
+<td>~18 codes worth</td>
+</tr>
+<tr>
+<td>Max (uniform)</td>
+<td>512</td>
+<td>100%</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the 3a row: you have 512 codes available, but the way they're being used is only as informative as a uniform draw from 443 of them. About 69 codes are "wasted" in the sense that they're rarely selected and barely contribute. After finetuning, that wasted capacity shrinks to ~18 codes worth.</p>
+<hr />
+<h2>Why "codes_used = 512" but perplexity &lt; 512</h2>
+<p>This is the subtle bit. Both 3a and 3b report <code>codes_used = 512</code> and <code>dead_code_fraction = 0</code>. That means every single code got picked at least once on the eval set. So how can perplexity be less than 512?</p>
+<p>Because <strong>"used at least once" is a much weaker statement than "used uniformly."</strong> Consider a toy example with <code>V = 3</code>:</p>
+<ul>
+<li>Distribution A: <code>p = (1/3, 1/3, 1/3)</code>. All 3 codes used. Entropy = <code>ln(3) ≈ 1.099</code>. Perplexity = 3.</li>
+<li>Distribution B: <code>p = (0.998, 0.001, 0.001)</code>. All 3 codes used (rare codes aren't dead). Entropy ≈ <code>0.018</code>. Perplexity ≈ <code>1.02</code>.</li>
+</ul>
+<p>In B, the codebook reports "3/3 codes used, 0 dead," but the model is effectively a one-code tokenizer. Dead-code fraction is a binary test (was code <code>i</code> ever selected?), while perplexity is a <em>continuous</em> measure that penalizes uneven distributions.</p>
+<p>This is exactly why we report both:</p>
+<ul>
+<li><code>codes_used</code> / <code>dead_code_fraction</code> catches <strong>gross collapse</strong> (codes that literally never fire).</li>
+<li><code>perplexity</code> catches <strong>soft collapse</strong> (codes that fire too rarely to carry information).</li>
+</ul>
+<p>Our tokenizer passes the gross check on both runs but the soft check tells us finetune made the distribution noticeably flatter.</p>
+<hr />
+<h2>A worked sanity check on our numbers</h2>
+<p>3a entropy is 6.094 nats. Convert to perplexity:</p>
+<pre><code>exp(6.094) ≈ 442.7    ← matches the reported 443.3 (modulo rounding)
+</code></pre>
+<p>3b entropy is 6.202 nats:</p>
+<pre><code>exp(6.202) ≈ 493.5    ← matches exactly
+</code></pre>
+<p>Max possible:</p>
+<pre><code>ln(512) = 6.2383
+exp(6.2383) = 512
+</code></pre>
+<p>So they really are the same number expressed two ways.</p>
+<hr />
+<h2>Why we care</h2>
+<p>A VQ tokenizer with low perplexity is a tokenizer that's <strong>leaving capacity on the table</strong>. The whole point of <code>V = 512</code> is to give 4M a 512-way vocabulary; if the actual usage is concentrated on 100 codes, you might as well have built a <code>V = 100</code> tokenizer and saved memory. Conversely, a tokenizer where perplexity is close to <code>V</code> is using its codebook the way the codebook was designed to be used: every entry is doing real work.</p>
+<p>The trajectory <code>443 → 494</code> (out of 512) tells us finetune mostly <em>equalized</em> a codebook that was already broadly used but lopsided. It didn't unlock dead codes (there were none); it just redistributed mass off of overused codes onto underused ones.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>Entropy = how spread out the token distribution is, max = <code>ln(V) ≈ 6.238</code> for <code>V=512</code>. Perplexity = <code>exp(entropy)</code> = effective vocabulary size, max = <code>V = 512</code>. Our 3a → 3b move was 443 → 494, meaning finetune turned a "mostly-but-unevenly-used" codebook into a "nearly-uniformly-used" one — using 96% of capacity instead of 87%, with no dead codes either way.</p></div></div></div>
+<div class="message user" id="msg-2026-05-29T20-32-34-316Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-29T20-32-34-316Z" class="timestamp-link"><time datetime="2026-05-29T20:32:34.316Z" data-timestamp="2026-05-29T20:32:34.316Z">2026-05-29T20:32:34.316Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>now explain each stat in sequence structure</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-32-45-638Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-32-45-638Z" class="timestamp-link"><time datetime="2026-05-29T20:32:45.638Z" data-timestamp="2026-05-29T20:32:45.638Z">2026-05-29T20:32:45.638Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-33-38-663Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-33-38-663Z" class="timestamp-link"><time datetime="2026-05-29T20:33:38.663Z" data-timestamp="2026-05-29T20:33:38.663Z">2026-05-29T20:33:38.663Z</time></a></div><div class="message-content">
+<div class="assistant-text"><h1>Sequence structure — what each stat is asking</h1>
+<p>The four codebook stats from last time told you "are all the codes being used?" The four sequence stats now ask a different question:</p>
+<blockquote>
+<p>Given a sequence of tokens for one trial — say <code>[42, 117, 9, 311, 88, ...]</code> — does the sequence have anything left to <em>predict</em>, or is it so redundant that a transformer has nothing to learn?</p>
+</blockquote>
+<p>This matters because 4M's training objective is "given some context tokens, predict the masked ones." If the tokenizer emits sequences where the next token is trivially determined by the previous one (e.g., always the same as the previous, or always alternating), the masked-prediction task is solved without learning anything generalizable. The model converges; nothing transfers. <strong>The sequence stats are designed to catch this silent failure.</strong></p>
+<p>Here are our numbers (<a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3a/evals/eval_ntest=n3000_s0.json">3a eval JSON</a> and <a href="neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b/evals/eval_ntest=n3000_s0.json">3b</a>) again as the reference:</p>
+<table>
+<thead>
+<tr>
+<th>Stat</th>
+<th>3a frozen</th>
+<th>3b finetune</th>
+<th>Max possible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unigram_entropy</code></td>
+<td>6.094</td>
+<td>6.202</td>
+<td>6.238</td>
+</tr>
+<tr>
+<td><code>bigram_conditional_entropy</code></td>
+<td>5.503</td>
+<td>5.851</td>
+<td>6.238</td>
+</tr>
+<tr>
+<td><code>entropy_gap_pct</code></td>
+<td>9.69%</td>
+<td>5.65%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><code>mean_run_length</code></td>
+<td>1.0017</td>
+<td>1.0019</td>
+<td>1.0 (ideal)</td>
+</tr>
+<tr>
+<td><code>frac_runs_ge_2</code></td>
+<td>0.582</td>
+<td>0.628</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>1. <code>unigram_entropy</code> — how spread out is the marginal token distribution?</h2>
+<p>This is exactly the codebook entropy from last time, just computed on the full <em>flattened token stream</em> over all trials in the test set, not on a single trial.</p>
+<pre><code>H(t) = − Σᵢ p(i) · ln p(i)         where p(i) = fraction of all tokens equal to code i
+</code></pre>
+<p>Max possible: <code>ln(512) ≈ 6.238</code> (every code used equally).</p>
+<p>Why report it again in the sequence section: the codebook section's entropy is sometimes computed <em>per RVQ layer</em> or across a specific subset; the sequence section computes it on whatever exact token stream the harness is treating as "the sequence." Reporting both is a consistency check — they should be close, and they are (6.094 nats matches the codebook section).</p>
+<p><strong>Reading our numbers:</strong> healthy. Both runs are within a hair of the maximum.</p>
+<hr />
+<h2>2. <code>bigram_conditional_entropy</code> — given the previous token, how much uncertainty is left?</h2>
+<p>This is the key one. Bigram conditional entropy is:</p>
+<pre><code>H(tᵢ | tᵢ₋₁) = − Σⱼ p(tᵢ₋₁ = j) · Σₖ p(tᵢ = k | tᵢ₋₁ = j) · ln p(tᵢ = k | tᵢ₋₁ = j)
+</code></pre>
+<p>In plain English: for each possible "previous token" value <code>j</code>, look at the distribution of "next tokens" <code>k</code> that follow it. Compute the entropy of that conditional distribution. Then average those entropies, weighted by how often token <code>j</code> actually occurs.</p>
+<p>Two intuition-building extreme cases:</p>
+<ul>
+<li><strong>Perfectly i.i.d. tokens</strong> (next token completely independent of previous): <code>H(tᵢ | tᵢ₋₁) = H(tᵢ)</code>. Knowing the previous token tells you nothing about the next.</li>
+<li><strong>Perfectly deterministic transitions</strong> (every token uniquely determines the next): <code>H(tᵢ | tᵢ₋₁) = 0</code>. Knowing one token tells you everything.</li>
+</ul>
+<p>For a <em>transformer to have something to learn</em>, you want <code>H(tᵢ | tᵢ₋₁)</code> close to <code>H(tᵢ)</code>. That's the "transitions are nearly independent of the previous token, so the model has to use <em>longer</em> context to predict" regime.</p>
+<p>If <code>H(tᵢ | tᵢ₋₁) = 0</code>, the transformer's next-token prediction is trivial — <code>tᵢ</code> is fully determined by <code>tᵢ₋₁</code>. It learns the identity function and nothing more.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 5.503 nats — knowing the previous token reduced uncertainty from 6.094 → 5.503 nats. The previous token contained <code>6.094 − 5.503 = 0.591</code> nats of information about the next.
+- 3b: 5.851 nats — knowing the previous token reduced uncertainty from 6.202 → 5.851 nats. Only <code>0.351</code> nats of information leaked.</p>
+<p>So finetuning made consecutive tokens <strong>more independent of each other</strong> — a transformer trained on 3b tokens has more left to learn from the previous-token cue than one trained on 3a tokens. Good.</p>
+<hr />
+<h2>3. <code>entropy_gap_pct</code> — the previous two, expressed as a fraction</h2>
+<pre><code>entropy_gap_pct = (unigram_entropy − bigram_conditional_entropy) / unigram_entropy × 100
+</code></pre>
+<p>This normalizes the "how much does the previous token tell you about the next" quantity by the total marginal entropy, so you can compare tokenizers with different vocab sizes apples-to-apples.</p>
+<p>Bounds:
+- <code>0%</code> = consecutive tokens are perfectly independent. Ideal.
+- <code>100%</code> = consecutive tokens are perfectly deterministic. Maximum redundancy.</p>
+<p>The parent CLAUDE.md §5 sets <code>&lt;20%</code> as a "healthy" pass threshold.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 9.69% — already healthy.
+- 3b: 5.65% — even closer to i.i.d. Roughly halved.</p>
+<p>In dollar terms: 3b sequences look more like fresh dice rolls (good for transformer learning), 3a sequences are slightly more "the next token kind of looks like the previous one" (still passing, but less ideal).</p>
+<hr />
+<h2>4. <code>mean_run_length</code> — the most direct redundancy test</h2>
+<p>A "run" is a stretch of the sequence where the same token repeats. For example, in <code>[7, 7, 7, 12, 3, 3, 88]</code> you have runs of lengths <code>3, 1, 2, 1</code>. Mean run length is <code>(3+1+2+1)/4 = 1.75</code>.</p>
+<p>Two extreme cases:
+- All tokens unique (<code>[7, 12, 3, 88, 41]</code>): mean run length = 1.0. Best.
+- All tokens identical (<code>[7, 7, 7, 7, 7]</code>): mean run length = sequence length. Worst — the tokenizer has effectively emitted <em>one</em> code per trial, padded out.</p>
+<p>This is the most visually obvious sign of collapse: if your tokenizer keeps spitting out the same code 8 times in a row, masked-token prediction is trivially solvable and 4M learns nothing.</p>
+<p><strong>Reading our numbers:</strong> both runs are ~1.002, basically the floor. Consecutive identical tokens are essentially nonexistent. Finetune didn't move this — there was nothing to fix.</p>
+<hr />
+<h2>5. <code>frac_runs_ge_2</code> — how many trials have <em>any</em> repeat?</h2>
+<p>The fraction of trials that contain at least one run of length ≥ 2 (i.e., at least one place where <code>tᵢ = tᵢ₋₁</code>).</p>
+<p>This is a coarser, complementary measure to mean run length. Mean run length tells you the average; <code>frac_runs_ge_2</code> tells you the <em>prevalence</em>. You could have a low mean run length (good) but still have some pathological trials where one token repeats a lot — that case would show up here.</p>
+<p><strong>Reading our numbers:</strong>
+- 3a: 58.2% of trials have at least one repeat somewhere
+- 3b: 62.8% of trials have at least one repeat somewhere</p>
+<p>This one <em>got slightly worse</em> after finetune, which initially looks bad. But notice that <strong>mean run length stayed at ~1.002 in both cases</strong>, so the repeats are isolated <code>(tᵢ, tᵢ₊₁) = (k, k)</code> events, not long runs. Combined with the entropy-gap improvement (9.69% → 5.65%), the picture is: finetune produced sequences where occasional adjacent repeats happen by chance (consistent with a more uniform / more i.i.d. emission), but those repeats are statistically incidental rather than evidence of collapse. If anything, an i.i.d. process <em>should</em> have some adjacent repeats: a uniform draw from 512 codes over a length-512 sequence will have expected number of adjacent equal pairs <code>≈ 511/512 ≈ 1</code>, so the per-trial probability of at least one repeat is high.</p>
+<p>This is a good example of why you need to read sequence stats together: any one number is ambiguous in isolation.</p>
+<hr />
+<h2>6. <code>max_possible_entropy</code> — the ceiling, included for reference</h2>
+<pre><code>max_possible_entropy = ln(V) = ln(512) ≈ 6.238
+</code></pre>
+<p>This is constant per tokenizer. It's reported so the reader can quickly check <code>unigram_entropy / max_possible_entropy</code> to see how close to maximum-spread the marginal is — and so the harness's "is this number good?" thresholds can be relative to vocab size rather than absolute. A tokenizer with <code>V = 128</code> and <code>unigram_entropy = 4.8</code> looks worse than one with <code>V = 512</code> and <code>unigram_entropy = 6.0</code> in absolute terms, but actually has higher fractional codebook usage (<code>4.8 / ln(128) = 99%</code> vs <code>6.0 / ln(512) = 96%</code>).</p>
+<hr />
+<h2>Putting the four diagnostic stats together</h2>
+<p>The four real measurements (ignoring <code>max_possible_entropy</code>, which is a constant) form a layered diagnostic:</p>
+<table>
+<thead>
+<tr>
+<th>Measures</th>
+<th>What it catches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unigram_entropy</code></td>
+<td>Is the marginal distribution spread out? (single-token redundancy)</td>
+</tr>
+<tr>
+<td><code>bigram_conditional_entropy</code> + <code>entropy_gap_pct</code></td>
+<td>Are consecutive tokens redundant with each other? (transformer has nothing to learn)</td>
+</tr>
+<tr>
+<td><code>mean_run_length</code></td>
+<td>Severity of the most visible collapse pattern (long repeats)</td>
+</tr>
+<tr>
+<td><code>frac_runs_ge_2</code></td>
+<td>Prevalence of even short repeats</td>
+</tr>
+</tbody>
+</table>
+<p>A healthy tokenizer hits roughly: unigram entropy near max, entropy gap &lt; 20%, mean run length ≈ 1.0, <code>frac_runs_ge_2</code> consistent with an i.i.d. process at that vocab size.</p>
+<p>Our 3b run satisfies all four: 6.20 / 6.24 marginal, 5.6% gap, 1.002 mean run, 62.8% repeat-prevalence (in the ballpark of what pure chance predicts at <code>V=512</code>, <code>L=512</code>). The sequence is transformer-ready in the structural sense — whether it carries <em>semantic content</em> is a separate question (the linear probe), and that one still fails.</p>
+<hr />
+<h2>End-of-turn</h2>
+<p>Marginal entropy = "are the codes evenly used overall." Bigram conditional entropy = "given the previous token, how much uncertainty is left about the next." Entropy gap % = those two as a normalized redundancy fraction. Mean run length = "how long do same-code stretches get on average." Frac runs ≥ 2 = "how many trials have any adjacent repeat at all." Together they catch every flavor of "transformer-unlearnable sequence collapse." Our 3b run passes all four.</p></div></div></div>
+<div class="message user" id="msg-2026-05-29T20-37-49-533Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-05-29T20-37-49-533Z" class="timestamp-link"><time datetime="2026-05-29T20:37:49.533Z" data-timestamp="2026-05-29T20:37:49.533Z">2026-05-29T20:37:49.533Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>also explain mutransforma nd why we used it as a baseline</p></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-37-58-040Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-37-58-040Z" class="timestamp-link"><time datetime="2026-05-29T20:37:58.040Z" data-timestamp="2026-05-29T20:37:58.040Z">2026-05-29T20:37:58.040Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-37-58-822Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-37-58-822Z" class="timestamp-link"><time datetime="2026-05-29T20:37:58.822Z" data-timestamp="2026-05-29T20:37:58.822Z">2026-05-29T20:37:58.822Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01LGUjrQXd79RdZKuGfhjaLY"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/encoder.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-29T20-37-58-839Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-29T20-37-58-839Z" class="timestamp-link"><time datetime="2026-05-29T20:37:58.839Z" data-timestamp="2026-05-29T20:37:58.839Z">2026-05-29T20:37:58.839Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;μ-transform encoder: clip → max-abs scale → μ-law compand.
+2	
+3	Stateless transformation parameterized by a `MuCalibration` (the per-channel
+4	clip thresholds and scaler). The encoder does NOT quantize — that&#x27;s quantizer.py.
+5	Splitting &quot;compress amplitude&quot; from &quot;discretize&quot; keeps each piece short and
+6	test-isolated:
+7	  * encoder maps (B, C, T) float → (B, C, T) float in [-1, 1]
+8	  * quantizer maps (B, C, T) float in [-1, 1] → (B, C, T) long in [0, V)
+9	
+10	All ops are pure torch and run on whatever device the input tensor lives on.
+11	&quot;&quot;&quot;
+12	
+13	from __future__ import annotations
+14	
+15	import torch
+16	
+17	from .calibration import MuCalibration
+18	
+19	
+20	def encode(x: torch.Tensor, calib: MuCalibration) -&gt; torch.Tensor:
+21	    &quot;&quot;&quot;Apply the three encoder steps and return a tensor in [-1, 1].
+22	
+23	    Args:
+24	        x:     (B, C, T) float tensor on any device.
+25	        calib: fitted MuCalibration (per-channel clip + scaler, μ).
+26	
+27	    Returns:
+28	        x_companded: (B, C, T) float in [-1, 1], same device/dtype as `x`.
+29	    &quot;&quot;&quot;
+30	    _assert_shape(x, calib)
+31	
+32	    # 1) Clip to per-channel [q_lo, q_hi]. Broadcast: (1, C, 1).
+33	    lo = calib.clip_lo.to(x.device).view(1, -1, 1)
+34	    hi = calib.clip_hi.to(x.device).view(1, -1, 1)
+35	    x_clipped = torch.clamp(x, min=lo, max=hi)
+36	
+37	    # 2) Max-abs scale to [-1, 1] using the per-channel `s`.
+38	    s = calib.scaler.to(x.device).view(1, -1, 1)
+39	    x_scaled = x_clipped / s.clamp_min(1e-12)
+40	
+41	    # 3) μ-law compand: sgn(x) * log(1 + μ|x|) / log(1 + μ).
+42	    mu = float(calib.mu)
+43	    abs_x = x_scaled.abs()
+44	    log_term = torch.log1p(mu * abs_x) / torch.log(torch.tensor(1.0 + mu, dtype=x.dtype, device=x.device))
+45	    return torch.sign(x_scaled) * log_term
+46	
+47	
+48	def _assert_shape(x: torch.Tensor, calib: MuCalibration) -&gt; None:
+49	    if x.ndim != 3:
+50	        raise ValueError(f&quot;expected (B, C, T); got shape {tuple(x.shape)}&quot;)
+51	    C = x.shape[1]
+52	    if calib.clip_lo.numel() != C:
+53	        raise ValueError(
+54	            f&quot;calibration has {calib.clip_lo.numel()} channels, input has {C}&quot;
+55	        )
+56	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-38-01-650Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-38-01-650Z" class="timestamp-link"><time datetime="2026-05-29T20:38:01.650Z" data-timestamp="2026-05-29T20:38:01.650Z">2026-05-29T20:38:01.650Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Lqj7qA1tkLNaXzt3Sw9CfX"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/quantizer.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-05-29T20-38-01-666Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-05-29T20-38-01-666Z" class="timestamp-link"><time datetime="2026-05-29T20:38:01.666Z" data-timestamp="2026-05-29T20:38:01.666Z">2026-05-29T20:38:01.666Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Uniform binning of [-1, 1] floats into integer token IDs.
+2	
+3	Companded values land in [-1, 1] (modulo clipping numerics, which we re-clamp
+4	to be safe). We split that interval into V equal-width bins and emit the bin
+5	index as the token ID.
+6	
+7	Symmetric: bin centers are {-1 + (i + 0.5) * 2/V} for i in [0, V).
+8	
+9	Inverse mapping (`dequantize`) returns the bin center, which is what the
+10	decoder&#x27;s inverse-μ-law expects.
+11	&quot;&quot;&quot;
+12	
+13	from __future__ import annotations
+14	
+15	import torch
+16	
+17	
+18	def quantize(x_companded: torch.Tensor, vocab_size: int) -&gt; torch.Tensor:
+19	    &quot;&quot;&quot;Map (B, C, T) floats in [-1, 1] to (B, C, T) long token IDs in [0, V).
+20	
+21	    Values outside [-1, 1] are clamped first — this handles tiny numerical
+22	    drift from the encoder&#x27;s float arithmetic without silently producing
+23	    out-of-range tokens.
+24	    &quot;&quot;&quot;
+25	    _assert_vocab_size(vocab_size)
+26	    x = x_companded.clamp(-1.0, 1.0)
+27	    # Map [-1, 1] -&gt; [0, V) via affine: idx = floor((x + 1) / 2 * V), clamped.
+28	    half_V = 0.5 * vocab_size
+29	    idx = (x + 1.0) * half_V
+30	    return idx.floor().clamp_(0, vocab_size - 1).to(torch.long)
+31	
+32	
+33	def dequantize(tokens: torch.Tensor, vocab_size: int) -&gt; torch.Tensor:
+34	    &quot;&quot;&quot;Map token IDs back to bin-center floats in [-1, 1].
+35	
+36	    bin_center(i) = -1 + (i + 0.5) * 2 / V
+37	    &quot;&quot;&quot;
+38	    _assert_vocab_size(vocab_size)
+39	    bin_width = 2.0 / vocab_size
+40	    return (tokens.to(torch.float32) + 0.5) * bin_width - 1.0
+41	
+42	
+43	def bin_centers(vocab_size: int, dtype: torch.dtype = torch.float32, device=None) -&gt; torch.Tensor:
+44	    &quot;&quot;&quot;The V bin centers as a 1-D tensor of shape (V,). Useful for plots / tests.&quot;&quot;&quot;
+45	    _assert_vocab_size(vocab_size)
+46	    bin_width = 2.0 / vocab_size
+47	    idx = torch.arange(vocab_size, dtype=dtype, device=device)
+48	    return (idx + 0.5) * bin_width - 1.0
+49	
+50	
+51	def _assert_vocab_size(vocab_size: int) -&gt; None:
+52	    if vocab_size &lt; 2:
+53	        raise ValueError(f&quot;vocab_size must be &gt;= 2, got {vocab_size}&quot;)
+54	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-38-07-506Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-38-07-506Z" class="timestamp-link"><time datetime="2026-05-29T20:38:07.506Z" data-timestamp="2026-05-29T20:38:07.506Z">2026-05-29T20:38:07.506Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-05-29T20-39-01-446Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-05-29T20-39-01-446Z" class="timestamp-link"><time datetime="2026-05-29T20:39:01.446Z" data-timestamp="2026-05-29T20:39:01.446Z">2026-05-29T20:39:01.446Z</time></a></div><div class="message-content">
+<div class="assistant-text"><h1>μ-transform — what it is and why it's the baseline</h1>
+<p>The μ-transform isn't a deep learning model at all. It's a 50-year-old idea from telephone audio compression, repurposed by Cho et al. 2026 as a "what's the dumbest sensible tokenizer for neural data?" baseline. Walking through it tells you a lot about what we mean by "tokenizer" in the first place.</p>
+<hr />
+<h2>1. The big picture: a stateless per-sample codec</h2>
+<p>μ-transform takes one MEG sample (one float — say the voltage at one sensor at one timepoint) and maps it to one integer in <code>[0, V)</code>. That's literally it. Apply it independently to every (channel, timepoint) cell of a trial and you get a <code>(271, 281)</code> grid of integers.</p>
+<p>Compare to BrainOmni: BrainOmni reads 271 sensors × 512 timepoints and emits <strong>512 integers</strong> total for the whole trial. μ-transform reads the same input and emits <strong>271 × 281 = 76,151 integers</strong> — one per input sample. So μ-transform is barely "compression" — it's <em>requantization</em>. It replaces 32-bit floats with 8-bit integers, like converting WAV to telephone-quality audio.</p>
+<p>This is the production-pipeline reason BrainOmni wins for 4M, even though μ-transform "wins" reconstruction: BrainOmni's 512 tokens fit in a transformer context; μ-transform's 76k tokens don't.</p>
+<hr />
+<h2>2. The four-step pipeline</h2>
+<p><a href="neural_tokenizers/meg/mu_transform/encoder.py#L20-L45">mu_transform/encoder.py:20-45</a> and <a href="neural_tokenizers/meg/mu_transform/quantizer.py#L18-L30">mu_transform/quantizer.py:18-30</a>:</p>
+<h3>Step 1 — Clip</h3>
+<pre><code>x_clipped = clamp(x, q_lo[c], q_hi[c])
+</code></pre>
+<p>For each channel <code>c</code>, clip the voltage to a per-channel range — defaults <code>[0.5th, 99.5th]</code> percentiles of that channel's distribution on the training data. This kills extreme outliers (movement artifacts, electrode glitches) that would otherwise eat up the codec's dynamic range.</p>
+<p>Why per-channel: different MEG sensors record different absolute amplitudes depending on where they sit on the head. A global clip would over-clip quiet sensors and under-clip loud ones.</p>
+<h3>Step 2 — Max-abs scale to [−1, 1]</h3>
+<pre><code>x_scaled = x_clipped / s[c]      where s[c] = max(|x|) on channel c
+</code></pre>
+<p>Per-channel rescale so each channel's signal lives in <code>[−1, 1]</code>. Now every channel speaks the same numerical units regardless of physical amplitude. The bin grid we'll apply next is universal across channels.</p>
+<h3>Step 3 — μ-law compand</h3>
+<pre><code>F(x) = sign(x) · log(1 + μ·|x|) / log(1 + μ)         with μ = 255
+</code></pre>
+<p>This is the telephone trick. A plain uniform quantizer of 256 bins on <code>[−1, 1]</code> would waste resolution on the rarely-occupied tails and starve the densely-occupied middle. μ-law warps the input so small values get <em>expanded</em> (more dynamic range allocated to the dense center) and large values get <em>compressed</em> (less resolution where data is rare).</p>
+<p>Visually, the input-output curve looks like an S, steep near 0 and flat near ±1. After companding, the distribution is roughly uniform on <code>[−1, 1]</code> — exactly what a uniform binner wants to see.</p>
+<p>The constant <code>μ = 255</code> is a historical choice from G.711 telephony, kept by Cho 2026 for continuity.</p>
+<h3>Step 4 — Uniform binning</h3>
+<pre><code>token = floor((F(x) + 1) / 2 · V)        with V = 256
+</code></pre>
+<p>Slice <code>[−1, 1]</code> into 256 equal-width bins, emit the bin index. That's the integer token.</p>
+<p>The inverse is <strong>bin-center lookup</strong>: token <code>i</code> → <code>−1 + (i + 0.5) · 2/V</code> → inverse μ-law → multiply by <code>s[c]</code> → reconstructed voltage. No learning, no decoder weights.</p>
+<hr />
+<h2>3. "Calibration": what "fit" means without gradients</h2>
+<p>μ-transform has zero gradient-descent weights, but it still has two <strong>dataset-dependent parameters per channel</strong> that must be set before inference:</p>
+<ul>
+<li><code>s[c]</code> — the per-channel max-abs scaler</li>
+<li><code>(q_lo[c], q_hi[c])</code> — per-channel clip thresholds</li>
+</ul>
+<p>These are estimated on the training split, written to a small JSON sidecar (<code>calibration.json</code>), and reused frozen at inference. The CLAUDE.md calls this "calibration" specifically to distinguish it from "training." Think of it as fitting a statistic, not a model.</p>
+<p>The hyperparameters <code>μ = 255</code>, <code>V = 256</code>, percentile choice <code>[0.5, 99.5]</code> are <strong>not</strong> fit — they're paper defaults.</p>
+<p>The shipped artifact is the JSON; total state is <code>271 × 3 + 2 ≈ 815</code> numbers. Compare to BrainOmni's 5M parameters.</p>
+<hr />
+<h2>4. Why it's the baseline — four concrete reasons</h2>
+<h3>(a) Floor on the leaderboard</h3>
+<p>If you ship a deep tokenizer that fails to beat a stateless 50-year-old telecom codec on some axis, you've learned something important — either the deep model is broken or that axis is not what differentiates them. Without a floor, you have no idea whether your fancy tokenizer's MSE of 1.2 is "good" or "barely above hand-crafted." With the floor present, you can see immediately that BrainOmni 3a's MSE of 4.35 is <em>worse than the trivial baseline</em> — that's how we knew zero-shot wasn't enough.</p>
+<h3>(b) Harness sanity check</h3>
+<p>The §5 evaluation harness has to compute reconstruction MSE, channel Pearson, PSD MSE, codebook perplexity, bigram entropies, linear probes on a multi-axis dataset. Any one of those metrics could be implemented wrong. The μ-transform tokenizer is so trivially analyzable that you know what every metric <em>should</em> return — near-perfect MSE, full codebook utilization, no degenerate runs. If the harness produces a surprising number on μ-transform, the harness is the bug. If it agrees with hand-derived expectations on μ-transform, you trust it on BrainOmni.</p>
+<p>This is the same principle as testing a sort function on a 3-element input before trusting it on a million-element input.</p>
+<h3>(c) Defers the deep architecture commitment</h3>
+<p>The parent CLAUDE.md is explicit about this: "avoid prematurely committing to a deep architecture before we know what 'good enough' looks like on this specific THINGS-MEG distribution." Numbers from the baseline tell you what the easy part of the problem looks like — once you see μ-transform achieves 0.998 channel Pearson, you know reconstruction <em>per se</em> is not hard on this data; the hard part must be elsewhere (semantic content, downstream task accuracy, sequence compressibility). That reframes what Phase 2/3 actually has to deliver.</p>
+<h3>(d) Reveals the trivial-vs-meaningful distinction</h3>
+<p>This is the most interesting one. μ-transform shows that you can ace reconstruction (<code>MSE = 1.0</code>, <code>Pearson = 0.998</code>) and <em>still</em> fail the linear probe (top-1 ≈ chance). That's structural: if the <em>hand-crafted codec</em> fails the probe, the probe failure cannot be the deep model's fault — it's an inherent property of "reconstruction-quality tokens." This is what motivated the BrainOmni §5 verdict ("probe failure is expected under reconstruction-only training").</p>
+<p>Without the baseline, when BrainOmni 3b also failed the probe you might have concluded "BrainOmni is broken, try harder." With the baseline, you can see that even a near-perfect codec doesn't carry concept-decodability, so the issue is the training objective, not the tokenizer architecture.</p>
+<hr />
+<h2>5. What μ-transform's strengths and weaknesses tell you</h2>
+<p>The §5 leaderboard numbers from CLAUDE.md §9, read with this framing:</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>μ-transform</th>
+<th>What it teaches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSE = 0.999, channel Pearson = 0.998</td>
+<td>Near-invertible per-sample codec</td>
+<td>Reconstruction is "easy" — almost any sensible codec gets there. <strong>Reconstruction is a <em>necessary</em> but not <em>sufficient</em> property.</strong></td>
+</tr>
+<tr>
+<td>PSD MSE = 1.01 × 10⁹ (much worse than BrainOmni 3b's 6.13 × 10⁷)</td>
+<td>Time-domain perfection doesn't imply spectral perfection</td>
+<td>Per-sample quantization noise is white-ish, which dumps energy across the whole spectrum and corrupts band power. <strong>MEG cares about bands.</strong></td>
+</tr>
+<tr>
+<td>256/256 codes used, perplexity 194 (out of 256 = 76%)</td>
+<td>A simple codec already uses its codebook well</td>
+<td>Codebook utilization is a <em>low</em> bar. Failing it means something is really broken; passing doesn't prove anything interesting.</td>
+</tr>
+<tr>
+<td>Entropy gap 22.9%, frac_runs_ge_2 = 1.0</td>
+<td>Strong adjacent-sample redundancy</td>
+<td>A per-sample codec on continuous data is <em>guaranteed</em> to produce highly autocorrelated token streams — neighboring MEG samples are very similar, so they map to neighboring or identical bins. <strong>This is the "transformer would have nothing to learn" failure mode</strong>, made obvious in the baseline.</td>
+</tr>
+<tr>
+<td>Linear probe top-1 ≈ chance</td>
+<td>Reconstruction-quality tokens carry no decodable concept signal</td>
+<td>The failure is in the training objective, not the architecture. (Confirmed once BrainOmni 3b also fails it.)</td>
+</tr>
+<tr>
+<td>76,151 tokens per trial</td>
+<td>No real compression</td>
+<td>Disqualifies it from 4M production. <strong>This single fact is why μ-transform is a baseline and not a candidate.</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>End-of-turn</h2>
+<p>μ-transform is a stateless per-sample codec (clip → scale → μ-law → bin) borrowed from telephone audio. It's the baseline because (a) it's the simplest thing that fits the <code>Tokenizer</code> interface, (b) it lets us sanity-check the evaluation harness against numbers we can derive by hand, (c) it puts a floor on what counts as "real compression," and (d) its passes-reconstruction-but-fails-probe pattern is what showed us that the linear-probe failure is intrinsic to reconstruction-only training, not a BrainOmni bug. It will never ship into 4M — 76k tokens per trial doesn't fit in a transformer context — but it makes every later number interpretable.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-001.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<span class="current">2</span>
+<span class="disabled">Next &rarr;</span>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

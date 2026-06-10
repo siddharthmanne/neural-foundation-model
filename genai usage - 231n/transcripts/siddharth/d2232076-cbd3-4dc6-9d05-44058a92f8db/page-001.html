@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 1</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 1/5</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<span class="disabled">&larr; Prev</span>
+<span class="current">1</span>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-002.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-03T01-48-35-925Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T01-48-35-925Z" class="timestamp-link"><time datetime="2026-06-03T01:48:35.925Z" data-timestamp="2026-06-03T01:48:35.925Z">2026-06-03T01:48:35.925Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>rn what is being inputted into 4m in terms of neural modalities? is it raw integer indices, or is it the codebook embeddings?</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-38-579Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-38-579Z" class="timestamp-link"><time datetime="2026-06-03T01:48:38.579Z" data-timestamp="2026-06-03T01:48:38.579Z">2026-06-03T01:48:38.579Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-39-660Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-39-660Z" class="timestamp-link"><time datetime="2026-06-03T01:48:39.660Z" data-timestamp="2026-06-03T01:48:39.660Z">2026-06-03T01:48:39.660Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_016fD5FRp8twDhSPbiiCNN8J">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List Python files and root contents</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">find /Users/Siddharth/neural-foundation-model -type f -name &#34;*.py&#34; | head -50 &amp;&amp; echo &#34;---&#34; &amp;&amp; ls /Users/Siddharth/neural-foundation-model</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-48-41-799Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-48-41-799Z" class="timestamp-link"><time datetime="2026-06-03T01:48:41.799Z" data-timestamp="2026-06-03T01:48:41.799Z">2026-06-03T01:48:41.799Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/modal_test.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/test_retrieval.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/test_tokenizer.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/__init__.py
+/Users/Siddharth/neural-foundation-model/4m_training/validate_4m.py
+/Users/Siddharth/neural-foundation-model/4m_training/overfit_smoke.py
+/Users/Siddharth/neural-foundation-model/modal/modal_inspect_things_meg.py
+/Users/Siddharth/neural-foundation-model/modal/modal_things_rgb_4m_repack.py
+/Users/Siddharth/neural-foundation-model/modal/modal_verify_eeg_cache.py
+/Users/Siddharth/neural-foundation-model/modal/things_manifest.py
+/Users/Siddharth/neural-foundation-model/modal/modal_peek_eeg_npz.py
+/Users/Siddharth/neural-foundation-model/modal/meg_token_shard.py
+/Users/Siddharth/neural-foundation-model/modal/modal_audit_things_4m.py
+/Users/Siddharth/neural-foundation-model/modal/modal_things_4m_repack.py
+/Users/Siddharth/neural-foundation-model/modal/modal_app.py
+/Users/Siddharth/neural-foundation-model/modal/modal_demo.py
+/Users/Siddharth/neural-foundation-model/modal/modal_delete_legacy_manifests.py
+/Users/Siddharth/neural-foundation-model/modal/modal_meg_avg_pack_shards.py
+/Users/Siddharth/neural-foundation-model/modal/modal_diag_eeg_keys.py
+/Users/Siddharth/neural-foundation-model/modal/modal_things_repack.py
+/Users/Siddharth/neural-foundation-model/modal/test_things_manifest.py
+/Users/Siddharth/neural-foundation-model/modal/modal_verify_eeg_cache_identity.py
+/Users/Siddharth/neural-foundation-model/modal/modal_sync_data_readme.py
+/Users/Siddharth/neural-foundation-model/modal/demo_train.py
+/Users/Siddharth/neural-foundation-model/modal/modal_meg_pipeline_audit.py
+/Users/Siddharth/neural-foundation-model/modal/modal_meg_pack_shards.py
+/Users/Siddharth/neural-foundation-model/modal/modal_inspect_things_deep.py
+/Users/Siddharth/neural-foundation-model/modal/modal_verify_eeg_id2.py
+/Users/Siddharth/neural-foundation-model/modal/modal_build_things_split.py
+/Users/Siddharth/neural-foundation-model/modal/modal_inspect_things_layout.py
+/Users/Siddharth/neural-foundation-model/modal/test_meg_token_shard.py
+/Users/Siddharth/neural-foundation-model/modal/modal_download_things_meg.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/stubs/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/stubs/tokenizers.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modality_registration.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/test_splits.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/splits.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/test_data.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/reconstruction.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/codebook.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/sequence.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/protocol.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/retrieval.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/decoder.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/test_mu_transform.py
+---
+4m_training
+external
+modal
+modal_test.py
+neural_tokenizers
+notes</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-44-150Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-44-150Z" class="timestamp-link"><time datetime="2026-06-03T01:48:44.150Z" data-timestamp="2026-06-03T01:48:44.150Z">2026-06-03T01:48:44.150Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01DQ2EW5onvpyT5aPyXhfHRe">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List 4m_training and meg dirs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/4m_training/ /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-48-44-179Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-48-44-179Z" class="timestamp-link"><time datetime="2026-06-03T01:48:44.179Z" data-timestamp="2026-06-03T01:48:44.179Z">2026-06-03T01:48:44.179Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/4m_training/:
+GETTING_STARTED.md
+README.md
+__pycache__
+configs
+lib
+modal
+overfit_smoke.py
+pytest.ini
+tests
+validate_4m.py
+
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/:
+CLAUDE.md
+__init__.py
+__pycache__
+brainomni
+data
+data.py
+meg_config.py
+modal
+modality_registration.py
+mu_transform
+splits.py
+test_data.py
+test_splits.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-47-298Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-47-298Z" class="timestamp-link"><time datetime="2026-06-03T01:48:47.298Z" data-timestamp="2026-06-03T01:48:47.298Z">2026-06-03T01:48:47.298Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01YDthU2q3xGKuZFyH65DFKH">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List lib and configs</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/4m_training/lib/ /Users/Siddharth/neural-foundation-model/4m_training/configs/</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-48-47-330Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-48-47-330Z" class="timestamp-link"><time datetime="2026-06-03T01:48:47.330Z" data-timestamp="2026-06-03T01:48:47.330Z">2026-06-03T01:48:47.330Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/4m_training/configs/:
+4m_things_data.yaml
+4m_things_main.yaml
+4m_things_val_tasks.yaml
+smoke
+
+/Users/Siddharth/neural-foundation-model/4m_training/lib/:
+__pycache__
+config_validate.py
+fourm_dataloader.py
+fourm_neural_embeddings.py
+fourm_neural_modalities.py
+fourm_neural_transforms.py
+in_loop_val.py
+neural_constants.py
+neural_masking.py
+neural_trial_transform.py
+repo_paths.py
+things_augmenter.py
+token_accounting.py
+train_4m.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-49-658Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-49-658Z" class="timestamp-link"><time datetime="2026-06-03T01:48:49.658Z" data-timestamp="2026-06-03T01:48:49.658Z">2026-06-03T01:48:49.658Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_012E16TewngYtjgo33PRExnf"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/fourm_neural_modalities.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-48-49-685Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-48-49-685Z" class="timestamp-link"><time datetime="2026-06-03T01:48:49.685Z" data-timestamp="2026-06-03T01:48:49.685Z">2026-06-03T01:48:49.685Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Register neural modalities with 4M at import time.
+2	
+3	Import this module BEFORE any 4M script that reads MODALITY_INFO or builds
+4	a dataloader. Mutates ``MODALITY_INFO`` and ``MODALITY_TRANSFORMS`` in place.
+5	
+6	MEG/EEG are **symmetric**: each is one modality used on both the encoder (input) and
+7	decoder (target) side. 4M&#x27;s masked prediction partitions a modality&#x27;s cells into input
+8	vs target on each step (disjoint), so neural acts as a reconstruction regularizer with no
+9	input-&gt;target leakage. MEG is 4 modalities (one per RVQ layer, ``tok_meg_rvq0..3``); EEG is
+10	one (``tok_eeg``). All carry ``type: neural_grid`` (parallel decoder branch) plus both an
+11	encoder and a decoder embedding. See ``notes/4m_neural_modality_design.md``.
+12	&quot;&quot;&quot;
+13	
+14	from __future__ import annotations
+15	
+16	import copy
+17	from functools import partial
+18	
+19	from fourm.data import modality_info as _mi
+20	from fourm.utils import generate_uint15_hash
+21	
+22	from fourm_neural_embeddings import (
+23	    EegDecoderEmbedding,
+24	    EegEncoderEmbedding,
+25	    MegRVQDecoderEmbedding,
+26	    MegRVQEncoderEmbedding,
+27	)
+28	from fourm_neural_transforms import (
+29	    MaskFlagTransform,
+30	    NeuralTargetTransform,
+31	)
+32	from neural_constants import (
+33	    EEG_CODE_MAX,
+34	    EEG_MODALITY,
+35	    EEG_TOKENS_PER_TRIAL,
+36	    EEG_VOCAB_SIZE,
+37	    MEG_CODE_MAX,
+38	    MEG_N_SOURCES,
+39	    MEG_N_TIME,
+40	    MEG_POSITIONS_PER_TRIAL,
+41	    MEG_RVQ_MODALITIES,
+42	    MEG_SOURCE_PATH,
+43	    MEG_VOCAB_SIZE,
+44	    NEURAL_GRID_TYPE,
+45	)
+46	from things_augmenter import ThingsTokTransform
+47	
+48	# Re-export for callers that import vocab sizes from this module.
+49	__all__ = [
+50	    &quot;EEG_VOCAB_SIZE&quot;,
+51	    &quot;MEG_VOCAB_SIZE&quot;,
+52	    &quot;register&quot;,
+53	]
+54	
+55	_NEURAL_MODALITY_INFO: dict[str, dict] = {
+56	    &quot;meg_mask&quot;: {
+57	        &quot;type&quot;: &quot;meta&quot;,
+58	        &quot;id&quot;: generate_uint15_hash(&quot;meg_mask&quot;),
+59	        &quot;path&quot;: &quot;meg_mask&quot;,
+60	    },
+61	    &quot;eeg_mask&quot;: {
+62	        &quot;type&quot;: &quot;meta&quot;,
+63	        &quot;id&quot;: generate_uint15_hash(&quot;eeg_mask&quot;),
+64	        &quot;path&quot;: &quot;eeg_mask&quot;,
+65	    },
+66	}
+67	
+68	# MEG: one symmetric modality per RVQ layer (layer-specific 512-vocab codebooks) over the
+69	# 16x8 grid. Both embeddings present -&gt; usable in in_domains AND out_domains. All four read
+70	# the on-disk ``tok_meg`` folder via ``path``; the rename seam splits one sampled trial.
+71	for _meg_mod in MEG_RVQ_MODALITIES:
+72	    _NEURAL_MODALITY_INFO[_meg_mod] = {
+73	        &quot;vocab_size&quot;: MEG_VOCAB_SIZE,
+74	        &quot;encoder_embedding&quot;: partial(
+75	            MegRVQEncoderEmbedding,
+76	            vocab_size=MEG_VOCAB_SIZE,
+77	            n_sources=MEG_N_SOURCES,
+78	            n_time=MEG_N_TIME,
+79	        ),
+80	        &quot;decoder_embedding&quot;: partial(
+81	            MegRVQDecoderEmbedding,
+82	            vocab_size=MEG_VOCAB_SIZE,
+83	            n_sources=MEG_N_SOURCES,
+84	            n_time=MEG_N_TIME,
+85	        ),
+86	        &quot;min_tokens&quot;: 0,
+87	        &quot;max_tokens&quot;: MEG_POSITIONS_PER_TRIAL,  # 128 grid cells
+88	        &quot;type&quot;: NEURAL_GRID_TYPE,
+89	        &quot;id&quot;: generate_uint15_hash(_meg_mod),
+90	        &quot;path&quot;: MEG_SOURCE_PATH,  # all four read the tok_meg folder
+91	        &quot;pretokenized&quot;: True,
+92	    }
+93	# EEG: a single codebook -&gt; one symmetric modality over the 17-token sequence. Its name
+94	# doubles as the on-disk folder, so ``path`` defaults to the modality name.
+95	_NEURAL_MODALITY_INFO[EEG_MODALITY] = {
+96	    &quot;vocab_size&quot;: EEG_VOCAB_SIZE,
+97	    &quot;encoder_embedding&quot;: partial(
+98	        EegEncoderEmbedding,
+99	        vocab_size=EEG_VOCAB_SIZE,
+100	        max_length=EEG_TOKENS_PER_TRIAL,
+101	    ),
+102	    &quot;decoder_embedding&quot;: partial(
+103	        EegDecoderEmbedding,
+104	        vocab_size=EEG_VOCAB_SIZE,
+105	        max_length=EEG_TOKENS_PER_TRIAL,
+106	    ),
+107	    &quot;min_tokens&quot;: 0,
+108	    &quot;max_tokens&quot;: EEG_TOKENS_PER_TRIAL,
+109	    &quot;type&quot;: NEURAL_GRID_TYPE,
+110	    &quot;id&quot;: generate_uint15_hash(EEG_MODALITY),
+111	    &quot;path&quot;: EEG_MODALITY,
+112	    &quot;pretokenized&quot;: True,
+113	}
+114	
+115	_REGISTERED_TRAINING: bool | None = None
+116	
+117	
+118	def register(training: bool = True) -&gt; None:
+119	    &quot;&quot;&quot;Inject MEG/EEG modalities into 4M&#x27;s global registries.
+120	
+121	    Neural transforms are passthrough-clip (the per-sample trial pick + RVQ split happen
+122	    once in the dataloader rename seam via ``NeuralTargetSplitter``), so train vs val trial
+123	    sampling is configured on the splitter, not here. ``training`` is kept for API symmetry.
+124	    &quot;&quot;&quot;
+125	    global _REGISTERED_TRAINING
+126	
+127	    for name, info in _NEURAL_MODALITY_INFO.items():
+128	        _mi.MODALITY_INFO.setdefault(name, info)
+129	
+130	    # THINGS on-disk folders use tok_rgb / tok_depth; stock 4M registers @224 names.
+131	    for alias, src in ((&quot;tok_rgb&quot;, &quot;tok_rgb@224&quot;), (&quot;tok_depth&quot;, &quot;tok_depth@224&quot;)):
+132	        if alias not in _mi.MODALITY_INFO and src in _mi.MODALITY_INFO:
+133	            info = copy.deepcopy(_mi.MODALITY_INFO[src])
+134	            info[&quot;path&quot;] = alias
+135	            _mi.MODALITY_INFO[alias] = info
+136	
+137	    # THINGS vision shards are flat (196,) with no augmentation axis; stock
+138	    # TokTransform would index that axis and collapse the grid to one token.
+139	    # ThingsTokTransform falls back to stock behaviour for (n_augs, n_tokens),
+140	    # so the shared &quot;tok_rgb&quot; transform key stays correct for CC12M too.
+141	    for vision_mod in (&quot;tok_rgb&quot;, &quot;tok_depth&quot;):
+142	        _mi.MODALITY_TRANSFORMS[vision_mod] = ThingsTokTransform()
+143	
+144	    # Neural modalities: the trial pick + RVQ split already happened in the rename seam,
+145	    # so these transforms just clip to the modality&#x27;s vocab and cast to int64.
+146	    for meg_mod in MEG_RVQ_MODALITIES:
+147	        _mi.MODALITY_TRANSFORMS[meg_mod] = NeuralTargetTransform(code_max=MEG_CODE_MAX)
+148	    _mi.MODALITY_TRANSFORMS[EEG_MODALITY] = NeuralTargetTransform(code_max=EEG_CODE_MAX)
+149	    _mi.MODALITY_TRANSFORMS.setdefault(&quot;meg_mask&quot;, MaskFlagTransform())
+150	    _mi.MODALITY_TRANSFORMS.setdefault(&quot;eeg_mask&quot;, MaskFlagTransform())
+151	    _REGISTERED_TRAINING = training
+152	
+153	
+154	register()
+155	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-48-53-070Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-48-53-070Z" class="timestamp-link"><time datetime="2026-06-03T01:48:53.070Z" data-timestamp="2026-06-03T01:48:53.070Z">2026-06-03T01:48:53.070Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01HPygaHYXv23dV1jkpXM1zu"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/fourm_neural_embeddings.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-48-53-084Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-48-53-084Z" class="timestamp-link"><time datetime="2026-06-03T01:48:53.084Z" data-timestamp="2026-06-03T01:48:53.084Z">2026-06-03T01:48:53.084Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;Encoder + decoder embeddings for SYMMETRIC neural modalities.
+2	
+3	MEG (BrainOmni) tokens are a ``16 x 8`` spatiotemporal grid with 4 RVQ codes per cell.
+4	Each RVQ layer is registered as its **own** modality (``tok_meg_rvqN``, vocab 512, 128-cell
+5	grid) used on **both** the encoder and decoder side, so 4M&#x27;s masked prediction makes each
+6	cell either an encoder input or a decoder target on a step — never both (leak-free). EEG
+7	(LaBraM) is a single 1D 17-token sequence: one modality (``tok_eeg``) on both sides.
+8	
+9	Each modality therefore needs an **encoder** embedding (ids -&gt; ``x``, ``emb``) and a
+10	**decoder** embedding (``forward_embed`` + ``forward_logits``). Both sides share their
+11	positional layout — axial (learned-source + sincos-time) for MEG, sincos-1D for EEG — via
+12	the ``_AxialPositions`` / ``_SincosPositions`` mixins, so the encoder and decoder cannot
+13	drift apart. See ``notes/4m_neural_modality_design.md``.
+14	
+15	The encoder modules mirror ``ImageTokenEncoderEmbedding``&#x27;s ``init`` / ``forward`` contract;
+16	the decoder modules mirror ``ImageTokenDecoderEmbedding``&#x27;s ``forward_embed`` /
+17	``forward_logits`` (fixed per-cell positions; parallel decoding).
+18	&quot;&quot;&quot;
+19	
+20	from __future__ import annotations
+21	
+22	from typing import Dict
+23	
+24	import torch
+25	import torch.nn as nn
+26	from einops import repeat
+27	from fourm.models.fm_utils import build_1d_sincos_posemb
+28	
+29	from neural_constants import (
+30	    EEG_TOKENS_PER_TRIAL,
+31	    EEG_VOCAB_SIZE,
+32	    MEG_N_SOURCES,
+33	    MEG_N_TIME,
+34	    MEG_VOCAB_SIZE,
+35	)
+36	
+37	
+38	# ---------------------------------------------------------------------------
+39	# Positional layout mixins — shared by the encoder AND decoder of a modality so
+40	# the two sides always agree on how a cell&#x27;s position is encoded.
+41	# ---------------------------------------------------------------------------
+42	
+43	
+44	class _AxialPositions:
+45	    &quot;&quot;&quot;MEG: a **learned** embedding for the unordered sources + **sincos** for ordered time.
+46	
+47	    Per-cell position = ``source_emb[s] + time_emb[t]`` where cell ``p`` (row-major over the
+48	    ``n_sources x n_time`` grid) maps to ``source = p // n_time``, ``time = p % n_time``.
+49	    &quot;&quot;&quot;
+50	
+51	    n_sources: int
+52	    n_time: int
+53	    n_positions: int
+54	
+55	    def _build_positions(self, dim_tokens: int, init_std: float) -&gt; None:
+56	        # No inherent order over latent sources -&gt; learned; time is ordered -&gt; sincos.
+57	        self.source_emb = nn.Parameter(torch.zeros(self.n_sources, dim_tokens))
+58	        nn.init.normal_(self.source_emb, std=init_std)
+59	        time_emb = build_1d_sincos_posemb(max_len=self.n_time, embed_dim=dim_tokens)[0]
+60	        self.register_buffer(&quot;time_emb&quot;, time_emb)  # (n_time, D)
+61	        cells = torch.arange(self.n_positions)
+62	        self.register_buffer(&quot;src_idx&quot;, cells // self.n_time)
+63	        self.register_buffer(&quot;time_idx&quot;, cells % self.n_time)
+64	
+65	    def _position_embedding(self) -&gt; torch.Tensor:
+66	        return self.source_emb[self.src_idx] + self.time_emb[self.time_idx]
+67	
+68	    @torch.jit.ignore
+69	    def no_weight_decay(self):
+70	        return {&quot;source_emb&quot;}
+71	
+72	
+73	class _SincosPositions:
+74	    &quot;&quot;&quot;EEG: fixed 1D sincos positions over the ``n_positions``-token sequence.&quot;&quot;&quot;
+75	
+76	    n_positions: int
+77	
+78	    def _build_positions(self, dim_tokens: int, init_std: float) -&gt; None:
+79	        pos = build_1d_sincos_posemb(max_len=self.n_positions, embed_dim=dim_tokens)[0]
+80	        self.register_buffer(&quot;pos_emb&quot;, pos)  # (n_positions, D)
+81	
+82	    def _position_embedding(self) -&gt; torch.Tensor:
+83	        return self.pos_emb
+84	
+85	    @torch.jit.ignore
+86	    def no_weight_decay(self):
+87	        return set()
+88	
+89	
+90	# ---------------------------------------------------------------------------
+91	# Encoder / decoder bases — the embed mechanics; positions come from a mixin.
+92	# ---------------------------------------------------------------------------
+93	
+94	
+95	class _NeuralGridEncoderEmbedding(nn.Module):
+96	    &quot;&quot;&quot;Embed ``(B, P)`` single-codebook ids -&gt; ``d[&#x27;x&#x27;]``, ``d[&#x27;emb&#x27;]`` (parallel grid input).
+97	
+98	    Subclasses set ``self.vocab_size`` / ``self.n_positions`` (+ axis sizes for the position
+99	    mixin) in ``__init__`` then call ``self.init(dim_tokens)`` (4M calls it lazily otherwise).
+100	    &quot;&quot;&quot;
+101	
+102	    vocab_size: int
+103	    n_positions: int
+104	
+105	    def init(self, dim_tokens: int = 768, init_std: float = 0.02) -&gt; None:
+106	        &quot;&quot;&quot;Build dimension-dependent parameters (called once when 4M is set up).&quot;&quot;&quot;
+107	        self.dim_tokens = dim_tokens
+108	        # No padding_idx: code 0 is a real token; absent neural is presence-masked upstream.
+109	        self.token_emb = nn.Embedding(self.vocab_size, dim_tokens)
+110	        self.mod_emb = nn.Parameter(torch.zeros(1, 1, dim_tokens))
+111	        nn.init.normal_(self.mod_emb, std=init_std)
+112	        self._build_positions(dim_tokens, init_std)
+113	
+114	    def forward(self, d: Dict[str, torch.Tensor]) -&gt; Dict[str, torch.Tensor]:
+115	        &quot;&quot;&quot;``d[&#x27;tensor&#x27;]``: ``(B, P)`` ids -&gt; adds ``d[&#x27;x&#x27;]`` and ``d[&#x27;emb&#x27;]``.&quot;&quot;&quot;
+116	        assert self.dim_tokens is not None, &quot;Call init(dim_tokens) before forward.&quot;
+117	        ids = d[&quot;tensor&quot;]
+118	        B = ids.shape[0]
+119	        ids = ids.reshape(B, -1)
+120	        x = self.token_emb(ids)
+121	        x_emb = repeat(
+122	            self._position_embedding().unsqueeze(0) + self.mod_emb, &quot;() n d -&gt; b n d&quot;, b=B
+123	        )
+124	        d[&quot;x&quot;] = x
+125	        d[&quot;emb&quot;] = x_emb
+126	        return d
+127	
+128	
+129	class _NeuralGridDecoderEmbedding(nn.Module):
+130	    &quot;&quot;&quot;Parallel decoder head for a fixed-size neural token grid.
+131	
+132	    Mirrors ``ImageTokenDecoderEmbedding``&#x27;s ``forward_embed`` / ``forward_logits`` contract
+133	    so 4M routes these through its **parallel** decoder branch: target ids are embedded
+134	    (``d[&#x27;x&#x27;]``), per-cell positional + modality embeddings are added (``d[&#x27;emb&#x27;]``), and
+135	    ``forward_logits`` projects decoder outputs to vocab logits. The decoder replaces
+136	    ``d[&#x27;x&#x27;]`` with its mask token, so the model must *predict* each target — no leakage.
+137	
+138	    Subclasses set ``self.vocab_size`` / ``self.n_positions`` (+ axis sizes) in ``__init__``
+139	    then call ``self.init(dim_tokens)`` (4M calls it lazily otherwise).
+140	    &quot;&quot;&quot;
+141	
+142	    vocab_size: int
+143	    n_positions: int
+144	
+145	    def init(self, dim_tokens: int = 768, init_std: float = 0.02) -&gt; None:
+146	        self.dim_tokens = dim_tokens
+147	        # No padding_idx: code 0 is a real token; absence is handled by presence masking.
+148	        self.token_emb = nn.Embedding(self.vocab_size, dim_tokens)
+149	        self.to_logits = nn.Linear(dim_tokens, self.vocab_size, bias=False)
+150	        self.mod_emb = nn.Parameter(torch.zeros(1, 1, dim_tokens))
+151	        nn.init.normal_(self.mod_emb, std=init_std)
+152	        self._build_positions(dim_tokens, init_std)
+153	
+154	    def forward_embed(self, d: Dict[str, torch.Tensor]) -&gt; Dict[str, torch.Tensor]:
+155	        assert self.dim_tokens is not None, &quot;Call init(dim_tokens) before forward_embed.&quot;
+156	        ids = d[&quot;tensor&quot;]
+157	        B = ids.shape[0]
+158	        ids = ids.reshape(B, -1)
+159	        x = self.token_emb(ids)
+160	        x_emb = repeat(
+161	            self._position_embedding().unsqueeze(0) + self.mod_emb, &quot;() n d -&gt; b n d&quot;, b=B
+162	        )
+163	        d[&quot;x&quot;] = x
+164	        d[&quot;emb&quot;] = x_emb
+165	        d[&quot;ids&quot;] = ids
+166	        return d
+167	
+168	    def forward_logits(self, x: torch.Tensor) -&gt; torch.Tensor:
+169	        return self.to_logits(x)
+170	
+171	
+172	# ---------------------------------------------------------------------------
+173	# Concrete MEG / EEG embeddings (one encoder + one decoder per modality).
+174	# Position mixin first in the bases so its layout methods win the MRO.
+175	# ---------------------------------------------------------------------------
+176	
+177	
+178	class MegRVQEncoderEmbedding(_AxialPositions, _NeuralGridEncoderEmbedding):
+179	    &quot;&quot;&quot;Encoder for one MEG RVQ layer: ``(B, 128)`` ids of a 16x8 grid, vocab 512, axial pos.&quot;&quot;&quot;
+180	
+181	    def __init__(
+182	        self,
+183	        vocab_size: int = MEG_VOCAB_SIZE,
+184	        n_sources: int = MEG_N_SOURCES,
+185	        n_time: int = MEG_N_TIME,
+186	        dim_tokens: int | None = None,
+187	        **kwargs,
+188	    ):
+189	        super().__init__()
+190	        self.vocab_size = vocab_size
+191	        self.n_sources = n_sources
+192	        self.n_time = n_time
+193	        self.n_positions = n_sources * n_time
+194	        self.dim_tokens = dim_tokens
+195	        if dim_tokens is not None:
+196	            self.init(dim_tokens)
+197	
+198	
+199	class MegRVQDecoderEmbedding(_AxialPositions, _NeuralGridDecoderEmbedding):
+200	    &quot;&quot;&quot;Decoder head for one MEG RVQ layer: ``(B, 128)`` ids of a 16x8 grid, vocab 512.
+201	
+202	    Positions mirror ``MegRVQEncoderEmbedding`` (shared ``_AxialPositions`` mixin). Four of
+203	    these (one per RVQ layer) reconstruct a MEG token in parallel.
+204	    &quot;&quot;&quot;
+205	
+206	    def __init__(
+207	        self,
+208	        vocab_size: int = MEG_VOCAB_SIZE,
+209	        n_sources: int = MEG_N_SOURCES,
+210	        n_time: int = MEG_N_TIME,
+211	        dim_tokens: int | None = None,
+212	        **kwargs,
+213	    ):
+214	        super().__init__()
+215	        self.vocab_size = vocab_size
+216	        self.n_sources = n_sources
+217	        self.n_time = n_time
+218	        self.n_positions = n_sources * n_time
+219	        self.dim_tokens = dim_tokens
+220	        if dim_tokens is not None:
+221	            self.init(dim_tokens)
+222	
+223	
+224	class EegEncoderEmbedding(_SincosPositions, _NeuralGridEncoderEmbedding):
+225	    &quot;&quot;&quot;Encoder for EEG: ``(B, 17)`` ids of a 1D sequence, vocab 8192, sincos positions.&quot;&quot;&quot;
+226	
+227	    def __init__(
+228	        self,
+229	        vocab_size: int = EEG_VOCAB_SIZE,
+230	        max_length: int = EEG_TOKENS_PER_TRIAL,
+231	        dim_tokens: int | None = None,
+232	        **kwargs,
+233	    ):
+234	        super().__init__()
+235	        self.vocab_size = vocab_size
+236	        self.n_positions = max_length
+237	        self.dim_tokens = dim_tokens
+238	        if dim_tokens is not None:
+239	            self.init(dim_tokens)
+240	
+241	
+242	class EegDecoderEmbedding(_SincosPositions, _NeuralGridDecoderEmbedding):
+243	    &quot;&quot;&quot;Decoder head for EEG: ``(B, 17)`` ids of a 1D sequence, vocab 8192, sincos positions.&quot;&quot;&quot;
+244	
+245	    def __init__(
+246	        self,
+247	        vocab_size: int = EEG_VOCAB_SIZE,
+248	        max_length: int = EEG_TOKENS_PER_TRIAL,
+249	        dim_tokens: int | None = None,
+250	        **kwargs,
+251	    ):
+252	        super().__init__()
+253	        self.vocab_size = vocab_size
+254	        self.n_positions = max_length
+255	        self.dim_tokens = dim_tokens
+256	        if dim_tokens is not None:
+257	            self.init(dim_tokens)
+258	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-49-06-509Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-49-06-509Z" class="timestamp-link"><time datetime="2026-06-03T01:49:06.509Z" data-timestamp="2026-06-03T01:49:06.509Z">2026-06-03T01:49:06.509Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Clear answer. Here's what's actually fed into 4M for the neural modalities:</p>
+<p><strong>Raw integer token IDs — not codebook embeddings.</strong></p>
+<p>The on-disk shards store integer codes from the RVQ/VQ tokenizers, the dataloader passes them through <code>NeuralTargetTransform</code> (just clips to <code>code_max</code> and casts to <code>int64</code>), and they enter 4M as <code>d["tensor"]</code> of shape <code>(B, P)</code> integer indices.</p>
+<p>Inside 4M, each modality's own <code>nn.Embedding(vocab_size, dim_tokens)</code> table — owned by the 4M model, <strong>not</strong> the tokenizer's codebook — turns those ids into vectors. See <a href="4m_training/lib/fourm_neural_embeddings.py#L109">fourm_neural_embeddings.py:109</a> (encoder) and <a href="4m_training/lib/fourm_neural_embeddings.py#L148">fourm_neural_embeddings.py:148</a> (decoder), called inside <code>forward</code> / <code>forward_embed</code> at <a href="4m_training/lib/fourm_neural_embeddings.py#L120">fourm_neural_embeddings.py:120</a> and <a href="4m_training/lib/fourm_neural_embeddings.py#L159">fourm_neural_embeddings.py:159</a>.</p>
+<p>Concretely per modality:
+- <strong>MEG</strong>: 4 modalities <code>tok_meg_rvq0..3</code>, each <code>(B, 128)</code> int ids, vocab 512, mapped via a fresh <code>nn.Embedding(512, dim_tokens)</code> + axial position (learned source + sincos time).
+- <strong>EEG</strong>: <code>tok_eeg</code>, <code>(B, 17)</code> int ids, vocab 8192, mapped via <code>nn.Embedding(8192, dim_tokens)</code> + 1D sincos pos.</p>
+<p>Why this design (system-level): 4M's masked prediction needs to read AND write the same modality — meaning the same <code>vocab_size</code>-way logit head has to invert the input mapping. Feeding the raw tokenizer codebook embeddings (frozen, ≠ <code>dim_tokens</code>) would force a projection and decouple input/output spaces, breaking the symmetric encoder↔decoder weight tying pattern used in 4M for image tokens. By keeping the tokenizer purely as a <em>discretizer</em> and letting 4M relearn an embedding table at its own width, MEG/EEG slot in exactly like <code>tok_rgb</code> — which is also why <code>pretokenized: True</code> is set in the modality info.</p></div></div></div>
+<div class="message user" id="msg-2026-06-03T01-50-09-427Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T01-50-09-427Z" class="timestamp-link"><time datetime="2026-06-03T01:50:09.427Z" data-timestamp="2026-06-03T01:50:09.427Z">2026-06-03T01:50:09.427Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>so its training a codebook from scrtch for each modality?</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-50-21-870Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-50-21-870Z" class="timestamp-link"><time datetime="2026-06-03T01:50:21.870Z" data-timestamp="2026-06-03T01:50:21.870Z">2026-06-03T01:50:21.870Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Yes — exactly.</p>
+<p>For each neural modality, 4M instantiates a <strong>fresh</strong> <code>nn.Embedding(vocab_size, dim_tokens)</code> on the encoder side and a <strong>separate</strong> fresh <code>nn.Embedding(vocab_size, dim_tokens)</code> + <code>nn.Linear(dim_tokens, vocab_size)</code> logit head on the decoder side. All randomly initialized, all trained end-to-end with the rest of 4M. The BrainOmni/LaBraM codebook vectors are never loaded — only the discrete ids they produced.</p>
+<p>So per run, 4M learns from scratch:
+- <strong>MEG</strong>: 4 × (512-entry encoder table + 512-entry decoder table + 512-way logit head), one per RVQ layer
+- <strong>EEG</strong>: 1 × (8192-entry encoder table + 8192-entry decoder table + 8192-way logit head)</p>
+<p>Two consequences worth noting:</p>
+<ol>
+<li>
+<p><strong>The tokenizer's geometry is discarded.</strong> RVQ codebook 0 and codebook 1 have a meaningful residual relationship in BrainOmni's latent space; 4M sees them as four independent vocabularies and has to rediscover any cross-layer structure through co-occurrence. That's the price of the symmetric-modality design.</p>
+</li>
+<li>
+<p><strong>Encoder and decoder embeddings are not tied</strong> in this code (each side has its own <code>token_emb</code>). Stock 4M image modalities don't tie them either, so this matches convention — but it does mean 2× the embedding params per modality. For EEG that's ~2 × 8192 × 768 ≈ 12.6M params just for the lookup tables, which is non-trivial at small model sizes.</p>
+</li>
+</ol>
+<p>If you ever wanted to warm-start from the tokenizer's codebook, the seam would be in <code>_NeuralGridEncoderEmbedding.init</code> / <code>_NeuralGridDecoderEmbedding.init</code> — load the codebook tensor, project to <code>dim_tokens</code>, and copy into <code>token_emb.weight</code>. But you'd lose the clean symmetry with <code>tok_rgb</code> and need to decide whether to freeze or fine-tune.</p></div></div></div>
+<div class="message user" id="msg-2026-06-03T01-56-14-606Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T01-56-14-606Z" class="timestamp-link"><time datetime="2026-06-03T01:56:14.606Z" data-timestamp="2026-06-03T01:56:14.606Z">2026-06-03T01:56:14.606Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>rn, for probes in meg tokenization, am i runing probes on raw data reconstructed from tokens, or just from token IDs?</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-56-17-631Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-56-17-631Z" class="timestamp-link"><time datetime="2026-06-03T01:56:17.631Z" data-timestamp="2026-06-03T01:56:17.631Z">2026-06-03T01:56:17.631Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-56-18-212Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-56-18-212Z" class="timestamp-link"><time datetime="2026-06-03T01:56:18.212Z" data-timestamp="2026-06-03T01:56:18.212Z">2026-06-03T01:56:18.212Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01SR9xPgViWMEBVmToVbYqnU"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/evaluation/probe.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-56-18-240Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-56-18-240Z" class="timestamp-link"><time datetime="2026-06-03T01:56:18.240Z" data-timestamp="2026-06-03T01:56:18.240Z">2026-06-03T01:56:18.240Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;§5.3 Downstream linear probe.
+2	
+3	Does the token sequence still carry the information we actually care about?
+4	Train a linear classifier (cross-entropy logistic regression in torch) on
+5	feature sets that always include `raw` and `random` as bracketing anchors,
+6	plus one or more token-derived feature sets:
+7	
+8	  - tokens_&lt;subset&gt; : per-trial features pooled from the tokenizer&#x27;s output.
+9	        If the tokenizer exposes a layered `tokens_to_embedding(tokens, layers)`,
+10	        one entry is produced per `EvalConfig.probe_rvq_layers` element
+11	        (e.g. `tokens_all`, `tokens_rvq0`). Otherwise a single `tokens`
+12	        entry is emitted (codebook embeddings if available, else
+13	        bag-of-codes).
+14	  - raw    : flattened signal x (upper bound — all info is there)
+15	  - random : bag-of-codes of uniformly random tokens of the same shape
+16	             (lower bound — no info)
+17	
+18	K-fold cross-validation:
+19	  Set `EvalConfig.probe_n_folds &gt;= 2` to run k-fold CV; the harness reports
+20	  `top{k}_&lt;set&gt;_mean` and `top{k}_&lt;set&gt;_std` across folds. With n_folds=1 we
+21	  fall back to a single random (train/test) split for back-compat.
+22	
+23	The probe is intentionally weak (one linear layer): if a linear model can
+24	read the stimulus off the tokens, the information is linearly decodable,
+25	which is what 4M&#x27;s transformer needs from its input embeddings. A strong
+26	nonlinear classifier would rescue tokens that are entangled in ways 4M
+27	cannot cheaply undo, and would therefore overstate quality.
+28	&quot;&quot;&quot;
+29	
+30	from __future__ import annotations
+31	
+32	import inspect
+33	import statistics
+34	
+35	import torch
+36	import torch.nn.functional as F
+37	
+38	from .codebook import tokenize_all
+39	from .protocol import EvalConfig, MetricResult, Tokenizer, has_token_embeddings
+40	
+41	
+42	def compute_probe_metrics(
+43	    tokenizer: Tokenizer,
+44	    signal: torch.Tensor,
+45	    labels: torch.Tensor,
+46	    config: EvalConfig,
+47	    tokens: torch.Tensor | None = None,
+48	) -&gt; MetricResult:
+49	    &quot;&quot;&quot;Run the bracketed linear probe with optional k-fold CV.
+50	
+51	    NOT decorated with @torch.no_grad() — the linear head needs gradients.
+52	    Featurization is wrapped in no_grad inside its helpers; the gradient-
+53	    bearing scope is limited to _train_and_score_probe.
+54	    &quot;&quot;&quot;
+55	    _assert_probe_inputs(signal, labels)
+56	
+57	    if tokens is None:
+58	        with torch.no_grad():
+59	            tokens = tokenize_all(tokenizer, signal, config)
+60	
+61	    y = labels.to(torch.long).cpu()
+62	
+63	    with torch.no_grad():
+64	        feature_sets = _build_feature_sets(tokenizer, tokens, signal, config)
+65	
+66	    n_classes = int(labels.max().item()) + 1
+67	    folds = _kfold_indices(n=signal.shape[0], n_folds=config.probe_n_folds, config=config)
+68	
+69	    values: dict[str, float] = {}
+70	    for name, feats in feature_sets.items():
+71	        per_fold: dict[str, list[float]] = {}
+72	        for train_idx, test_idx in folds:
+73	            accs = _train_and_score_probe(feats, y, train_idx, test_idx, n_classes, config)
+74	            for metric_name, acc in accs.items():
+75	                per_fold.setdefault(metric_name, []).append(acc)
+76	        for metric_name, vals in per_fold.items():
+77	            values[f&quot;{metric_name}_{name}_mean&quot;] = float(statistics.mean(vals))
+78	            values[f&quot;{metric_name}_{name}_std&quot;] = (
+79	                float(statistics.stdev(vals)) if len(vals) &gt;= 2 else 0.0
+80	            )
+81	    return MetricResult(name=&quot;probe&quot;, values=values)
+82	
+83	
+84	# ---------- feature construction -----------------------------------------
+85	
+86	def _build_feature_sets(
+87	    tokenizer: Tokenizer,
+88	    tokens: torch.Tensor,
+89	    signal: torch.Tensor,
+90	    config: EvalConfig,
+91	) -&gt; dict[str, torch.Tensor]:
+92	    &quot;&quot;&quot;Return {feature_set_name: feature tensor on CPU, float32}.
+93	
+94	    Shape varies by `config.probe_classifier`:
+95	      - &quot;linear&quot; / &quot;mlp&quot;: (B, D_flat) — mean-pooled / bag-of-codes / flattened.
+96	      - &quot;cnn&quot;           : (B, *natural_spatial[, D]) — structured for conv heads.
+97	                          See _embed_keep_structure for the natural-shape rules.
+98	
+99	    Order matters only for stable JSON output: tokens variants first, then
+100	    raw, then random.
+101	    &quot;&quot;&quot;
+102	    use_cnn = config.probe_classifier == &quot;cnn&quot;
+103	
+104	    feats: dict[str, torch.Tensor] = {}
+105	    if has_token_embeddings(tokenizer):
+106	        embed_fn = _embed_keep_structure if use_cnn else _embed_and_mean
+107	        if _supports_layered_embedding(tokenizer):
+108	            for subset in config.probe_rvq_layers:
+109	                name = f&quot;tokens_{_layer_subset_name(subset)}&quot;
+110	                feats[name] = embed_fn(tokenizer, tokens, config, layers=subset)
+111	        else:
+112	            feats[&quot;tokens&quot;] = embed_fn(tokenizer, tokens, config, layers=None)
+113	    else:
+114	        if use_cnn:
+115	            raise ValueError(
+116	                &quot;CNN probe requires tokenizer.tokens_to_embedding; &quot;
+117	                f&quot;{type(tokenizer).__name__} only exposes bag-of-codes features.&quot;
+118	            )
+119	        feats[&quot;tokens&quot;] = _bag_of_codes(tokens, tokenizer.codebook_size)
+120	
+121	    random_tokens = _random_tokens_like(tokens, tokenizer.codebook_size, config.seed)
+122	    if use_cnn:
+123	        feats[&quot;raw&quot;] = signal.to(torch.float32).cpu()
+124	        if has_token_embeddings(tokenizer):
+125	            feats[&quot;random&quot;] = _embed_keep_structure(
+126	                tokenizer, random_tokens, config, layers=None
+127	            )
+128	        else:
+129	            # Defensive — earlier branch already raised for this case.
+130	            feats[&quot;random&quot;] = _bag_of_codes(random_tokens, tokenizer.codebook_size)
+131	    else:
+132	        feats[&quot;raw&quot;] = signal.reshape(signal.shape[0], -1).to(torch.float32).cpu()
+133	        feats[&quot;random&quot;] = _bag_of_codes(random_tokens, tokenizer.codebook_size)
+134	    return feats
+135	
+136	
+137	def _supports_layered_embedding(tokenizer: Tokenizer) -&gt; bool:
+138	    &quot;&quot;&quot;True if `tokens_to_embedding` accepts a `layers` kwarg.
+139	
+140	    We don&#x27;t import the BrainOmni adapter here — keep `probe.py` modality-
+141	    agnostic. Signature sniff is the cheapest way to opt in without a flag.
+142	    &quot;&quot;&quot;
+143	    fn = getattr(tokenizer, &quot;tokens_to_embedding&quot;, None)
+144	    if fn is None:
+145	        return False
+146	    try:
+147	        sig = inspect.signature(fn)
+148	    except (TypeError, ValueError):
+149	        return False
+150	    return &quot;layers&quot; in sig.parameters
+151	
+152	
+153	def _layer_subset_name(layers: tuple[int, ...] | None) -&gt; str:
+154	    &quot;&quot;&quot;Stable name for a layer subset (used as JSON key suffix).&quot;&quot;&quot;
+155	    if layers is None:
+156	        return &quot;all&quot;
+157	    return &quot;rvq&quot; + &quot;&quot;.join(str(int(layer)) for layer in layers)
+158	
+159	
+160	@torch.no_grad()
+161	def _embed_and_mean(
+162	    tokenizer: Tokenizer,
+163	    tokens: torch.Tensor,
+164	    config: EvalConfig,
+165	    layers: tuple[int, ...] | None,
+166	) -&gt; torch.Tensor:
+167	    &quot;&quot;&quot;Pool the per-token embeddings to a single (B, D) feature per trial.
+168	
+169	    `layers=None` means &quot;use whatever the tokenizer&#x27;s default is&quot; (current
+170	    behavior: sum all RVQ layers for BrainOmni). A tuple selects a subset.
+171	    &quot;&quot;&quot;
+172	    pieces: list[torch.Tensor] = []
+173	    layered = _supports_layered_embedding(tokenizer)
+174	    for start in range(0, tokens.shape[0], config.batch_size):
+175	        chunk = tokens[start : start + config.batch_size].to(config.device)
+176	        if layered:
+177	            emb = tokenizer.tokens_to_embedding(chunk, layers=layers)  # type: ignore[call-arg]
+178	        else:
+179	            emb = tokenizer.tokens_to_embedding(chunk)  # type: ignore[attr-defined]
+180	        emb_flat = emb.reshape(emb.shape[0], -1, emb.shape[-1])
+181	        pieces.append(emb_flat.mean(dim=1).cpu().to(torch.float32))
+182	    return torch.cat(pieces, dim=0)
+183	
+184	
+185	@torch.no_grad()
+186	def _embed_keep_structure(
+187	    tokenizer: Tokenizer,
+188	    tokens: torch.Tensor,
+189	    config: EvalConfig,
+190	    layers: tuple[int, ...] | None,
+191	) -&gt; torch.Tensor:
+192	    &quot;&quot;&quot;Like `_embed_and_mean` but **preserves the natural spatial/temporal
+193	    layout** instead of mean-pooling. Used by the CNN probe head.
+194	
+195	    Shape conventions (assumes tokens shape is `(B, *natural, [RVQ?])`):
+196	      - RVQ tokenizers (e.g. BrainOmni, tokens (B, 16, 8, 4)):
+197	          → emb (B, 16, 8, D)
+198	      - Single-codebook tokenizers (e.g. μ-transform, tokens (B, 271, 281)):
+199	          → emb (B, 271, 281, D); D=1 is squeezed so CNN1D sees (B, 271, 281).
+200	
+201	    Why D=1 squeeze: μ-transform&#x27;s `tokens_to_embedding` returns scalar
+202	    bin-center values per (channel, time-sample) position. Keeping the
+203	    trailing D=1 would force the probe to use Conv2d when Conv1d over
+204	    (channels, time) is the natural inductive bias.
+205	    &quot;&quot;&quot;
+206	    layered = _supports_layered_embedding(tokenizer)
+207	    if layered:
+208	        # Last token axis is the RVQ-layer index; the spatial layout
+209	        # is everything between the batch dim and the RVQ dim.
+210	        natural_shape = tokens.shape[1:-1]
+211	    else:
+212	        natural_shape = tokens.shape[1:]
+213	
+214	    pieces: list[torch.Tensor] = []
+215	    for start in range(0, tokens.shape[0], config.batch_size):
+216	        chunk = tokens[start : start + config.batch_size].to(config.device)
+217	        if layered:
+218	            emb = tokenizer.tokens_to_embedding(chunk, layers=layers)  # type: ignore[call-arg]
+219	        else:
+220	            emb = tokenizer.tokens_to_embedding(chunk)  # type: ignore[attr-defined]
+221	        D = emb.shape[-1]
+222	        emb = emb.reshape(emb.shape[0], *natural_shape, D)
+223	        if D == 1:
+224	            emb = emb.squeeze(-1)
+225	        pieces.append(emb.cpu().to(torch.float32))
+226	    return torch.cat(pieces, dim=0)
+227	
+228	
+229	def _bag_of_codes(tokens: torch.Tensor, codebook_size: int) -&gt; torch.Tensor:
+230	    &quot;&quot;&quot;Histogram of code occurrences per trial: (B, V) float.&quot;&quot;&quot;
+231	    flat = tokens.reshape(tokens.shape[0], -1).to(torch.long).cpu()
+232	    B, L = flat.shape
+233	    out = torch.zeros(B, codebook_size, dtype=torch.float32)
+234	    out.scatter_add_(1, flat, torch.ones_like(flat, dtype=torch.float32))
+235	    return out / max(L, 1)
+236	
+237	
+238	def _random_tokens_like(tokens: torch.Tensor, codebook_size: int, seed: int) -&gt; torch.Tensor:
+239	    g = torch.Generator().manual_seed(seed)
+240	    return torch.randint(0, codebook_size, tokens.shape, generator=g, dtype=torch.long)
+241	
+242	
+243	# ---------- splits &amp; training -------------------------------------------
+244	
+245	def _assert_probe_inputs(signal: torch.Tensor, labels: torch.Tensor) -&gt; None:
+246	    if signal.ndim != 3:
+247	        raise ValueError(f&quot;signal must be (B, C, T); got {tuple(signal.shape)}&quot;)
+248	    if labels.ndim != 1 or labels.shape[0] != signal.shape[0]:
+249	        raise ValueError(
+250	            f&quot;labels must be (B,) matching signal[0]; got {tuple(labels.shape)} vs B={signal.shape[0]}&quot;
+251	        )
+252	
+253	
+254	def _kfold_indices(
+255	    n: int, n_folds: int, config: EvalConfig
+256	) -&gt; list[tuple[torch.Tensor, torch.Tensor]]:
+257	    &quot;&quot;&quot;K-fold permutation-based split.
+258	
+259	    n_folds=1 → one (train, test) split sized by `config.probe_test_frac`
+260	    (preserves old single-split behavior). n_folds&gt;=2 → equal-sized folds;
+261	    the last fold absorbs the remainder so all samples are tested exactly
+262	    once across folds.
+263	    &quot;&quot;&quot;
+264	    if n_folds &lt; 1:
+265	        raise ValueError(f&quot;probe_n_folds must be &gt;= 1, got {n_folds}&quot;)
+266	    g = torch.Generator().manual_seed(config.seed)
+267	    perm = torch.randperm(n, generator=g)
+268	    if n_folds == 1:
+269	        n_test = max(1, int(round(config.probe_test_frac * n)))
+270	        return [(perm[n_test:], perm[:n_test])]
+271	    if n_folds &gt; n:
+272	        raise ValueError(f&quot;probe_n_folds={n_folds} exceeds sample count n={n}&quot;)
+273	    fold_size = n // n_folds
+274	    out: list[tuple[torch.Tensor, torch.Tensor]] = []
+275	    for k in range(n_folds):
+276	        start = k * fold_size
+277	        end = (k + 1) * fold_size if k &lt; n_folds - 1 else n
+278	        test_idx = perm[start:end]
+279	        train_idx = torch.cat([perm[:start], perm[end:]])
+280	        out.append((train_idx, test_idx))
+281	    return out
+282	
+283	
+284	def _train_and_score_probe(
+285	    feats: torch.Tensor,
+286	    labels: torch.Tensor,
+287	    train_idx: torch.Tensor,
+288	    test_idx: torch.Tensor,
+289	    n_classes: int,
+290	    config: EvalConfig,
+291	) -&gt; dict[str, float]:
+292	    &quot;&quot;&quot;Fit a single nn.Linear with full-batch gradient descent.
+293	
+294	    Returns a dict of named metrics: `top{k}` for each k in probe_top_k, and
+295	    `bal_acc` (balanced accuracy = mean of per-class recalls). Balanced acc
+296	    is the imbalance-invariant diagnostic: chance is exactly 1/n_classes
+297	    regardless of class frequencies, whereas top-1 floor is `max(class_freq)`
+298	    once a classifier collapses to majority prediction.
+299	    &quot;&quot;&quot;
+300	    device = config.device
+301	    X_train = feats[train_idx].to(device)
+302	    y_train = labels[train_idx].to(device)
+303	    X_test = feats[test_idx].to(device)
+304	    y_test = labels[test_idx].to(device)
+305	
+306	    feat_shape = tuple(feats.shape[1:])
+307	    torch.manual_seed(config.seed)
+308	    head = _build_head(feat_shape, n_classes, config).to(device)
+309	    opt = torch.optim.AdamW(
+310	        head.parameters(), lr=config.probe_lr, weight_decay=config.probe_weight_decay
+311	    )
+312	
+313	    class_weights = _class_weights(y_train, n_classes, device) if config.probe_class_weighted else None
+314	
+315	    head.train()
+316	    for _ in range(config.probe_epochs):
+317	        opt.zero_grad()
+318	        loss = F.cross_entropy(head(X_train), y_train, weight=class_weights)
+319	        loss.backward()
+320	        opt.step()
+321	
+322	    head.eval()
+323	    with torch.no_grad():
+324	        logits = head(X_test)
+325	    out: dict[str, float] = {
+326	        f&quot;top{k}&quot;: acc
+327	        for k, acc in _topk_accuracy(logits, y_test, config.probe_top_k).items()
+328	    }
+329	    out[&quot;bal_acc&quot;] = _balanced_accuracy(logits, y_test, n_classes)
+330	    return out
+331	
+332	
+333	def _topk_accuracy(
+334	    logits: torch.Tensor, labels: torch.Tensor, ks: tuple[int, ...]
+335	) -&gt; dict[int, float]:
+336	    &quot;&quot;&quot;Top-k accuracy. Falls back to top-min(k, n_classes) silently.&quot;&quot;&quot;
+337	    n_classes = logits.shape[1]
+338	    out: dict[int, float] = {}
+339	    for k in ks:
+340	        k_eff = min(k, n_classes)
+341	        top = logits.topk(k_eff, dim=1).indices
+342	        correct = (top == labels.unsqueeze(1)).any(dim=1).to(torch.float64)
+343	        out[k] = float(correct.mean().item())
+344	    return out
+345	
+346	
+347	def _build_head(
+348	    feat_shape: tuple[int, ...], n_classes: int, config: EvalConfig
+349	) -&gt; torch.nn.Module:
+350	    &quot;&quot;&quot;Construct the probe classifier per `config.probe_classifier`.
+351	
+352	    Args:
+353	        feat_shape: feature shape **excluding** the batch dim. e.g.
+354	            `(D,)` for flat features; `(C, T)` for 1-D time-series;
+355	            `(S1, S2, D)` for 2-D structured embeddings.
+356	        n_classes: classification target size.
+357	        config: EvalConfig.
+358	
+359	    Heads:
+360	        &quot;linear&quot; — §5.3 gate (what 4M&#x27;s input embedding effectively does).
+361	                   Flatten + Linear.
+362	        &quot;mlp&quot;    — 2-layer ReLU+dropout. Tests &quot;info is there but nonlinear.&quot;
+363	        &quot;cnn&quot;    — Conv1d head (3-D inputs) or Conv2d head (4-D inputs).
+364	                   Tests &quot;info needs the right inductive bias to surface.&quot;
+365	    &quot;&quot;&quot;
+366	    feat_dim = int(torch.tensor(feat_shape).prod().item())
+367	    clf = config.probe_classifier
+368	    if clf == &quot;linear&quot;:
+369	        return torch.nn.Sequential(
+370	            torch.nn.Flatten(),
+371	            torch.nn.Linear(feat_dim, n_classes),
+372	        )
+373	    if clf == &quot;mlp&quot;:
+374	        return torch.nn.Sequential(
+375	            torch.nn.Flatten(),
+376	            torch.nn.Linear(feat_dim, config.probe_mlp_hidden),
+377	            torch.nn.ReLU(),
+378	            torch.nn.Dropout(config.probe_mlp_dropout),
+379	            torch.nn.Linear(config.probe_mlp_hidden, n_classes),
+380	        )
+381	    if clf == &quot;cnn&quot;:
+382	        return _build_cnn_head(feat_shape, n_classes, hidden=config.probe_cnn_hidden)
+383	    raise ValueError(
+384	        f&quot;probe_classifier must be &#x27;linear&#x27;, &#x27;mlp&#x27;, or &#x27;cnn&#x27;; got {clf!r}&quot;
+385	    )
+386	
+387	
+388	def _build_cnn_head(
+389	    feat_shape: tuple[int, ...], n_classes: int, hidden: int
+390	) -&gt; torch.nn.Module:
+391	    &quot;&quot;&quot;Shape-dispatched CNN head.
+392	
+393	      - (C, T)      → CNN1D: channels-as-input, conv over time.
+394	      - (S1, S2, D) → CNN2D: D-as-input, conv over (S1, S2).
+395	
+396	    Other shapes (e.g. flat or 4-D non-token) are rejected — they don&#x27;t have
+397	    a natural conv interpretation and the user should switch to linear/mlp.
+398	    &quot;&quot;&quot;
+399	    if len(feat_shape) == 2:
+400	        in_channels, _t = feat_shape
+401	        return _CNN1DHead(in_channels=in_channels, n_classes=n_classes, hidden=hidden)
+402	    if len(feat_shape) == 3:
+403	        _s1, _s2, d_embed = feat_shape
+404	        return _CNN2DHead(in_channels=d_embed, n_classes=n_classes, hidden=hidden)
+405	    raise ValueError(
+406	        f&quot;CNN head expects features with shape (C, T) or (S1, S2, D); &quot;
+407	        f&quot;got {feat_shape!r}&quot;
+408	    )
+409	
+410	
+411	class _CNN1DHead(torch.nn.Module):
+412	    &quot;&quot;&quot;Conv1d → BN → ReLU ×2 → AdaptiveAvgPool1d → Linear.
+413	
+414	    Designed for (B, C, T) — raw MEG (C=271, T=281) or μ-transform
+415	    dequantized tokens (same shape).
+416	    &quot;&quot;&quot;
+417	
+418	    def __init__(self, in_channels: int, n_classes: int, hidden: int = 64):
+419	        super().__init__()
+420	        self.net = torch.nn.Sequential(
+421	            torch.nn.Conv1d(in_channels, hidden, kernel_size=7, stride=2, padding=3),
+422	            torch.nn.BatchNorm1d(hidden),
+423	            torch.nn.ReLU(),
+424	            torch.nn.Conv1d(hidden, hidden, kernel_size=5, stride=2, padding=2),
+425	            torch.nn.BatchNorm1d(hidden),
+426	            torch.nn.ReLU(),
+427	            torch.nn.AdaptiveAvgPool1d(1),
+428	            torch.nn.Flatten(),
+429	            torch.nn.Linear(hidden, n_classes),
+430	        )
+431	
+432	    def forward(self, x: torch.Tensor) -&gt; torch.Tensor:  # (B, C, T) → (B, n_classes)
+433	        return self.net(x)
+434	
+435	
+436	class _CNN2DHead(torch.nn.Module):
+437	    &quot;&quot;&quot;Conv2d → BN → ReLU ×2 → AdaptiveAvgPool2d → Linear.
+438	
+439	    Designed for (B, S1, S2, D) — BrainOmni tokens decoded through
+440	    `tokens_to_embedding` and kept structured: S1=16 latent, S2=8 time,
+441	    D=embedding dim. The forward pass permutes D into the channel slot.
+442	    &quot;&quot;&quot;
+443	
+444	    def __init__(self, in_channels: int, n_classes: int, hidden: int = 64):
+445	        super().__init__()
+446	        self.net = torch.nn.Sequential(
+447	            torch.nn.Conv2d(in_channels, hidden, kernel_size=3, padding=1),
+448	            torch.nn.BatchNorm2d(hidden),
+449	            torch.nn.ReLU(),
+450	            torch.nn.Conv2d(hidden, hidden, kernel_size=3, padding=1),
+451	            torch.nn.BatchNorm2d(hidden),
+452	            torch.nn.ReLU(),
+453	            torch.nn.AdaptiveAvgPool2d((1, 1)),
+454	            torch.nn.Flatten(),
+455	            torch.nn.Linear(hidden, n_classes),
+456	        )
+457	
+458	    def forward(self, x: torch.Tensor) -&gt; torch.Tensor:  # (B, S1, S2, D)
+459	        x = x.permute(0, 3, 1, 2).contiguous()
+460	        return self.net(x)
+461	
+462	
+463	def _class_weights(
+464	    y_train: torch.Tensor, n_classes: int, device: torch.device | str
+465	) -&gt; torch.Tensor:
+466	    &quot;&quot;&quot;sklearn-style balanced weights: w_c = N_total / (n_classes * count_c).
+467	
+468	    Computed per-fold from the training labels (not globally), so each fold&#x27;s
+469	    weights match its own class distribution. Classes absent from this fold
+470	    fall back to the unweighted-uniform default (N_total / n_classes) — a
+471	    defensive choice that prevents `0 * +inf` if any class happens to be
+472	    missing on a small fold.
+473	    &quot;&quot;&quot;
+474	    counts = torch.bincount(y_train, minlength=n_classes).to(torch.float64)
+475	    n_total = float(y_train.shape[0])
+476	    default = n_total / n_classes
+477	    weights = torch.where(
+478	        counts &gt; 0,
+479	        n_total / (n_classes * counts.clamp(min=1.0)),
+480	        torch.full_like(counts, default),
+481	    )
+482	    return weights.to(device=device, dtype=torch.float32)
+483	
+484	
+485	def _balanced_accuracy(
+486	    logits: torch.Tensor, labels: torch.Tensor, n_classes: int
+487	) -&gt; float:
+488	    &quot;&quot;&quot;Mean of per-class recalls. Invariant to class imbalance.
+489	
+490	    Classes absent from the test set contribute nothing (averaged over
+491	    only the classes that *do* appear). This matters when a fold happens
+492	    to miss a tiny class — the alternative (count 0 recall for missing
+493	    classes) penalizes folds for sampling variance, not classifier quality.
+494	    &quot;&quot;&quot;
+495	    preds = logits.argmax(dim=1)
+496	    per_class_recall: list[float] = []
+497	    for c in range(n_classes):
+498	        mask = labels == c
+499	        if mask.any():
+500	            per_class_recall.append((preds[mask] == c).to(torch.float64).mean().item())
+501	    return float(sum(per_class_recall) / len(per_class_recall)) if per_class_recall else 0.0
+502	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-56-22-575Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-56-22-575Z" class="timestamp-link"><time datetime="2026-06-03T01:56:22.575Z" data-timestamp="2026-06-03T01:56:22.575Z">2026-06-03T01:56:22.575Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-56-34-292Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-56-34-292Z" class="timestamp-link"><time datetime="2026-06-03T01:56:34.292Z" data-timestamp="2026-06-03T01:56:34.292Z">2026-06-03T01:56:34.292Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Neither, strictly — and importantly <strong>not from decoded/reconstructed signal</strong>. The probe never calls <code>decode_tokens</code>. Here's what each feature set actually is:</p>
+<p>For the "tokens_<em>" features (the thing being evaluated):
+- If the tokenizer exposes <code>tokens_to_embedding</code> → embed the token IDs through the </em><em>codebook lookup</em><em> (BrainOmni: sum of RVQ codebook vectors per cell) and either mean-pool (<a href="neural_tokenizers/evaluation/probe.py#L181">probe.py:181</a>) or keep the natural spatial layout for the CNN head (<a href="neural_tokenizers/evaluation/probe.py#L222">probe.py:222</a>).
+- If it doesn't → </em><em>bag-of-codes</em>* histogram over the integer IDs (<a href="neural_tokenizers/evaluation/probe.py#L229-L235">probe.py:229-235</a>).</p>
+<p>So the "tokens" path uses codebook embeddings or raw IDs — never <code>x_hat</code>.</p>
+<p>The two bracketing anchors:
+- <code>raw</code> = the actual raw MEG signal <code>x</code>, flattened (linear/mlp) or kept as <code>(C, T)</code> (CNN). Not reconstructed — the literal input.
+- <code>random</code> = uniformly random token IDs, bag-of-codes'd.</p>
+<p>Why this design (the §5.3 logic in your <code>CLAUDE.md</code>): the question the probe answers is "can 4M's transformer linearly read the stimulus from what it actually sees as input?" 4M sees codebook embeddings (well, <em>its own</em> re-learned embedding of the IDs — see your earlier question), not <code>x_hat</code>. Probing on <code>decode_tokens(tokens)</code> would measure something else entirely — "did the decoder preserve task signal in time-domain reconstruction" — which is a §5.1 reconstruction question, not a representation-quality question. Probing on the reconstruction would also smuggle the decoder's capacity into the score: a stronger decoder could rescue lossy tokens.</p>
+<p>The <code>raw</code> anchor is the closest the harness comes to "what if we just used the signal directly" — it's the ceiling the tokens are trying to approach.</p></div></div></div>
+<div class="message user" id="msg-2026-06-03T01-57-50-341Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T01-57-50-341Z" class="timestamp-link"><time datetime="2026-06-03T01:57:50.341Z" data-timestamp="2026-06-03T01:57:50.341Z">2026-06-03T01:57:50.341Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Ok, look at the data in meg_tokenization_lean, i want to redo experiment 2 (where we used the averaged meg model), but now i want to 1) only use MEG channels in the occippital lobe. this means we donbt use all channels of raw MEG data - only a few (the occipitla lobe) and rerun c27, animacy, retrieval for it. would this require me to rerun finetuning for brainomni? and 2) not just tokens but raw data reconstructed from tokens</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-00-917Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-00-917Z" class="timestamp-link"><time datetime="2026-06-03T01:58:00.917Z" data-timestamp="2026-06-03T01:58:00.917Z">2026-06-03T01:58:00.917Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-01-705Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-01-705Z" class="timestamp-link"><time datetime="2026-06-03T01:58:01.705Z" data-timestamp="2026-06-03T01:58:01.705Z">2026-06-03T01:58:01.705Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01RpEAroRzQrd2mCQsQ7KGmj"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-58-01-720Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-58-01-720Z" class="timestamp-link"><time datetime="2026-06-03T01:58:01.720Z" data-timestamp="2026-06-03T01:58:01.720Z">2026-06-03T01:58:01.720Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	# MEG tokenization — lean
+2	
+3	Compressed reference for BrainOmni 3b probe results. Full doc:
+4	[meg_tokenization.md](meg_tokenization.md).
+5	
+6	## Setup
+7	
+8	- Checkpoint: BrainOmni `V512_rvq4_win512_sf256_3b` (RVQ, V=512, 4 layers, 512 tokens/trial)
+9	- Tasks: **category27** (chance 3.70%), **animacy** (50%), **subject** (25%)
+10	- Probes: linear / MLP / **CNN**, all 5-fold CV, class-weighted CE, balanced accuracy
+11	- Features: `tokens_all` / `tokens_rvq0` / `raw` (ceiling) / `random` (floor)
+12	
+13	---
+14	
+15	## Experiment 1 — `3b_nonavg` (single-trial finetune)
+16	
+17	Train: 88,340 single trials. Best val 1.401.
+18	
+19	### 1a — Category27 (chance 3.70%)
+20	
+21	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+22	|---|---|---|---|---|
+23	| Linear, unweighted | 3.76 ± 0.07 | 3.71 ± 0.01 | **6.14 ± 0.44** | 3.70 ± 0.00 |
+24	| Linear, weighted | 3.35 ± 0.91 | 3.42 ± 0.38 | **5.16 ± 0.21** | 3.64 ± 0.73 |
+25	| MLP, weighted | 3.18 ± 0.97 | 2.94 ± 0.78 | **4.31 ± 0.49** | 3.09 ± 0.82 |
+26	| **CNN, weighted** | 3.55 ± 0.54 | 3.77 ± 0.53 | **4.19 ± 0.87** | 3.61 ± 0.52 |
+27	
+28	**Tokens at chance across all probes.** Raw barely lifts (~5%).
+29	
+30	### 1b — Subject (chance 25%)
+31	
+32	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+33	|---|---|---|---|---|
+34	| Linear, weighted | 62.6 ± 1.0 | 45.1 ± 0.7 | 93.9 ± 0.9 | 25.2 ± 0.9 |
+35	| MLP, weighted | 69.3 ± 1.0 | 52.2 ± 1.1 | 95.4 ± 0.4 | 25.4 ± 1.3 |
+36	| **CNN, weighted** | **97.4 ± 0.4** | **92.1 ± 0.5** | **98.0 ± 0.5** | 25.5 ± 0.7 |
+37	
+38	**Tokens nearly match raw under CNN.** Monotone linear → MLP → CNN.
+39	
+40	### 1c — Animacy (chance 50%)
+41	
+42	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+43	|---|---|---|---|---|
+44	| Linear, weighted | 51.1 ± 1.8 | 52.6 ± 1.6 | **57.8 ± 2.5** | 50.0 ± 2.2 |
+45	| MLP, weighted | 50.8 ± 2.0 | 51.4 ± 0.8 | **57.9 ± 2.1** | 49.9 ± 3.0 |
+46	| **CNN, weighted** | 51.6 ± 2.0 | 51.2 ± 1.3 | 52.1 ± 1.3 | 49.5 ± 0.6 |
+47	
+48	**Tokens at chance; raw lifts ~5–8pp.**
+49	
+50	### 1d — Retrieval (zero trainable params)
+51	
+52	| Task | tokens cos @1/@5 | tokens Jacc @1/@5 | raw @1/@5 | random @1/@5 |
+53	|---|---|---|---|---|
+54	| Cat27 | 3.71 / 3.59 | 3.38 / 3.81 | 3.76 / 3.94 | 4.11 / 3.54 |
+55	| Animacy | 50.5 / 50.3 | 51.1 / 50.5 | 50.2 / 50.6 | 49.7 / 49.3 |
+56	| Subject | **50.3 / 47.5** | **37.7 / 36.7** | **65.9 / 61.5** | 24.7 / 24.9 |
+57	
+58	**Subject geometry lifts without training; cat/animacy at chance.**
+59	
+60	---
+61	
+62	## Experiment 2 — `3b_avgcross` (cross-subject-averaged finetune)
+63	
+64	Train: 17,959 averaged trials. Best val 1.469. Subject task N/A by construction.
+65	
+66	### 2a — Category27 (chance 3.70%)
+67	
+68	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+69	|---|---|---|---|---|
+70	| Linear, weighted (bal_acc) | 2.88 ± 1.80 | 3.24 ± 1.32 | **6.01 ± 2.37** | 4.02 ± 2.24 |
+71	| **CNN, weighted (bal_acc)** | **4.65 ± 1.31** | 4.07 ± 0.82 | **4.78 ± 1.47** | 3.65 ± 1.24 |
+72	
+73	**CNN tokens 4.65 vs raw 4.78 — essentially matched, ~+1σ above random.**
+74	
+75	### 2c — Animacy (chance 50%)
+76	
+77	| Classifier | tokens_all | tokens_rvq0 | raw | random |
+78	|---|---|---|---|---|
+79	| Linear, weighted (bal_acc) | 48.5 ± 4.6 | 50.9 ± 7.3 | **61.1 ± 3.4** | 48.2 ± 4.3 |
+80	| **CNN, weighted (bal_acc)** | **52.2 ± 1.7** | 51.4 ± 0.3 | **58.9 ± 5.3** | 50.9 ± 2.5 |
+81	
+82	**Tokens ~2pp above random; raw ~7pp above. Partial loss persists.**
+83	
+84	### 2d — Retrieval
+85	
+86	| Task | tokens cos @1/@5 | tokens Jacc @1/@5 | raw @1/@5 | random @1/@5 |
+87	|---|---|---|---|---|
+88	| Cat27 | 3.98 / 3.72 | 4.51 / — | **4.24 / 4.37** | 3.72 / 3.84 |
+89	| Animacy | 48.6 / 50.7 | 48.6 / 49.4 | 50.7 / 51.4 | 51.2 / 49.9 |
+90	
+91	**All at chance** — raw retrieval also at chance at n=1,126/2,245 (too weak for the small linear signal).
+92	
+93	---
+94	
+95	## What the two experiments together say
+96	
+97	- **Reconstruction objective is the bottleneck**, not single-trial noise. Both averaged-input diagnostics and the averaged-trained Exp 2 fail to recover cat27.
+98	- **Variance budget goes to subject/sensor features**, not to fine category structure.
+99	- **Next intervention**: contrastive/supervised auxiliary loss, OR Stage 2 (Cho2026 / EphysTokenizer). Don&#x27;t iterate further on reconstruction-only finetuning.
+100	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-20-271Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-20-271Z" class="timestamp-link"><time datetime="2026-06-03T01:58:20.271Z" data-timestamp="2026-06-03T01:58:20.271Z">2026-06-03T01:58:20.271Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-20-689Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-20-689Z" class="timestamp-link"><time datetime="2026-06-03T01:58:20.689Z" data-timestamp="2026-06-03T01:58:20.689Z">2026-06-03T01:58:20.689Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me look at how BrainOmni ingests channels and how the data is shaped before answering.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-22-567Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-22-567Z" class="timestamp-link"><time datetime="2026-06-03T01:58:22.567Z" data-timestamp="2026-06-03T01:58:22.567Z">2026-06-03T01:58:22.567Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01Aq8m3mh8mGGLoievFaxmoH">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">List brainomni and meg files</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">ls /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/ 2&gt;/dev/null &amp;&amp; echo &#34;---&#34; &amp;&amp; find /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg -name &#34;*.py&#34; | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-58-22-606Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-58-22-606Z" class="timestamp-link"><time datetime="2026-06-03T01:58:22.606Z" data-timestamp="2026-06-03T01:58:22.606Z">2026-06-03T01:58:22.606Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>README.md
+__init__.py
+__pycache__
+adapter.py
+checkpoint.py
+compare_eval.py
+config.py
+load.py
+preprocess.py
+runs
+sensor_metadata.py
+test_brainomni.py
+trainer.py
+---
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modality_registration.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/test_splits.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/meg_config.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/splits.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/test_data.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/data.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/decoder.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/test_mu_transform.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/quantizer.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/encoder.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/tokenizer.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/mu_transform/calibration.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_tokenize_all_avg.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_download_meg_image_bridge.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_inspect_labels.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/__init__.py
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/modal/modal_meg_tokenize_all.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-58-25-188Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-58-25-188Z" class="timestamp-link"><time datetime="2026-06-03T01:58:25.188Z" data-timestamp="2026-06-03T01:58:25.188Z">2026-06-03T01:58:25.188Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_017yMo141ZDzgtYkC9Nf4NTV"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/adapter.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-58-25-200Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-58-25-200Z" class="timestamp-link"><time datetime="2026-06-03T01:58:25.200Z" data-timestamp="2026-06-03T01:58:25.200Z">2026-06-03T01:58:25.200Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>1	&quot;&quot;&quot;BrainOmniTokenizer — Phase 3 adapter implementing evaluation.protocol.Tokenizer.&quot;&quot;&quot;
+2	
+3	from __future__ import annotations
+4	
+5	from typing import Any
+6	
+7	import torch
+8	from einops import rearrange
+9	
+10	from ..meg_config import BRAINOMNI_DEFAULT, BrainOmniConfig
+11	from .config import default_ckpt_dir
+12	from .load import load_braintokenizer
+13	from .preprocess import PreprocessState, inverse_preprocess, preprocess_for_braintokenizer
+14	from .sensor_metadata import SensorMetadata, load_things_meg_sensor_metadata
+15	
+16	
+17	def _decode_rvq_indices(
+18	    rvq,
+19	    indices: torch.Tensor,
+20	    dim: int,
+21	    layers: tuple[int, ...] | None = None,
+22	) -&gt; torch.Tensor:
+23	    &quot;&quot;&quot;Map RVQ indices ``(..., Q)`` → ``(..., dim)`` by summing layer decodes.
+24	
+25	    Args:
+26	        rvq: the RVQ stack (must expose ``.layers``).
+27	        indices: ``(..., Q)`` long token IDs.
+28	        dim: per-layer embedding dimension.
+29	        layers: which RVQ layer indices to sum. ``None`` (default) sums every
+30	            available layer — required for faithful decode/reconstruction.
+31	            A tuple selects a subset (e.g. ``(0,)`` for RVQ0 only), used by
+32	            the linear probe to ask whether one specific layer carries the
+33	            task signal.
+34	    &quot;&quot;&quot;
+35	    *leading, q = indices.shape
+36	    flat = indices.reshape(-1, q)
+37	    out = torch.zeros(flat.shape[0], dim, device=indices.device, dtype=torch.float32)
+38	    chosen = layers if layers is not None else tuple(range(len(rvq.layers)))
+39	    for qi in chosen:
+40	        layer_idx = flat[:, qi].long()
+41	        out = out + rvq.layers[qi].decode(layer_idx)
+42	    return out.reshape(*leading, dim)
+43	
+44	
+45	class BrainOmniTokenizer:
+46	    &quot;&quot;&quot;Wraps OpenTSLab BrainTokenizer for THINGS-MEG.
+47	
+48	    Token shape after ``tokenize``: ``(B, C&#x27;, T_win, Q)`` where C&#x27;=16 latent
+49	    sources, T_win≈8 temporal tokens per 512-sample window, Q=4 RVQ layers.
+50	
+51	    ``decode_tokens`` requires a preceding ``tokenize`` on the same batch so
+52	    per-trial z-score stats are available for inverse preprocessing (the §5
+53	    harness calls them back-to-back per batch).
+54	    &quot;&quot;&quot;
+55	
+56	    def __init__(
+57	        self,
+58	        model: torch.nn.Module,
+59	        sensor_meta: SensorMetadata,
+60	        cfg: BrainOmniConfig = BRAINOMNI_DEFAULT,
+61	        device: str | torch.device = &quot;cpu&quot;,
+62	    ):
+63	        self.model = model
+64	        self.sensor_meta = sensor_meta
+65	        self.cfg = cfg
+66	        self.device = torch.device(device)
+67	        self.codebook_size: int = cfg.codebook_size
+68	        self._preprocess_states: list[PreprocessState] | None = None
+69	
+70	    @classmethod
+71	    def from_checkpoint(
+72	        cls,
+73	        ckpt_dir: str | None = None,
+74	        brainomni_repo: str | None = None,
+75	        cfg: BrainOmniConfig = BRAINOMNI_DEFAULT,
+76	        sensor_meta: SensorMetadata | None = None,
+77	        device: str = &quot;cpu&quot;,
+78	    ) -&gt; &quot;BrainOmniTokenizer&quot;:
+79	        ckpt_dir = ckpt_dir or default_ckpt_dir()
+80	        brainomni_repo = brainomni_repo or cfg.brainomni_repo
+81	        repo_abs = brainomni_repo
+82	        if not brainomni_repo.startswith(&quot;/&quot;):
+83	            import os
+84	
+85	            here = os.path.dirname(__file__)
+86	            repo_abs = os.path.abspath(os.path.join(here, &quot;..&quot;, &quot;..&quot;, &quot;..&quot;, brainomni_repo))
+87	        model = load_braintokenizer(ckpt_dir, repo_abs, device=device)
+88	        if sensor_meta is None:
+89	            try:
+90	                sensor_meta = load_things_meg_sensor_metadata()
+91	            except FileNotFoundError:
+92	                # Synthetic fallback for unit tests without .fif data.
+93	                from ..meg_config import MEG_DATA
+94	
+95	                c = MEG_DATA.n_channels
+96	                sensor_meta = SensorMetadata(
+97	                    pos=torch.zeros(c, 6),
+98	                    sensor_type=torch.ones(c, dtype=torch.long),
+99	                )
+100	        return cls(model, sensor_meta, cfg=cfg, device=device)
+101	
+102	    def _preprocess_batch(
+103	        self, x: torch.Tensor
+104	    ) -&gt; tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+105	        x = x.to(self.device)
+106	        x_pad, state, mask = preprocess_for_braintokenizer(x, self.cfg)
+107	        pos, sensor_type = self.sensor_meta.batch(x_pad.shape[0], self.device)
+108	        self._preprocess_states = [state]
+109	        return x_pad, pos, sensor_type, mask
+110	
+111	    @torch.no_grad()
+112	    def tokenize(self, x: torch.Tensor) -&gt; torch.Tensor:
+113	        &quot;&quot;&quot;(B, C, T) @ 200 Hz → (B, C&#x27;, T_win, Q) long token IDs.&quot;&quot;&quot;
+114	        self.model.eval()
+115	        x_pad, pos, sensor_type, _ = self._preprocess_batch(x)
+116	        _, indices = self.model.tokenize(
+117	            x_pad, pos, sensor_type, overlap_ratio=self.cfg.overlap_ratio
+118	        )
+119	        # BrainTokenizer returns (B, C&#x27;=16, T_win=8, Q=4).
+120	        return indices.long()
+121	
+122	    @torch.no_grad()
+123	    def decode_tokens(self, tokens: torch.Tensor) -&gt; torch.Tensor:
+124	        &quot;&quot;&quot;(B, C&#x27;, T_win, Q) → (B, C, T) @ 200 Hz.&quot;&quot;&quot;
+125	        if self._preprocess_states is None:
+126	            raise RuntimeError(
+127	                &quot;decode_tokens requires a preceding tokenize() on the same batch &quot;
+128	                &quot;for z-score inversion.&quot;
+129	            )
+130	        state = self._preprocess_states[0]
+131	        self.model.eval()
+132	
+133	        b = tokens.shape[0]
+134	        pos, sensor_type = self.sensor_meta.batch(b, self.device)
+135	        dim = self.model.n_dim
+136	        feature = _decode_rvq_indices(self.model.quantizer.rvq, tokens, dim)
+137	        feature = rearrange(feature, &quot;b c t d -&gt; b c 1 t d&quot;)
+138	        sensor_embedding = self.model.sensor_embed(pos, sensor_type)
+139	        x_rec = self.model.decoder(feature, sensor_embedding)
+140	        x_hat = inverse_preprocess(x_rec, state, self.cfg)
+141	        self._preprocess_states = None
+142	        return x_hat
+143	
+144	    @torch.no_grad()
+145	    def tokens_to_embedding(
+146	        self, tokens: torch.Tensor, layers: tuple[int, ...] | None = None
+147	    ) -&gt; torch.Tensor:
+148	        &quot;&quot;&quot;RVQ codebook embeddings for the linear probe. Shape (B, L, D).
+149	
+150	        ``layers`` selects which RVQ codebooks to sum. ``None`` (default)
+151	        sums all 4 layers — equivalent to the original behavior and what
+152	        ``decode_tokens`` uses for reconstruction. Passing e.g. ``(0,)``
+153	        returns the RVQ0-only embedding, which the §5.3 probe uses to ask
+154	        whether the coarsest layer alone carries object-level information.
+155	        &quot;&quot;&quot;
+156	        dim = self.model.n_dim
+157	        emb = _decode_rvq_indices(self.model.quantizer.rvq, tokens, dim, layers=layers)
+158	        return emb.reshape(tokens.shape[0], -1, dim)
+159	
+160	    @torch.no_grad()
+161	    def reconstruct(self, x: torch.Tensor) -&gt; torch.Tensor:
+162	        &quot;&quot;&quot;Direct round-trip via BrainTokenizer.visualize (for debugging).&quot;&quot;&quot;
+163	        self.model.eval()
+164	        x_pad, pos, sensor_type, _ = self._preprocess_batch(x)
+165	        out = self.model.visualize(x_pad, pos, sensor_type)
+166	        state = self._preprocess_states[0]
+167	        return inverse_preprocess(out[&quot;x_rec&quot;], state, self.cfg)
+168	
+169	
+170	def build_tokenizer_from_payload(payload: dict[str, Any]) -&gt; BrainOmniTokenizer:
+171	    &quot;&quot;&quot;Factory for Modal eval — payload from config.json.&quot;&quot;&quot;
+172	    cfg_dict = payload.get(&quot;config&quot;, {})
+173	    base = {f: getattr(BRAINOMNI_DEFAULT, f) for f in BRAINOMNI_DEFAULT.__dataclass_fields__}
+174	    base.update(cfg_dict)
+175	    cfg = BrainOmniConfig(**base)
+176	    return BrainOmniTokenizer.from_checkpoint(
+177	        ckpt_dir=payload.get(&quot;ckpt_dir&quot;, default_ckpt_dir()),
+178	        brainomni_repo=payload.get(&quot;brainomni_repo&quot;, cfg.brainomni_repo),
+179	        cfg=cfg,
+180	        device=payload.get(&quot;device&quot;, &quot;cpu&quot;),
+181	    )
+182	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-59-09-909Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-59-09-909Z" class="timestamp-link"><time datetime="2026-06-03T01:59:09.909Z" data-timestamp="2026-06-03T01:59:09.909Z">2026-06-03T01:59:09.909Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-59-10-385Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-59-10-385Z" class="timestamp-link"><time datetime="2026-06-03T01:59:10.385Z" data-timestamp="2026-06-03T01:59:10.385Z">2026-06-03T01:59:10.385Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Let me check how BrainOmni handles channels architecturally before answering.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-59-12-587Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-59-12-587Z" class="timestamp-link"><time datetime="2026-06-03T01:59:12.587Z" data-timestamp="2026-06-03T01:59:12.587Z">2026-06-03T01:59:12.587Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_015AjUsQeJduVfbt2yUh19hR">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Inspect sensor metadata and preprocess</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;sensor_embed\|sensor_type\|pos\|tokenize\b\|cross&#34; /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py 2&gt;/dev/null | head -60</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T01-59-12-621Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T01-59-12-621Z" class="timestamp-link"><time datetime="2026-06-03T01:59:12.621Z" data-timestamp="2026-06-03T01:59:12.621Z">2026-06-03T01:59:12.621Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/preprocess.py:6:  3. Zero-pad post-stimulus tail to ``window_length`` (512).
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:1:&quot;&quot;&quot;Extract BrainOmni sensor metadata (pos, sensor_type) from MNE info.
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:3:Mirrors ``factory/utils.py::extract_pos_sensor_type`` without importing the
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:27:    pos: torch.Tensor          # (C, 6) float32 — xyz + orientation
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:28:    sensor_type: torch.Tensor  # (C,) int64 — 0=EEG, 1=MAG, 2=GRAD
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:32:        return int(self.sensor_type.shape[0])
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:36:        pos = self.pos.unsqueeze(0).expand(batch_size, -1, -1).to(device)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:37:        st = self.sensor_type.unsqueeze(0).expand(batch_size, -1).to(device)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:38:        return pos, st
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:41:def extract_pos_sensor_type_from_info(info) -&gt; tuple[np.ndarray, np.ndarray]:
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:42:    &quot;&quot;&quot;Build pos (C, 6) and sensor_type (C,) from an MNE Info object.&quot;&quot;&quot;
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:43:    pos_list: list[np.ndarray] = []
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:44:    sensor_type_list: list[int] = []
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:51:            pos_list.append(np.hstack([ch[&quot;loc&quot;][:3], np.zeros(3, dtype=np.float64)]))
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:52:            sensor_type_list.append(SENSOR_TYPE_EEG)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:59:            pos_list.append(np.hstack([xyz, direction]))
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:61:                sensor_type_list.append(SENSOR_TYPE_MAG)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:63:                sensor_type_list.append(SENSOR_TYPE_GRAD)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:64:    pos = np.stack(pos_list).astype(np.float32)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:65:    sensor_type = np.array(sensor_type_list, dtype=np.int64)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:66:    return pos, sensor_type
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:81:    pos, sensor_type = extract_pos_sensor_type_from_info(epochs.info)
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:82:    if pos.shape[0] != MEG_DATA.n_channels:
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:84:            f&quot;Expected {MEG_DATA.n_channels} channels, got {pos.shape[0]} from {epo_path}&quot;
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:87:        pos=torch.from_numpy(pos),
+/Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/sensor_metadata.py:88:        sensor_type=torch.from_numpy(sensor_type),</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-59-38-968Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-59-38-968Z" class="timestamp-link"><time datetime="2026-06-03T01:59:38.968Z" data-timestamp="2026-06-03T01:59:38.968Z">2026-06-03T01:59:38.968Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now I have enough to answer both questions cleanly. Before writing code, here are the system-level decisions you need to make.</p>
+<h2>Q1: Occipital channels → does this require re-finetuning?</h2>
+<p><strong>Architecturally, no — BrainOmni is channel-count agnostic by design</strong>, but the answer depends on <em>what scientific question you're asking</em>. BrainOmni's tokenize path takes <code>(x, pos, sensor_type)</code> and cross-attends from your sensors to <strong>16 fixed latent "neuro sources"</strong> (<code>adapter.py:115-120</code>). So you can pass 30 occipital sensors instead of 271 — the model just attends over a smaller set. No architectural change required.</p>
+<p>But there are <strong>three different experiments</strong> hiding inside "occipital only," with very different costs and meanings:</p>
+<p><strong>(A) Probe-side restriction only — zero retraining cost.</strong>
+- Tokenize the full 271-channel signal as before. Tokens stay identical to Exp 2.
+- Restrict only the <code>raw</code> baseline and the new <code>recon</code> feature to occipital channels.
+- <strong>What this answers:</strong> "If you only let the <em>probe</em> look at occipital signal/reconstruction, is the category info there?"
+- <strong>What this does NOT answer:</strong> whether occipital-only tokens would be better — because the tokens still aggregate the whole head.</p>
+<p><strong>(B) Tokenizer-input restriction, no re-finetune (zero-shot occipital through 3b).</strong>
+- Feed only occipital channels + matching <code>pos</code>/<code>sensor_type</code> rows into the existing 3b checkpoint.
+- 3b was finetuned on full-head distributions, so this is OOD — the cross-attention pattern it learned assumes ~uniform whole-head coverage. The result is interpretable but contaminated by distribution shift.
+- <strong>What this answers:</strong> a rough lower bound on (C) below.</p>
+<p><strong>(C) Tokenizer-input restriction + re-finetune (the principled version).</strong>
+- Re-finetune 3b's <code>adapt</code> mode on occipital-only averaged trials.
+- Cost: same as the original Exp 2 finetune (a few hours L40S, since the averaged corpus is only ~18k trials).
+- <strong>What this answers:</strong> "Does forcing BrainOmni to encode only occipital signal produce tokens that pass §5.3 where whole-head averaged tokens didn't?"</p>
+<p>The most informative experiment is <strong>(C)</strong>. The cheapest is <strong>(A)</strong>. <strong>(B) is rarely worth running alone</strong> — it gives an ambiguous result (did it fail because occipital is wrong, or because OOD?). If budget allows, run (A) and (C) together: (A) tells you whether the <em>signal</em> matters; (C) tells you whether the <em>tokenizer</em> can capture it.</p>
+<h2>Q2: Probe on reconstructed raw</h2>
+<p>Cheap to add. The clean seam is <code>_build_feature_sets</code> in <a href="neural_tokenizers/evaluation/probe.py#L86">probe.py:86</a> — add a <code>recon</code> feature that's <code>tokenizer.decode_tokens(tokens)</code> treated the same shape-wise as <code>raw</code> (flatten for linear/mlp, <code>(C, T)</code> for CNN).</p>
+<p>One implementation wrinkle: BrainOmni's <code>decode_tokens</code> requires the matching <code>tokenize</code> z-score state (<a href="neural_tokenizers/meg/brainomni/adapter.py#L125-L129">adapter.py:125-129</a>), so the probe can't reuse the cached <code>tokens</code> — it needs to re-tokenize + decode in pairs. Two design options:</p>
+<ul>
+<li><strong>(P1) Tokenize-and-decode in <code>tokenize_all</code></strong> — return <code>(tokens, x_hat)</code> instead of just <code>tokens</code>. Symmetric, but changes the <code>Tokenizer</code> protocol's call contract a bit.</li>
+<li><strong>(P2) Sibling helper <code>reconstruct_all(tokenizer, signal)</code></strong> — runs <code>tokenize</code> + <code>decode_tokens</code> per batch and returns <code>x_hat</code>. Called only when the probe asks for <code>recon</code>. Modality-agnostic; cheapest to revert. <strong>Recommend this.</strong></li>
+</ul>
+<p><strong>Interpretation:</strong> <code>recon</code> measures "did the decoder preserve task signal that the tokens technically carry?" It's an <strong>upper bound on what a perfect non-linear decoder of the tokens could recover</strong> (the BrainOmni decoder <em>is</em> such a decoder, trained end-to-end). If <code>recon</code> lifts above <code>tokens_all</code> but stays below <code>raw</code>, the info is <em>in</em> the tokens but not linearly accessible from RVQ codebook embeddings — i.e. the tokens carry it nonlinearly. If <code>recon ≈ tokens_all</code> and both are near chance, the decoder threw it out, confirming the reconstruction objective is the bottleneck (which matches the §9 verdict).</p>
+<hr />
+<p>Two questions before I write code.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T01-59-51-561Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T01-59-51-561Z" class="timestamp-link"><time datetime="2026-06-03T01:59:51.561Z" data-timestamp="2026-06-03T01:59:51.561Z">2026-06-03T01:59:51.561Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01JzDcgNnm2QWBP9ZsDftmwX"><div class="tool-header"><span class="tool-icon">⚙</span> AskUserQuestion</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;questions&#34;: [
+    {
+      &#34;question&#34;: &#34;Which occipital experiment do you want to run?&#34;,
+      &#34;header&#34;: &#34;Occipital scope&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;(A) Probe-side only — no re-finetune&#34;,
+          &#34;description&#34;: &#34;Tokenize whole head (existing 3b_avgcross tokens). Restrict only `raw` and new `recon` features to occipital channels. Zero GPU cost. Answers: does occipital signal carry decodable category info?&#34;
+        },
+        {
+          &#34;label&#34;: &#34;(C) Re-finetune 3b on occipital-only averaged trials&#34;,
+          &#34;description&#34;: &#34;Re-run the avgcross finetune with `(B, C_occ, T)` inputs and matching sensor metadata. ~hours L40S. Principled answer to: do occipital-only tokens pass §5.3?&#34;
+        },
+        {
+          &#34;label&#34;: &#34;Both A and C (recommended for a complete story)&#34;,
+          &#34;description&#34;: &#34;Run (A) first as a fast diagnostic — if `raw_occipital` is near chance, abort and don&#39;t pay for (C). If it lifts, (C) tells you whether the tokenizer can capture that signal.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;(B) Zero-shot occipital through 3b (OOD)&#34;,
+          &#34;description&#34;: &#34;Pass occipital-only channels to the existing whole-head 3b checkpoint. Fast but interpretation is ambiguous — OOD distribution shift confounds the result.&#34;
+        }
+      ]
+    },
+    {
+      &#34;question&#34;: &#34;How should the probe access reconstructed signal?&#34;,
+      &#34;header&#34;: &#34;Recon design&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;(P2) Add `reconstruct_all` helper, call lazily (Recommended)&#34;,
+          &#34;description&#34;: &#34;New module-level helper that runs `tokenize` + `decode_tokens` in pairs per batch. Probe calls it only when `recon` is in the feature set. Modality-agnostic, minimal churn to the Tokenizer protocol.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;(P1) Have `tokenize_all` return (tokens, recon) together&#34;,
+          &#34;description&#34;: &#34;More symmetric but changes the existing `tokenize_all` contract and forces a recon pass even when probes don&#39;t need it.&#34;
+        }
+      ]
+    },
+    {
+      &#34;question&#34;: &#34;Want a notes doc on what each probe feature measures?&#34;,
+      &#34;header&#34;: &#34;Conceptual note&#34;,
+      &#34;multiSelect&#34;: false,
+      &#34;options&#34;: [
+        {
+          &#34;label&#34;: &#34;Yes — add notes/probe_feature_semantics.md&#34;,
+          &#34;description&#34;: &#34;Short conceptual writeup: tokens vs codebook-embeddings vs decoded recon vs raw, what each one bounds, and when each diagnoses which failure mode. Useful to refer back to when reading new probe numbers.&#34;
+        },
+        {
+          &#34;label&#34;: &#34;No — skip the note&#34;,
+          &#34;description&#34;: &#34;Just do the work; I&#39;ll refer to the §5.3 docstring + this conversation.&#34;
+        }
+      ]
+    }
+  ]
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T02-05-21-479Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T02-05-21-479Z" class="timestamp-link"><time datetime="2026-06-03T02:05:21.479Z" data-timestamp="2026-06-03T02:05:21.479Z">2026-06-03T02:05:21.479Z</time></a></div><div class="message-content"><div class="tool-result tool-error"><div class="truncatable"><div class="truncatable-content"><pre>The user doesn&#x27;t want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message user" id="msg-2026-06-03T02-05-21-481Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T02-05-21-481Z" class="timestamp-link"><time datetime="2026-06-03T02:05:21.481Z" data-timestamp="2026-06-03T02:05:21.481Z">2026-06-03T02:05:21.481Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>[Request interrupted by user for tool use]</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<span class="disabled">&larr; Prev</span>
+<span class="current">1</span>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-002.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

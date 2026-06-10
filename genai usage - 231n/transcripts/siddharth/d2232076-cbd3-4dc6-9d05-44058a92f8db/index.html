@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - Index</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>Claude Code transcript</h1>
+            <div id="search-box">
+                <input type="text" id="search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+        <p style="color: var(--text-muted); margin-bottom: 24px;">23 prompts · 304 messages · 90 tool calls · 0 commits · 5 pages</p>
+        
+<div class="index-item"><a href="page-001.html#msg-2026-06-03T01-48-35-925Z"><div class="index-item-header"><span class="index-item-number">#1</span><time datetime="2026-06-03T01:48:35.925Z" data-timestamp="2026-06-03T01:48:35.925Z">2026-06-03T01:48:35.925Z</time></div><div class="index-item-content"><p>rn what is being inputted into 4m in terms of neural modalities? is it raw integer indices, or is it the codebook embeddings?</p></div></a><div class="index-item-stats"><span>3 bash · 2 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Clear answer. Here's what's actually fed into 4M for the neural modalities:</p>
+<p><strong>Raw integer token IDs — not codebook embeddings.</strong></p>
+<p>The on-disk shards store integer codes from the RVQ/VQ tokenizers, the dataloader passes them through <code>NeuralTargetTransform</code> (just clips to <code>code_max</code> and casts to <code>int64</code>), and they enter 4M as <code>d["tensor"]</code> of shape <code>(B, P)</code> integer indices.</p>
+<p>Inside 4M, each modality's own <code>nn.Embedding(vocab_size, dim_tokens)</code> table — owned by the 4M model, <strong>not</strong> the tokenizer's codebook — turns those ids into vectors. See <a href="4m_training/lib/fourm_neural_embeddings.py#L109">fourm_neural_embeddings.py:109</a> (encoder) and <a href="4m_training/lib/fourm_neural_embeddings.py#L148">fourm_neural_embeddings.py:148</a> (decoder), called inside <code>forward</code> / <code>forward_embed</code> at <a href="4m_training/lib/fourm_neural_embeddings.py#L120">fourm_neural_embeddings.py:120</a> and <a href="4m_training/lib/fourm_neural_embeddings.py#L159">fourm_neural_embeddings.py:159</a>.</p>
+<p>Concretely per modality:
+- <strong>MEG</strong>: 4 modalities <code>tok_meg_rvq0..3</code>, each <code>(B, 128)</code> int ids, vocab 512, mapped via a fresh <code>nn.Embedding(512, dim_tokens)</code> + axial position (learned source + sincos time).
+- <strong>EEG</strong>: <code>tok_eeg</code>, <code>(B, 17)</code> int ids, vocab 8192, mapped via <code>nn.Embedding(8192, dim_tokens)</code> + 1D sincos pos.</p>
+<p>Why this design (system-level): 4M's masked prediction needs to read AND write the same modality — meaning the same <code>vocab_size</code>-way logit head has to invert the input mapping. Feeding the raw tokenizer codebook embeddings (frozen, ≠ <code>dim_tokens</code>) would force a projection and decouple input/output spaces, breaking the symmetric encoder↔decoder weight tying pattern used in 4M for image tokens. By keeping the tokenizer purely as a <em>discretizer</em> and letting 4M relearn an embedding table at its own width, MEG/EEG slot in exactly like <code>tok_rgb</code> — which is also why <code>pretokenized: True</code> is set in the modality info.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-03T01-50-09-427Z"><div class="index-item-header"><span class="index-item-number">#2</span><time datetime="2026-06-03T01:50:09.427Z" data-timestamp="2026-06-03T01:50:09.427Z">2026-06-03T01:50:09.427Z</time></div><div class="index-item-content"><p>so its training a codebook from scrtch for each modality?</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Yes — exactly.</p>
+<p>For each neural modality, 4M instantiates a <strong>fresh</strong> <code>nn.Embedding(vocab_size, dim_tokens)</code> on the encoder side and a <strong>separate</strong> fresh <code>nn.Embedding(vocab_size, dim_tokens)</code> + <code>nn.Linear(dim_tokens, vocab_size)</code> logit head on the decoder side. All randomly initialized, all trained end-to-end with the rest of 4M. The BrainOmni/LaBraM codebook vectors are never loaded — only the discrete ids they produced.</p>
+<p>So per run, 4M learns from scratch:
+- <strong>MEG</strong>: 4 × (512-entry encoder table + 512-entry decoder table + 512-way logit head), one per RVQ layer
+- <strong>EEG</strong>: 1 × (8192-entry encoder table + 8192-entry decoder table + 8192-way logit head)</p>
+<p>Two consequences worth noting:</p>
+<ol>
+<li>
+<p><strong>The tokenizer's geometry is discarded.</strong> RVQ codebook 0 and codebook 1 have a meaningful residual relationship in BrainOmni's latent space; 4M sees them as four independent vocabularies and has to rediscover any cross-layer structure through co-occurrence. That's the price of the symmetric-modality design.</p>
+</li>
+<li>
+<p><strong>Encoder and decoder embeddings are not tied</strong> in this code (each side has its own <code>token_emb</code>). Stock 4M image modalities don't tie them either, so this matches convention — but it does mean 2× the embedding params per modality. For EEG that's ~2 × 8192 × 768 ≈ 12.6M params just for the lookup tables, which is non-trivial at small model sizes.</p>
+</li>
+</ol>
+<p>If you ever wanted to warm-start from the tokenizer's codebook, the seam would be in <code>_NeuralGridEncoderEmbedding.init</code> / <code>_NeuralGridDecoderEmbedding.init</code> — load the codebook tensor, project to <code>dim_tokens</code>, and copy into <code>token_emb.weight</code>. But you'd lose the clean symmetry with <code>tok_rgb</code> and need to decide whether to freeze or fine-tune.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-03T01-56-14-606Z"><div class="index-item-header"><span class="index-item-number">#3</span><time datetime="2026-06-03T01:56:14.606Z" data-timestamp="2026-06-03T01:56:14.606Z">2026-06-03T01:56:14.606Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md in the IDE. This may or may not be related to the current task.</ide_opened_file> rn, for probes in meg tokenization, am i runing probes on raw data reconstructed from tokens, or just from token IDs?</p></div></a><div class="index-item-stats"><span>1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Neither, strictly — and importantly <strong>not from decoded/reconstructed signal</strong>. The probe never calls <code>decode_tokens</code>. Here's what each feature set actually is:</p>
+<p>For the "tokens_<em>" features (the thing being evaluated):
+- If the tokenizer exposes <code>tokens_to_embedding</code> → embed the token IDs through the </em><em>codebook lookup</em><em> (BrainOmni: sum of RVQ codebook vectors per cell) and either mean-pool (<a href="neural_tokenizers/evaluation/probe.py#L181">probe.py:181</a>) or keep the natural spatial layout for the CNN head (<a href="neural_tokenizers/evaluation/probe.py#L222">probe.py:222</a>).
+- If it doesn't → </em><em>bag-of-codes</em>* histogram over the integer IDs (<a href="neural_tokenizers/evaluation/probe.py#L229-L235">probe.py:229-235</a>).</p>
+<p>So the "tokens" path uses codebook embeddings or raw IDs — never <code>x_hat</code>.</p>
+<p>The two bracketing anchors:
+- <code>raw</code> = the actual raw MEG signal <code>x</code>, flattened (linear/mlp) or kept as <code>(C, T)</code> (CNN). Not reconstructed — the literal input.
+- <code>random</code> = uniformly random token IDs, bag-of-codes'd.</p>
+<p>Why this design (the §5.3 logic in your <code>CLAUDE.md</code>): the question the probe answers is "can 4M's transformer linearly read the stimulus from what it actually sees as input?" 4M sees codebook embeddings (well, <em>its own</em> re-learned embedding of the IDs — see your earlier question), not <code>x_hat</code>. Probing on <code>decode_tokens(tokens)</code> would measure something else entirely — "did the decoder preserve task signal in time-domain reconstruction" — which is a §5.1 reconstruction question, not a representation-quality question. Probing on the reconstruction would also smuggle the decoder's capacity into the score: a stronger decoder could rescue lossy tokens.</p>
+<p>The <code>raw</code> anchor is the closest the harness comes to "what if we just used the signal directly" — it's the ceiling the tokens are trying to approach.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-03T01-57-50-341Z"><div class="index-item-header"><span class="index-item-number">#4</span><time datetime="2026-06-03T01:57:50.341Z" data-timestamp="2026-06-03T01:57:50.341Z">2026-06-03T01:57:50.341Z</time></div><div class="index-item-content"><p>Ok, look at the data in meg_tokenization_lean, i want to redo experiment 2 (where we used the averaged meg model), but now i want to 1) only use MEG channels in the occippital lobe. this means we donbt use all channels of raw MEG data - only a few (the occipitla lobe) and rerun c27, animacy, retrieval for it. would this require me to rerun finetuning for brainomni? and 2) not just tokens but raw data reconstructed from tokens</p></div></a><div class="index-item-stats"><span>2 read · 2 bash · 1 askuserquestion</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Ok, look at the data in meg_tokenization_lean, i want to redo experiment 2 (where we used the averaged meg model), but now i want to 1) only use MEG channels in the occippital lobe. this means we donbt use all channels of raw MEG data - only a few (the occipitla lobe) and rerun c27, animacy, retrieval for it. would this require me to rerun finetuning for brainomni? and 2) not just tokens but raw data reconstructed from tokens</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Now I have enough to answer both questions cleanly. Before writing code, here are the system-level decisions you need to make.</p>
+<h2>Q1: Occipital channels → does this require re-finetuning?</h2>
+<p><strong>Architecturally, no — BrainOmni is channel-count agnostic by design</strong>, but the answer depends on <em>what scientific question you're asking</em>. BrainOmni's tokenize path takes <code>(x, pos, sensor_type)</code> and cross-attends from your sensors to <strong>16 fixed latent "neuro sources"</strong> (<code>adapter.py:115-120</code>). So you can pass 30 occipital sensors instead of 271 — the model just attends over a smaller set. No architectural change required.</p>
+<p>But there are <strong>three different experiments</strong> hiding inside "occipital only," with very different costs and meanings:</p>
+<p><strong>(A) Probe-side restriction only — zero retraining cost.</strong>
+- Tokenize the full 271-channel signal as before. Tokens stay identical to Exp 2.
+- Restrict only the <code>raw</code> baseline and the new <code>recon</code> feature to occipital channels.
+- <strong>What this answers:</strong> "If you only let the <em>probe</em> look at occipital signal/reconstruction, is the category info there?"
+- <strong>What this does NOT answer:</strong> whether occipital-only tokens would be better — because the tokens still aggregate the whole head.</p>
+<p><strong>(B) Tokenizer-input restriction, no re-finetune (zero-shot occipital through 3b).</strong>
+- Feed only occipital channels + matching <code>pos</code>/<code>sensor_type</code> rows into the existing 3b checkpoint.
+- 3b was finetuned on full-head distributions, so this is OOD — the cross-attention pattern it learned assumes ~uniform whole-head coverage. The result is interpretable but contaminated by distribution shift.
+- <strong>What this answers:</strong> a rough lower bound on (C) below.</p>
+<p><strong>(C) Tokenizer-input restriction + re-finetune (the principled version).</strong>
+- Re-finetune 3b's <code>adapt</code> mode on occipital-only averaged trials.
+- Cost: same as the original Exp 2 finetune (a few hours L40S, since the averaged corpus is only ~18k trials).
+- <strong>What this answers:</strong> "Does forcing BrainOmni to encode only occipital signal produce tokens that pass §5.3 where whole-head averaged tokens didn't?"</p>
+<p>The most informative experiment is <strong>(C)</strong>. The cheapest is <strong>(A)</strong>. <strong>(B) is rarely worth running alone</strong> — it gives an ambiguous result (did it fail because occipital is wrong, or because OOD?). If budget allows, run (A) and (C) together: (A) tells you whether the <em>signal</em> matters; (C) tells you whether the <em>tokenizer</em> can capture it.</p>
+<h2>Q2: Probe on reconstructed raw</h2>
+<p>Cheap to add. The clean seam is <code>_build_feature_sets</code> in <a href="neural_tokenizers/evaluation/probe.py#L86">probe.py:86</a> — add a <code>recon</code> feature that's <code>tokenizer.decode_tokens(tokens)</code> treated the same shape-wise as <code>raw</code> (flatten for linear/mlp, <code>(C, T)</code> for CNN).</p>
+<p>One implementation wrinkle: BrainOmni's <code>decode_tokens</code> requires the matching <code>tokenize</code> z-score state (<a href="neural_tokenizers/meg/brainomni/adapter.py#L125-L129">adapter.py:125-129</a>), so the probe can't reuse the cached <code>tokens</code> — it needs to re-tokenize + decode in pairs. Two design options:</p>
+<ul>
+<li><strong>(P1) Tokenize-and-decode in <code>tokenize_all</code></strong> — return <code>(tokens, x_hat)</code> instead of just <code>tokens</code>. Symmetric, but changes the <code>Tokenizer</code> protocol's call contract a bit.</li>
+<li><strong>(P2) Sibling helper <code>reconstruct_all(tokenizer, signal)</code></strong> — runs <code>tokenize</code> + <code>decode_tokens</code> per batch and returns <code>x_hat</code>. Called only when the probe asks for <code>recon</code>. Modality-agnostic; cheapest to revert. <strong>Recommend this.</strong></li>
+</ul>
+<p><strong>Interpretation:</strong> <code>recon</code> measures "did the decoder preserve task signal that the tokens technically carry?" It's an <strong>upper bound on what a perfect non-linear decoder of the tokens could recover</strong> (the BrainOmni decoder <em>is</em> such a decoder, trained end-to-end). If <code>recon</code> lifts above <code>tokens_all</code> but stays below <code>raw</code>, the info is <em>in</em> the tokens but not linearly accessible from RVQ codebook embeddings — i.e. the tokens carry it nonlinearly. If <code>recon ≈ tokens_all</code> and both are near chance, the decoder threw it out, confirming the reconstruction objective is the bottleneck (which matches the §9 verdict).</p>
+<hr />
+<p>Two questions before I write code.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-001.html#msg-2026-06-03T02-05-21-481Z"><div class="index-item-header"><span class="index-item-number">#5</span><time datetime="2026-06-03T02:05:21.481Z" data-timestamp="2026-06-03T02:05:21.481Z">2026-06-03T02:05:21.481Z</time></div><div class="index-item-content"><p>[Request interrupted by user for tool use]</p></div></a></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-03T02-07-52-035Z"><div class="index-item-header"><span class="index-item-number">#6</span><time datetime="2026-06-03T02:07:52.035Z" data-timestamp="2026-06-03T02:07:52.035Z">2026-06-03T02:07:52.035Z</time></div><div class="index-item-content"><p>there are 2 separate things i wanna do, let's start with the 1) using occipital lobe tokens. i want tokens_all, tokens_rvq0 to be redone on only occipital lobe only tokens. the raw would also need to be updated since we need to work with occpital lobe only raw data, and random would need to be updated to change the dimensions (no longer 271 channels).</p></div></a><div class="index-item-stats"><span>27 edit · 7 read · 5 todo · 5 bash · 2 askuserquestion · 1 toolsearch</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>there are 2 separate things i wanna do, let's start with the 1) using occipital lobe tokens. i want tokens_all, tokens_rvq0 to be redone on only occipital lobe only tokens. the raw would also need to be updated since we need to work with occpital lobe only raw data, and random would need to be updated to change the dimensions (no longer 271 channels).</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Before I write code, let me flag one architectural fact, correct one assumption, and present the plan.</p>
+<h2>Architectural fact</h2>
+<p>BrainOmni's tokenize call cross-attends from your sensors → <strong>16 fixed latent "neuro sources"</strong> (<a href="neural_tokenizers/meg/brainomni/adapter.py#L115-L120">adapter.py:115-120</a>). The token grid output is <strong>always <code>(B, 16, 8, 4)</code></strong> regardless of input channel count. So channel count is varying on the <em>input</em> side, not the <em>output</em> side.</p>
+<h2>Assumption to correct: <code>random</code> doesn't change</h2>
+<p><code>random</code> in the probe is <code>_random_tokens_like(tokens, codebook_size, seed)</code> then bag-of-codes (<a href="neural_tokenizers/evaluation/probe.py#L121">probe.py:121, 238-240</a>) — it's shape-matched to <strong>tokens</strong>, not to raw channels. Since tokens stay <code>(B, 16, 8, 4)</code> and <code>codebook_size=512</code> regardless of input channel count, <strong>random is unchanged</strong>. The thing that changes shape is only <code>raw</code> (now <code>(B, C_occ, T)</code>).</p>
+<h2>What changes, end-to-end</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>meg_config.py</code></td>
+<td>Add <code>OCCIPITAL_CTF_PREFIXES = ("MLO", "MRO", "MZO")</code> (Left/Right/Zenith Occipital — CTF convention; THINGS-MEG is 271-mag CTF)</td>
+</tr>
+<tr>
+<td><code>data.list_subjects</code> / <code>load_trials</code></td>
+<td>Add <code>channel_subset: list[str] | None</code> → <code>epochs.pick(picks=names)</code> <em>before</em> <code>get_data()</code>. Sensor metadata derived from <code>epochs.info</code> then naturally has matching <code>(C_occ, 6)</code> pos + <code>(C_occ,)</code> sensor_type.</td>
+</tr>
+<tr>
+<td><code>sensor_metadata.load_things_meg_sensor_metadata</code></td>
+<td>Take the same <code>channel_subset</code>; pos/sensor_type rows shrink to occipital.</td>
+</tr>
+<tr>
+<td><code>adapter.from_checkpoint</code></td>
+<td>Unchanged — receives whatever <code>SensorMetadata</code> it's given.</td>
+</tr>
+<tr>
+<td>Modal avg-tokenize entrypoint</td>
+<td>Add <code>--channel-subset occipital</code> flag</td>
+</tr>
+<tr>
+<td>Modal eval entrypoint</td>
+<td>Same flag; pipes through to <code>tokenize_all</code> + makes <code>raw</code> use the same restricted signal</td>
+</tr>
+<tr>
+<td>Probe code</td>
+<td><strong>Zero changes</strong> — <code>_build_feature_sets</code> already handles arbitrary raw shapes</td>
+</tr>
+</tbody>
+</table>
+<h2>The decision: re-finetune or zero-shot through existing 3b?</h2>
+<p>Two plans:</p>
+<p><strong>Plan A — Zero-shot through existing 3b_avgcross checkpoint.</strong>
+- Just feed occipital-only signal through the unchanged 3b weights.
+- Cost: ~5 min L40S to retokenize + run probes, no training.
+- <strong>Risk:</strong> 3b's cross-attention (sensors → 16 latents) was finetuned assuming whole-head input. Restricting to 30-40 sensors is OOD on the <em>trained</em> part of the model. Result could be uninterpretable: did occipital fail because the signal is wrong, or because the model can't aggregate it correctly?</p>
+<p><strong>Plan B — Re-finetune as <code>3b_occ_avg</code>, then eval.</strong>
+- Identical recipe to 3b_avgcross (adapt mode, lr=3e-5, 10 epochs, V=512) but on occipital-only averaged input.
+- Cost: ~hours L40S (same as Exp 2's original finetune).
+- This is a proper replica of Exp 2 with restricted input — fair comparison.</p>
+<p><strong>My recommendation: Plan B</strong>, because you said "redo Experiment 2" — and Exp 2 <em>was</em> a finetune. Zero-shot through 3b doesn't replicate Exp 2; it asks a different (and more confounded) question. The cost is no worse than the original Exp 2 finetune since the corpus is the same ~18k averaged trials.</p>
+<p>That said, if you're budget-conscious, Plan A as a 10-minute "is there even a signal?" diagnostic before committing to Plan B is reasonable.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Plan settled. Channel restriction lives at the <strong>data layer</strong>, not the tokenizer layer — the BrainOmni adapter stays untouched, the data loaders + sensor metadata gain an optional <code>channel_names</code> arg, and the entrypoints (finetune + eval) gain a <code>--channel-subset</code> flag that auto-persists into <code>config.json</code> so eval picks up whatever the model was finetuned on.</p>
+<p>Updating progress and starting implementation.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Plumbing is all in place. Before I launch Modal jobs (paid, external state), let me show you the commands and one nuance to confirm.</p>
+<h2>What I built</h2>
+<p><strong>Data layer (modality-agnostic):</strong>
+- <a href="neural_tokenizers/meg/meg_config.py">meg_config.py</a>: <code>OCCIPITAL_CTF_PREFIXES = ("MLO", "MRO", "MZO")</code> + <code>CHANNEL_SUBSET_PREFIXES</code> registry.
+- <a href="neural_tokenizers/meg/data.py">data.py:resolve_channel_names</a>: subset name → explicit <code>ch_names</code> list (reads P1's layout, identical across subjects).
+- <code>load_trials</code>, <code>load_trials_pooled</code>, <code>sample_train_trials</code>, <code>load_things_meg_sensor_metadata</code>: all gained an opt-in <code>channel_names</code> kwarg.</p>
+<p><strong>BrainOmni adapter:</strong>
+- <a href="neural_tokenizers/meg/brainomni/adapter.py">adapter.py:build_tokenizer_from_payload</a>: now reads <code>payload["channel_subset"]</code> and builds a matching reduced-channel <code>SensorMetadata</code>. <strong>Model code untouched.</strong></p>
+<p><strong>Entrypoints:</strong>
+- <a href="neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py">modal_meg_finetune_brainomni.py</a>: <code>--channel-subset occipital</code> flag, persisted into <code>config.json</code>.
+- <a href="neural_tokenizers/meg/modal/modal_meg_eval.py">modal_meg_eval.py</a>: auto-reads <code>channel_subset</code> from config; <code>--channel-subset</code> flag overrides. Eval slug gains <code>_chocc</code> suffix so reports don't collide.</p>
+<p>System-level design note: channel restriction lives <strong>at the data layer</strong> (where it belongs), not inside the model or the tokenizer. The BrainOmni model itself was always channel-count agnostic via cross-attention from sensors → 16 fixed latents — we're just exercising that capability.</p>
+<h2>One nuance to confirm</h2>
+<p>You mentioned <code>random</code> needs updated dims. Worth flagging: only <strong><code>raw</code></strong> changes shape (now <code>(B, ~32, T)</code> instead of <code>(B, 271, T)</code>). <code>tokens_all</code>, <code>tokens_rvq0</code>, and <code>random</code> are all in <strong>token space</strong> — tokens come out <code>(B, 16, 8, 4)</code> regardless of input channel count (BrainOmni cross-attends from your sensors to 16 fixed latent neuro sources, output independent of <code>C_in</code>). So <code>random</code> automatically stays the right shape. No code change needed there. Worth noting because the dimensionality changes might lead you to expect different numerics than what you'll actually see.</p>
+<h2>Commands I'd run, in order</h2>
+<p><strong>1. Smoke test (cross-subject averaged, 1k train / 200 val, 3 epochs, ~5-10 min L40S):</strong></p>
+<pre><code>modal run neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py::finetune \
+  --finetune-mode adapt --lr 3e-5 --epochs 3 --batch-size 32 \
+  --stage 3b_occ_smoke --max-train-trials 1000 --max-val-trials 200 \
+  --averaging cross_subject --channel-subset occipital
+</code></pre>
+<p>Sanity goals: confirms <code>epochs.pick(occipital_names)</code> resolves to N&gt;0 channels, signal flows end-to-end through cross-attn, val loss decreases.</p>
+<p><strong>2. Full finetune (detached, ~hours L40S):</strong></p>
+<pre><code>modal run --detach neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py::finetune_detached \
+  --finetune-mode adapt --lr 3e-5 --epochs 10 --batch-size 32 \
+  --stage 3b_occ_avg --averaging cross_subject --channel-subset occipital \
+  --patience 2 --min-epochs 3
+</code></pre>
+<p>Produces checkpoint slug <code>V512_rvq4_win512_sf256_3b_occ_avg</code>.</p>
+<p><strong>3. Eval (after #2 converges):</strong></p>
+<pre><code># c27 + linear
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject
+
+# c27 + cnn
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject --probe-classifier cnn
+
+# animacy + linear  / animacy + cnn  / retrieval (default in harness)
+# (same pattern, swap --probe-label-space animacy + --probe-classifier {linear,cnn})
+</code></pre>
+<p>The eval auto-resolves <code>channel_subset</code> from the finetune's <code>config.json</code>, so <code>--channel-subset</code> doesn't need to be repeated on the eval side.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-03T02-21-17-084Z"><div class="index-item-header"><span class="index-item-number">#7</span><time datetime="2026-06-03T02:21:17.084Z" data-timestamp="2026-06-03T02:21:17.084Z">2026-06-03T02:21:17.084Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>blhsdkg3r</task-id>
+<tool-use-id>toolu_017MPFDhN6wM7BqXDnJw4LaU</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/blhsdkg3r.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Launch occipital smoke test on Modal" completed (exit code 0)</summary>
+<p></task-notification></p></div></a><div class="index-item-stats"><span>2 bash · 2 edit</span>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-03T02-24-52-016Z"><div class="index-item-header"><span class="index-item-number">#8</span><time datetime="2026-06-03T02:24:52.016Z" data-timestamp="2026-06-03T02:24:52.016Z">2026-06-03T02:24:52.016Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>bh4xm0r3z</task-id>
+<tool-use-id>toolu_01BrX1wYpUx33dLAf4MMN6DQ</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/bh4xm0r3z.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Re-launch occipital smoke test" completed (exit code 0)</summary>
+<p></task-notification></p></div></a><div class="index-item-stats"><span>2 bash · 1 edit</span>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-03T02-26-34-298Z"><div class="index-item-header"><span class="index-item-number">#9</span><time datetime="2026-06-03T02:26:34.298Z" data-timestamp="2026-06-03T02:26:34.298Z">2026-06-03T02:26:34.298Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>brx2j00yv</task-id>
+<tool-use-id>toolu_01QXQ7VmggnLyugwkU1K7kCi</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/brx2j00yv.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Re-launch occipital smoke after sensor_metadata fix" completed (exit code 0)</summary>
+<p></task-notification></p></div></a><div class="index-item-stats"><span>3 bash · 1 todo</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Smoke succeeded:
+- <strong>39 occipital channels</strong> resolved (<code>MLO11-1609</code>, ...)
+- Train/val shapes <code>(865, 39, 281)</code> / <code>(190, 39, 281)</code> — channel restriction flowed correctly
+- Val loss 1.71 → 1.54 → 1.46 in 3 epochs, comparable to original Exp 2's best 1.469 after 10 epochs</p>
+<p>Plumbing validated. Launching full detached finetune.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Full finetune is detached on Modal. Status:</p>
+<p><strong>Run details:</strong>
+- Slug: <code>V512_rvq4_win512_sf256_3b_occ_avg</code>
+- Function call ID: <code>fc-01KT5NBT7RC17H3KJP3JP8650N</code>
+- Checkpoint dir: <code>/project/checkpoints/meg/brainomni/V512_rvq4_win512_sf256_3b_occ_avg/</code>
+- Monitor: https://modal.com/apps/neural-fm/main/ap-8ohJG2S9n3qxMZ6HNpAY40
+- <strong>ETA: ~30-60 min</strong> (averaged corpus is ~18k trials × 10 epochs, fewer channels → faster than original Exp 2)</p>
+<p>The job is detached — safe to close laptop. When it finishes, the checkpoint and updated <code>config.json</code> will be on the Modal Volume and ready to eval.</p>
+<h2>Eval commands to run once the finetune completes</h2>
+<p>Mirror the original Exp 2 protocol (cat27 + animacy, linear + CNN; retrieval comes free in each eval):</p>
+<pre><code class="language-bash"># Fetch the finished config from the Modal Volume (writes local runs/ pointer)
+modal run neural_tokenizers/meg/modal/modal_meg_finetune_brainomni.py::fetch_config \
+  --stage 3b_occ_avg
+
+# 2a — Cat27, linear
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject
+
+# 2a — Cat27, CNN
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject --probe-classifier cnn
+
+# 2c — Animacy, linear
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject --probe-label-space animacy
+
+# 2c — Animacy, CNN
+modal run neural_tokenizers/meg/modal/modal_meg_eval.py::run \
+  --tokenizer brainomni \
+  --calibration neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/config.json \
+  --n-test 3000 --seed 0 --averaging cross_subject --probe-label-space animacy --probe-classifier cnn
+</code></pre>
+<p>Channel restriction is auto-read from the finetune's <code>config.json</code> — <code>--channel-subset</code> doesn't need to be repeated on eval.</p>
+<p><strong>Reports land under</strong> <code>neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/evals/</code> with the <code>_chocc</code> slug suffix.</p>
+<p><strong>Ping me when the finetune finishes</strong> (or anytime — I can read <code>history.json</code> from the Volume to check progress) and I'll run the eval suite, compile the table, and append the "Experiment 3 — occipital-only avgcross" section to <code>notes/meg_tokenization_lean.md</code>.</p>
+<p>Two system-level notes worth flagging since they were design choices:</p>
+<ol>
+<li>
+<p><strong>Channel restriction lived at the data layer, not the model.</strong> BrainOmni's cross-attention from sensors → 16 fixed latents was already channel-count agnostic. We exercised that capability via opt-in <code>channel_names</code> on data loaders — the model code is byte-identical. Anti-pattern would have been to add channel masks inside the adapter or model.</p>
+</li>
+<li>
+<p><strong>Subset persists in <code>config.json</code> alongside the checkpoint, not in code.</strong> Eval auto-resolves from there, so you can never run the wrong eval on this checkpoint by forgetting a flag. This pattern (config-as-artifact) generalizes to any restriction we add later (frontal-only, time-window, etc.).</p>
+</li>
+</ol>
+<p>When we've done 2-3 of these variant runs, this becomes a strong candidate for a <code>meg-experiment-variant</code> skill in <code>.claude/</code> — wrap finetune + eval suite under one name. Premature now (only one variant so far), but worth keeping in mind.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-002.html#msg-2026-06-03T02-45-48-735Z"><div class="index-item-header"><span class="index-item-number">#10</span><time datetime="2026-06-03T02:45:48.735Z" data-timestamp="2026-06-03T02:45:48.735Z">2026-06-03T02:45:48.735Z</time></div><div class="index-item-content"><p>ok the finetune is done, now go and run eval for everything and add a new table to meg_tokenization_lean.md</p></div></a></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-03T02-45-51-131Z"><div class="index-item-header"><span class="index-item-number">#11</span><time datetime="2026-06-03T02:45:51.131Z" data-timestamp="2026-06-03T02:45:51.131Z">2026-06-03T02:45:51.131Z</time></div><div class="index-item-content"><p>[Request interrupted by user]</p></div></a></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-03T02-46-47-990Z"><div class="index-item-header"><span class="index-item-number">#12</span><time datetime="2026-06-03T02:46:47.990Z" data-timestamp="2026-06-03T02:46:47.990Z">2026-06-03T02:46:47.990Z</time></div><div class="index-item-content"><p>ok the finetune is done, now go and run eval for everything and add a new table to meg_tokenization_lean.md using CNN.</p></div></a><div class="index-item-stats"><span>4 bash</span>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-03T02-52-21-204Z"><div class="index-item-header"><span class="index-item-number">#13</span><time datetime="2026-06-03T02:52:21.204Z" data-timestamp="2026-06-03T02:52:21.204Z">2026-06-03T02:52:21.204Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>b1jc5bv5d</task-id>
+<tool-use-id>toolu_01EtBChmvCfVCvECceuCKmu8</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/b1jc5bv5d.output</output-file>
+<status>completed</status></p>
+<summary>Background command "CNN eval for cat27" completed (exit code 0)</summary>
+<p></task-notification></p></div></a><div class="index-item-stats"><span>4 bash · 2 todo · 1 edit</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Exp 3 results are in <a href="notes/meg_tokenization_lean.md">meg_tokenization_lean.md</a>. Headline:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>tokens_all</th>
+<th>raw</th>
+<th>random</th>
+<th>Δ raw vs Exp 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cat27 (chance 3.7)</td>
+<td>4.30</td>
+<td>4.30</td>
+<td>3.83</td>
+<td>−0.48pp</td>
+</tr>
+<tr>
+<td>Animacy (chance 50)</td>
+<td>48.93</td>
+<td>51.41</td>
+<td>50.09</td>
+<td><strong>−7.5pp</strong></td>
+</tr>
+<tr>
+<td>Animacy retrieval Jacc@1</td>
+<td>56.18</td>
+<td>54.03</td>
+<td>49.46</td>
+<td>— (only signal lifted ~+6pp)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bottom line:</strong> restricting to occipital cratered the <code>raw</code> baseline more than it changed the tokens. Raw animacy dropped from 58.9 → 51.4 (clearly outside Exp 2's σ); raw cat27 also lost its small margin. This argues the linear category signal in full-head MEG is <strong>distributed across the scalp</strong>, not concentrated in occipital sensors — so restricting the tokenizer to occipital can't recover what wasn't there. Tokens stayed at chance regardless.</p>
+<p>The one weak positive: animacy bag-of-codes (Jaccard) retrieval lifted ~+6pp above random — first above-chance occipital-token number. Worth noting if a future tokenizer with bag-of-codes-friendly geometry comes up.</p>
+<p>Ready to move on to part (2) — reconstructed-raw as a probe feature — whenever you want.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-03T03-35-54-321Z"><div class="index-item-header"><span class="index-item-number">#14</span><time datetime="2026-06-03T03:35:54.321Z" data-timestamp="2026-06-03T03:35:54.321Z">2026-06-03T03:35:54.321Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md in the IDE. This may or may not be related to the current task.</ide_opened_file> rerun this experiment with linear, weighted as an extra row for cat27 &amp; animacy</p></div></a><div class="index-item-stats"><span>2 bash</span>
+</div></div>
+<div class="index-item"><a href="page-003.html#msg-2026-06-03T03-37-15-746Z"><div class="index-item-header"><span class="index-item-number">#15</span><time datetime="2026-06-03T03:37:15.746Z" data-timestamp="2026-06-03T03:37:15.746Z">2026-06-03T03:37:15.746Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>b1hwhvbg3</task-id>
+<tool-use-id>toolu_01RANDUXKT4vaxCMUzwFGwi2</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/b1hwhvbg3.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Linear eval for cat27" completed (exit code 0)</summary>
+<p></task-notification></p></div></a></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-03T03-37-46-498Z"><div class="index-item-header"><span class="index-item-number">#16</span><time datetime="2026-06-03T03:37:46.498Z" data-timestamp="2026-06-03T03:37:46.498Z">2026-06-03T03:37:46.498Z</time></div><div class="index-item-content"><p><task-notification>
+<task-id>bzf6zqzfz</task-id>
+<tool-use-id>toolu_01BQTfFGVGHvfsTPtGAQyeKY</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/bzf6zqzfz.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Linear eval for animacy" completed (exit code 0)</summary>
+<p></task-notification></p></div></a><div class="index-item-stats"><span>2 edit · 1 bash</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Spell-check informational notices for terminology consistent with the rest of the doc — not actionable.</p>
+<p>Linear rows are in, verdict updated to reflect what changed. Net of all four rows:</p>
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Cat27 tokens_all</th>
+<th>Animacy tokens_all</th>
+<th>Animacy raw</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linear</td>
+<td>2.80 (chance 3.7)</td>
+<td><strong>54.75</strong> (chance 50, +4 vs random, +6 vs Exp 2)</td>
+<td>55.54</td>
+</tr>
+<tr>
+<td>CNN</td>
+<td>4.30</td>
+<td>48.93</td>
+<td>51.41</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The new finding:</strong> linear-probe animacy <code>tokens_all</code> lifts ~+4pp above random AND ~+6pp above Exp 2's full-head equivalent — but the CNN doesn't see it. Together with the +6pp Jaccard retrieval lift on animacy, this is consistent with a layer-mixed/bag-of-codes-friendly geometry that the CNN's spatial convs over the (16, 8) latent grid don't exploit. Cat27 stays at chance under both probes.</p>
+<p>Ready for part (2) — reconstructed-raw probe feature — whenever you want.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-04T04-31-44-159Z"><div class="index-item-header"><span class="index-item-number">#17</span><time datetime="2026-06-04T04:31:44.159Z" data-timestamp="2026-06-04T04:31:44.159Z">2026-06-04T04:31:44.159Z</time></div><div class="index-item-content"><p>Can I turn find unused parameters off if there are no modalities with multiple trials for 4M</p></div></a><div class="index-item-stats"><span>4 bash · 1 read</span>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Short answer: probably yes if every modality lands in every batch on both the input and target side every step, but you should verify in the training code first — <code>find_unused_parameters=True</code> in 4M usually fires for two distinct reasons, only one of which is about "multi-trial" modalities. Let me check the actual seams.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Short answer: <strong>not just based on "no multi-trial modalities" — the actual condition is stricter.</strong> Here's what's actually controlling that flag in our setup.</p>
+<p><code>find_unused_parameters=True</code> is required whenever any parameter can miss a gradient on a forward pass. In our 4M training, two independent causes can fire each step:</p>
+<p><strong>1. Presence flags zero out absent modalities.</strong> <code>PresenceAwareUnifiedMasking.zero_absent_budgets</code> at <a href="4m_training/lib/neural_masking.py#L100">neural_masking.py:100</a> sets a modality's input AND target budgets to 0 when its presence flag is False. If even one sample in a global batch has e.g. MEG absent and no other sample on any rank routes that step's gradient through MEG's encoder+decoder embeddings, those params skip → unused.</p>
+<p><strong>2. The Dirichlet token-budget sampler can assign 0 tokens</strong> to a side of a modality even when the modality is present. With <code>min_tokens=0</code> in our <code>MODALITY_INFO</code> (set for all neural modalities in <a href="4m_training/lib/fourm_neural_modalities.py#L86">fourm_neural_modalities.py:86,107</a>) and the upstream Dirichlet allocator, getting <code>input_budget=0</code> or <code>target_budget=0</code> for a given modality is a regular occurrence, not a rare edge case. That zero kills the gradient through that side's <code>token_emb</code> + (for decoder) <code>to_logits</code>.</p>
+<p>So:</p>
+<ul>
+<li><strong>"No modality has multiple trials"</strong> is not the relevant condition — it's about per-step token allocation, not per-sample trial count.</li>
+<li><strong>You can disable <code>find_unused_params</code> only if BOTH</strong>:</li>
+<li>Every sample in every batch has every modality present (no zero-presence), AND</li>
+<li>The sampler is configured so no modality ever gets 0 tokens on either side (e.g. <code>min_tokens &gt;= 1</code> enforced as a hard floor, or <code>keep</code> schemes that pin &gt;=1 cell per side).</li>
+</ul>
+<p>If either fails on any step, DDP will hang or error with "expected to mark a variable ready only once" or "unused parameter detected." With our current MEG/EEG presence-gated setup, both fail routinely.</p>
+<p><strong>Practical implication for our config:</strong> the <code>find_unused_params: true</code> in <a href="4m_training/configs/4m_things_main.yaml#L28">4m_things_main.yaml:28</a> is load-bearing as long as we have:
+- Variable MEG/EEG presence per sample, OR
+- The default Dirichlet sampler with no nonzero floor.</p>
+<p>If you want to flip it off, the cheapest path is to assert <strong>every sample has every modality</strong> (drop the presence mechanism, only train on the intersection of RGB ∩ MEG ∩ EEG image_ids) AND add a <code>min_tokens=1</code> floor enforced in <code>PresenceAwareUnifiedMasking</code> so the Dirichlet allocation can't zero a side. Even then I'd recommend keeping it on initially and toggling off only after a full epoch runs cleanly with both conditions — DDP failures from this are silent until the wrong rank hits the wrong sample.</p>
+<p>The speedup from <code>find_unused_params=False</code> is typically 5-15% wall time, so it's only worth chasing once everything else is stable.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-04T06-07-03-964Z"><div class="index-item-header"><span class="index-item-number">#18</span><time datetime="2026-06-04T06:07:03.964Z" data-timestamp="2026-06-04T06:07:03.964Z">2026-06-04T06:07:03.964Z</time></div><div class="index-item-content"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md in the IDE. This may or may not be related to the current task.</ide_opened_file> read @notes/meg_tokenization.md . In the paepr for this experiment and repo, i wanna explain why we chose to do averaged (to decrease noise). this is the methods section, does this belong there. hows this "We will evalaute two methods for MEG tokenization. Given that we have 4 participants in this MEG dataset (and therefore multiple trials per THINGS image), we will finetune one tokenizer on randomized, single-trials of neural data per image ID, and another with averaged trials of neural data per image ID. "</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>read @notes/meg_tokenization.md . In the paepr for this experiment and repo, i wanna explain why we chose to do averaged (to decrease noise). this is the methods section, does this belong there. hows this "We will evalaute two methods for MEG tokenization. Given that we have 4 participants in this MEG dataset (and therefore multiple trials per THINGS image), we will finetune one tokenizer on randomized, single-trials of neural data per image ID, and another with averaged trials of neural data per image ID. "</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Yes — the <em>motivation</em> (why averaging) belongs in Methods, as a one-line "we did X to test Y." The <em>verdict</em> (whether averaging actually helped) belongs in Results/Discussion. The current draft does state what you did but is missing the <em>why</em>, has a couple of accuracy slips, and uses future tense.</p>
+<p>Three things to fix:</p>
+<ol>
+<li>
+<p><strong>The "multiple trials per image" claim is incomplete.</strong> With THINGS-MEG you get repetition from two distinct sources: (i) cross-subject pooling (4 subjects × 1 rep each for the ~22k "exp" images), and (ii) within-subject repetition for the 200 "test" images (12 reps × 4 subjects = 48 trials per test image). So averaging collapses <em>both</em> axes. Worth being precise — a reviewer will notice.</p>
+</li>
+<li>
+<p><strong>Add the motivation.</strong> The standard MEG-decoding argument: single trials are dominated by per-trial measurement noise (high σ, low-frequency drifts, eye movements, etc.); averaging across repetitions / subjects boosts SNR by ~√N for stimulus-locked responses while preserving image-specific signal. The question your experimental contrast tests is whether that SNR boost makes its way into the <em>tokens</em> — i.e., whether the reconstruction objective bottleneck is per-trial noise or something else.</p>
+</li>
+<li>
+<p><strong>Tense + word choice.</strong> "We will evaluate" reads like a proposal; in Methods, past or simple present is more standard. "Randomized, single-trials" is awkward.</p>
+</li>
+</ol>
+<p>A tightened version:</p>
+<blockquote>
+<p>We compare two tokenizer-finetuning regimes on the same BrainOmni backbone to test whether per-trial measurement noise limits the category-discriminative signal preserved in the tokens. THINGS-MEG provides ~22k unique images per subject across 4 subjects, with 200 "test" images additionally repeated 12 times within each subject — so each image_id is associated with ≥4 trials (≥48 for test images). We finetune one tokenizer (<strong>3b_nonavg</strong>) on individual single trials, and a second (<strong>3b_avgcross</strong>) on signals averaged within each image_id across all available subjects and repetitions, increasing per-image SNR by approximately √N for stimulus-locked responses at the cost of removing subject-specific variability. Both checkpoints are then evaluated on the same §X probe suite.</p>
+</blockquote>
+<p>That paragraph: (i) names the regimes, (ii) gives the noise/SNR rationale (1 sentence), (iii) flags the tradeoff (subject variability removed) honestly, (iv) is methods-appropriate — what was done and why, not what the result was.</p>
+<p><strong>What does NOT belong in Methods</strong> (save for Results/Discussion):
+- That averaging <em>didn't</em> rescue category-27 decoding (<a href="notes/meg_tokenization.md">meg_tokenization.md §1.5 / §2</a>) — that's a finding.
+- The "reconstruction-objective-is-the-bottleneck" conclusion — also a finding, follows from the contrast.
+- The "subject signal destroyed by averaging" empirical confirmation (97% → N/A) — a finding.</p>
+<p>The Methods motivation should be <strong>the question the contrast tests</strong>, not its answer. If you put the answer in Methods, you take the suspense out of Results <em>and</em> commit yourself to the conclusion before presenting the evidence for it — both bad rhetorical moves.</p>
+<p>One system-level note (since you asked about this kind of thing): the structure "we contrast A vs B to test hypothesis H" is reusable across the paper — same template will fit the upcoming occipital-only experiment (3b_occ_avg) and any future variant. Worth setting up the Methods section as a small grid (regime name, training-data definition, hypothesis it tests, checkpoint slug) so each new experiment slots in as one row rather than a new paragraph. Keeps the paper's experimental design readable as it grows.</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-04T06-10-34-094Z"><div class="index-item-header"><span class="index-item-number">#19</span><time datetime="2026-06-04T06:10:34.094Z" data-timestamp="2026-06-04T06:10:34.094Z">2026-06-04T06:10:34.094Z</time></div><div class="index-item-content"><p>problem with this in latex? We compare two tokenizer-finetuning regimes on the same BrainOmni backbone to test whether per-trial measurement noise limits the category-discriminative signal preserved in the tokens. THINGS-MEG provides ~22k unique images per subject across 4 subjects, with 200 "test" images additionally repeated 12 times within each subject — so each image is associated with \ge 4 trials (\ge 48 for test images). We finetune one tokenizeron individual single trials, and a second on signals averaged within each image_id across all available subjects and repetitions, increasing per-image SNR by approximately √N for stimulus-locked responses at the cost of removing subject-specific variability. Both checkpoints are then evaluated on the same evaluation scheme described in 3.3.</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>problem with this in latex? We compare two tokenizer-finetuning regimes on the same BrainOmni backbone to test whether per-trial measurement noise limits the category-discriminative signal preserved in the tokens. THINGS-MEG provides ~22k unique images per subject across 4 subjects, with 200 "test" images additionally repeated 12 times within each subject — so each image is associated with \ge 4 trials (\ge 48 for test images). We finetune one tokenizeron individual single trials, and a second on signals averaged within each image_id across all available subjects and repetitions, increasing per-image SNR by approximately √N for stimulus-locked responses at the cost of removing subject-specific variability. Both checkpoints are then evaluated on the same evaluation scheme described in 3.3.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Several LaTeX-specific issues (plus one content typo):</p>
+<ol>
+<li><strong><code>~22k</code></strong> — <code>~</code> is a non-breaking space in LaTeX, not "approximately." Use <code>$\sim$22k</code> or write "approximately 22k".</li>
+<li><strong><code>"test"</code></strong> — straight quotes render as <code>”test”</code> (two right-doubles). Use <code></code>test'' `` (two backticks + two apostrophes).</li>
+<li><strong><code>\ge 4</code> / <code>\ge 48</code></strong> — <code>\ge</code> is a math command; outside math mode it errors. Wrap: <code>$\ge 4$</code>, <code>$\ge 48$</code> (or <code>$\geq 4$</code>).</li>
+<li><strong><code>√N</code></strong> — Unicode root works in XeLaTeX/LuaLaTeX but breaks pdfLaTeX. Safer: <code>$\sqrt{N}$</code>.</li>
+<li><strong><code>image_id</code></strong> — the <code>_</code> is the math subscript operator and errors in text mode. Either escape (<code>image\_id</code>) or use <code>\texttt{image\_id}</code> (recommended — it's a code identifier).</li>
+<li><strong><code>—</code> em dashes</strong> — Unicode char; works in XeLaTeX/LuaLaTeX, breaks pdfLaTeX. Use <code>---</code> for portability.</li>
+<li><strong>Content typo (not LaTeX):</strong> <code>tokenizeron individual</code> → missing space → <code>tokenizer on individual</code>.</li>
+<li><strong>Section reference <code>3.3</code></strong> — hardcoded section numbers go stale when sections are renumbered. Use <code>\ref{sec:eval}</code> or <code>\autoref{sec:eval}</code> with a <code>\label{sec:eval}</code> on the eval section. Same for any forward reference.</li>
+</ol>
+<p>Portable (pdfLaTeX-safe) rewrite:</p>
+<pre><code class="language-latex">We compare two tokenizer-finetuning regimes on the same BrainOmni
+backbone to test whether per-trial measurement noise limits the
+category-discriminative signal preserved in the tokens. THINGS-MEG
+provides approximately 22k unique images per subject across 4 subjects,
+with 200 ``test'' images additionally repeated 12 times within each
+subject---so each image is associated with $\ge 4$ trials ($\ge 48$ for
+test images). We finetune one tokenizer on individual single trials,
+and a second on signals averaged within each \texttt{image\_id} across
+all available subjects and repetitions, increasing per-image SNR by
+approximately $\sqrt{N}$ for stimulus-locked responses at the cost of
+removing subject-specific variability. Both checkpoints are then
+evaluated on the same evaluation scheme described in
+Section~\ref{sec:eval}.
+</code></pre>
+<p>(Where the eval section carries <code>\label{sec:eval}</code>.)</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-004.html#msg-2026-06-04T06-12-06-049Z"><div class="index-item-header"><span class="index-item-number">#20</span><time datetime="2026-06-04T06:12:06.049Z" data-timestamp="2026-06-04T06:12:06.049Z">2026-06-04T06:12:06.049Z</time></div><div class="index-item-content"><p>the section is a \subsection Section~\ref{subsection:Neural Data Tokenizer Evaluation}.</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p><code>\ref</code> works the same for any sectional level — <code>Section~\ref{subsec:...}</code> will print "Section 3.3.2" (or whatever the subsection number resolves to), which reads fine for a subsection.</p>
+<p>Two small things to fix:</p>
+<p><strong>1. Spaces in labels.</strong> <code>subsection:Neural Data Tokenizer Evaluation</code> will technically compile but breaks hyperref bookmarks and is fragile. Convention is no spaces, no capitals: rename the label to e.g. <code>subsec:neural-tokenizer-eval</code>.</p>
+<p><strong>2. If you want the word "Subsection" to print automatically</strong> (instead of "Section"), use <code>\autoref</code> and override hyperref's default:</p>
+<pre><code class="language-latex">\renewcommand{\subsectionautorefname}{Subsection}  % in preamble
+...
+evaluated on the same evaluation scheme described in
+\autoref{subsec:neural-tokenizer-eval}.
+</code></pre>
+<p>Otherwise just keep <code>Section~\ref{subsec:neural-tokenizer-eval}</code> — most papers refer to subsections as "Section X.Y.Z" anyway, no override needed.</p>
+<p>Concretely, replace the last sentence of the paragraph with:</p>
+<pre><code class="language-latex">Both checkpoints are then evaluated on the same evaluation scheme
+described in Section~\ref{subsec:neural-tokenizer-eval}.
+</code></pre>
+<p>and on the subsection itself:</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsec:neural-tokenizer-eval}
+</code></pre></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-04T06-12-59-847Z"><div class="index-item-header"><span class="index-item-number">#21</span><time datetime="2026-06-04T06:12:59.847Z" data-timestamp="2026-06-04T06:12:59.847Z">2026-06-04T06:12:59.847Z</time></div><div class="index-item-content"><p>its not working - and a second on signals averaged within each image across
+all available subjects and repetitions, increasing per-image SNR by
+approximately $\sqrt{N}$ for stimulus-locked responses at the cost of
+removing subject-specific variability. Both checkpoints are then
+evaluated on the same evaluation scheme described in
+Section~\ref{subsection:Neural Data Tokenizer Evaluation}.</p>
+<p>\subsection{EEG Tokenization}</p>
+<p>\subsection{Neural Data Tokenizer Evaluation}</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>its not working - and a second on signals averaged within each image across
+all available subjects and repetitions, increasing per-image SNR by
+approximately $\sqrt{N}$ for stimulus-locked responses at the cost of
+removing subject-specific variability. Both checkpoints are then
+evaluated on the same evaluation scheme described in
+Section~\ref{subsection:Neural Data Tokenizer Evaluation}.</p>
+<p>\subsection{EEG Tokenization}</p>
+<p>\subsection{Neural Data Tokenizer Evaluation}</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>The label doesn't exist — that's the bug. <code>\ref{...}</code> only resolves if a matching <code>\label{...}</code> is defined somewhere. You named the label in <code>\ref</code> but never put it on the subsection.</p>
+<p>Fix:</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsection:Neural Data Tokenizer Evaluation}
+</code></pre>
+<p>After saving, <strong>you need two LaTeX compile passes</strong> — first pass writes the label to the <code>.aux</code> file, second pass reads it. After one pass you'll see <code>Section~??</code> and a "Label(s) may have changed. Rerun" warning. Run again and it resolves.</p>
+<p>(Side note: spaces in label keys technically work with vanilla <code>\ref</code> but break <code>hyperref</code> PDF bookmarks and <code>cleveref</code>. Renaming to <code>subsec:tokenizer-eval</code> is the safer choice — but not what's blocking you right now.)</p></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-04T06-15-23-874Z"><div class="index-item-header"><span class="index-item-number">#22</span><time datetime="2026-06-04T06:15:23.874Z" data-timestamp="2026-06-04T06:15:23.874Z">2026-06-04T06:15:23.874Z</time></div><div class="index-item-content"><p>now describe the eval method we use,starting with comparing raw, random, tokens, rv0 in case of meg, etc. then moving to what we actually test - staritng with sanity checks, codebook usage, perplexity, entreopy, etc. then moving to lienar probe - animacy, category27 (noting not all image IDs applied here), token retrival (whatever that is), subject ID across linear, MLP, CNN.</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>now describe the eval method we use,starting with comparing raw, random, tokens, rv0 in case of meg, etc. then moving to what we actually test - staritng with sanity checks, codebook usage, perplexity, entreopy, etc. then moving to lienar probe - animacy, category27 (noting not all image IDs applied here), token retrival (whatever that is), subject ID across linear, MLP, CNN.</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Here's a methods-section subsection covering all four axes. pdfLaTeX-safe.</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsec:tokenizer-eval}
+
+Each tokenizer is evaluated on four independent axes that target
+distinct failure modes (reconstruction fidelity, codebook health,
+discriminability, and sequence learnability). To make each axis
+interpretable we compare four feature sets per trial:
+\textbf{raw} (the preprocessed MEG signal itself, an upper bound on
+what any tokenizer could preserve), \textbf{random} (uniformly random
+token IDs of the matching shape, a lower bound representing zero
+information content), \textbf{tokens\_all} (the trained tokenizer's
+output, with multi-codebook tokenizers' codebook embeddings summed
+across all RVQ layers), and---for MEG, where BrainOmni uses
+residual vector quantization with $Q{=}4$ layers---\textbf{tokens\_rvq0},
+the coarsest RVQ layer alone, which asks whether top-level structure
+carries the relevant signal independently of finer residual layers.
+The raw/random brackets are essential: without them an absolute
+probe number cannot be interpreted as ``the tokenizer preserved
+signal'' versus ``the task is intrinsically hard from this modality.''
+
+\paragraph{Reconstruction fidelity.} We measure time-domain mean
+squared error, mean per-channel Pearson correlation, and the mean
+squared error between Welch power spectral density estimates of $x$
+and $\hat{x}$ in the 1--100\,Hz band. The spectral term is the most
+diagnostic of the three: neural task signal lives in named frequency
+bands ($\theta/\alpha/\beta/\gamma$), and a tokenizer can drive
+time-domain MSE down while still scrambling band power.
+
+\paragraph{Codebook health.} A tokenizer that achieves low
+reconstruction error by collapsing onto a small subset of its codes
+is broken even when MSE looks clean. We report perplexity
+$\exp(H(p))$ of the empirical code distribution $p$, the
+dead-code fraction (codes never selected on the test set), and the
+unigram entropy $H(p)$ in nats. We additionally compute bigram
+conditional entropy $H(t_i \mid t_{i-1})$ and mean run-length to detect
+sequence-level collapse: a tokenizer that emits highly redundant
+streams (e.g., long runs of a single code per trial) can pass the
+unigram diagnostics while leaving the masked-prediction objective
+nothing to learn.
+
+\paragraph{Downstream probes.} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty:
+\begin{itemize}
+    \item \textbf{Subject identity} (4-way, chance 25\%): a pipeline
+    sanity check. Subject identity is dominated by sensor
+    geometry and head position and is trivially decodable from raw
+    MEG; tokens that fail this task indicate a broken eval pipeline
+    rather than a broken tokenizer.
+    \item \textbf{Animacy} (2-way, chance 50\%): a sensitivity check.
+    Living vs.\ non-living discrimination is well-established in
+    MEG decoding and provides a coarse target that should be
+    reachable from a competent tokenizer.
+    \item \textbf{Category27} (27-way, chance 3.70\%): the
+    publication-target gate. We coarsen the 1{,}854 THINGS concept
+    labels into 27 superordinate categories from the THINGS canonical
+    metadata. Only the 892 concepts with a clean single-category
+    Bottom-Up label are retained, reducing the eval to roughly
+    5{,}000 of the original $\sim$10{,}000 test trials (around
+    185 trials per class); the remaining trials are dropped from
+    this task only.
+\end{itemize}
+
+For each task we fit three probe heads: a single linear layer
+(class-weighted cross-entropy logistic regression), a two-layer MLP
+with ReLU and dropout (tests ``information present but nonlinearly
+encoded''), and a small CNN that respects each feature set's natural
+spatial--temporal layout (Conv2D over the $16\times 8$ latent--time
+grid for BrainOmni tokens, Conv1D over (channel, time) for raw MEG).
+All probes use 5-fold cross-validation with class-weighted cross-entropy
+loss; we report balanced accuracy as the headline metric since its
+chance floor is $1/n_{\text{classes}}$ regardless of class frequency,
+unlike top-1 accuracy whose floor under imbalance is the majority
+class frequency.
+
+\paragraph{Model-free retrieval.} As a zero-trainable-parameter
+complement to the probe, we run nearest-neighbour retrieval at $k{=}1$
+and $k{=}5$ on cosine similarity over the tokenizer's continuous code
+embeddings and on Jaccard overlap over the discrete bag of codes per
+trial. Retrieval separates two otherwise-confounded failure modes: a
+task on which both the probe and retrieval are at chance indicates
+the signal is not in the token geometry at all, while a task on which
+retrieval is at chance but the probe lifts above chance indicates the
+signal is present but only linearly accessible after a learned
+projection. Retrieval is reported on the same three tasks.
+
+A tokenizer passes the gate for downstream foundation-model training
+when (i) tokens reach the raw upper bound (within fold variance) on at
+least one above-chance task, (ii) the codebook is not collapsed, and
+(iii) tokens lift cleanly above the random lower bound on the gate
+task (Category27). Tokenizers that pass reconstruction and codebook
+diagnostics but stay at the random floor on the probe are the
+characteristic failure mode this evaluation is designed to catch.
+</code></pre>
+<p>Two notes on framing choices worth being explicit about in the paper draft:</p>
+<ol>
+<li>
+<p><strong><code>tokens_rvq0</code> is MEG-specific</strong> (BrainOmni's RVQ structure). EEG is single-codebook so this column collapses to just <code>tokens</code>. The paragraph says so but you may want to mention this once in a generic methods sentence rather than carrying conditional cases everywhere.</p>
+</li>
+<li>
+<p><strong>The Category27 trial drop is a real population shift</strong>, not just a sample-size reduction. You're keeping only concepts with unambiguous single-category labels — these tend to be the more prototypical, less ambiguous object concepts. Mentioning this in Discussion as a limitation is more defensible than burying it; the alternative (multi-label classification on all 1,854 concepts) is harder to interpret and isn't what the field standardly does.</p>
+</li>
+</ol></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+<div class="index-item"><a href="page-005.html#msg-2026-06-05T01-04-16-410Z"><div class="index-item-header"><span class="index-item-number">#23</span><time datetime="2026-06-05T01:04:16.410Z" data-timestamp="2026-06-05T01:04:16.410Z">2026-06-05T01:04:16.410Z</time></div><div class="index-item-content"><p>fix this ending. \paragraph{Reconstruction fidelity:} We measure time-domain mean square error (MSE), mean per-channel Pearson correlation, and MSE between Welch power spectral density estimates. 
+\paragraph{Codebook health:} We measure perplexity (exponentiated entropy of empirical code distribution), dead-code fraction, and the unigram entropy. 
+\paragraph{Downstream probes:} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty: subject identity classification (4-way), animacy classification (2-way), and a 27-way THINGS categorization task. The last categorization task was created by coarsening the 1{,}854 THINGS concept labels into 27 superordinate categories from the THINGS canonical metadata. Only the 892 concepts with a clean single-category Bottom-Up label are retained, reducing the eval to roughly 5{,}000 of the original $\sim$10{,}000 test trials (around 185 trials per class); the remaining trials are dropped from this task only. We then compare performance of neural tokenization with DINO embeddings (as a sanity check, etc</p></div></a><div class="index-item-stats">
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>fix this ending. \paragraph{Reconstruction fidelity:} We measure time-domain mean square error (MSE), mean per-channel Pearson correlation, and MSE between Welch power spectral density estimates. 
+\paragraph{Codebook health:} We measure perplexity (exponentiated entropy of empirical code distribution), dead-code fraction, and the unigram entropy. 
+\paragraph{Downstream probes:} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty: subject identity classification (4-way), animacy classification (2-way), and a 27-way THINGS categorization task. The last categorization task was created by coarsening the 1{,}854 THINGS concept labels into 27 superordinate categories from the THINGS canonical metadata. Only the 892 concepts with a clean single-category Bottom-Up label are retained, reducing the eval to roughly 5{,}000 of the original $\sim$10{,}000 test trials (around 185 trials per class); the remaining trials are dropped from this task only. We then compare performance of neural tokenization with DINO embeddings (as a sanity check, etc</p></div></div><button class="expand-btn">Show more</button></div></div>
+<div class="index-item-long-text"><div class="truncatable"><div class="truncatable-content"><div class="index-item-long-text-content"><p>Fixed ending — completes the DINO thought, adds the three probe heads (linear/MLP/CNN) that were dropped from the original ask, and adds the retrieval paragraph:</p>
+<pre><code class="language-latex">\paragraph{Downstream probes:} The central test of whether the tokens
+carry task-relevant signal is a probe trained on top of the frozen
+tokenizer. We evaluate three tasks of decreasing chance level and
+increasing difficulty: subject identity classification (4-way),
+animacy classification (2-way), and a 27-way THINGS categorization
+task. The last categorization task was created by coarsening the
+1{,}854 THINGS concept labels into 27 superordinate categories from
+the THINGS canonical metadata. Only the 892 concepts with a clean
+single-category Bottom-Up label are retained, reducing the eval to
+roughly 5{,}000 of the original $\sim$10{,}000 test trials (around
+185 trials per class); the remaining trials are dropped from this
+task only. For each task we fit three probe heads---a single linear
+layer, a two-layer MLP with ReLU and dropout, and a small CNN that
+respects each feature set's natural spatial--temporal layout (Conv2D
+over the $16\times 8$ latent--time grid for BrainOmni tokens, Conv1D
+over $(\text{channel}, \text{time})$ for raw MEG)---under 5-fold
+cross-validation with class-weighted cross-entropy loss, reporting
+balanced accuracy as the headline metric since its chance floor is
+$1/n_{\text{classes}}$ regardless of class frequency. As a
+stimulus-side ceiling on the categorization tasks we additionally
+report the same probes trained on frozen DINOv2 embeddings of the
+corresponding THINGS images: these embeddings upper-bound what any
+MEG tokenizer could in principle decode about visual content from
+this dataset, since DINOv2 sees the image directly without the noise
+floor of single-trial evoked responses.
+
+\paragraph{Model-free retrieval:} As a zero-trainable complement to
+the probe, we run $k$-nearest-neighbour retrieval at $k{=}1$ and
+$k{=}5$ on cosine similarity over the tokenizer's continuous code
+embeddings and on Jaccard overlap over the discrete bag of codes per
+trial. Retrieval separates two otherwise-confounded failure modes: a
+task on which both the probe and retrieval are at chance indicates
+the signal is not in the token geometry at all, while a task on which
+retrieval is at chance but the probe lifts above chance indicates the
+signal is present but only linearly accessible after a learned
+projection.
+</code></pre>
+<p>Two flagged decisions for your edit pass:</p>
+<ol>
+<li>
+<p><strong>The DINO framing.</strong> I wrote it as a <em>stimulus-side ceiling</em> (DINOv2 of the image ≈ "best case if MEG were perfect"). If that's not what you meant — e.g., you meant DINO as a <em>competing tokenizer</em> on the same MEG signal, or as a <em>target representation</em> for alignment — the sentence needs to change. Let me know which you mean.</p>
+</li>
+<li>
+<p><strong>Retrieval inclusion.</strong> You asked for it in the original spec; I assumed you still wanted it. If you've decided to drop retrieval from the paper (it's been at chance on cat27 across every experiment), delete the second paragraph. The separator-test logic is still defensible to keep even if all numbers are at chance, because it's the cleanest way to say "this isn't a probe-strength problem."</p>
+</li>
+</ol></div></div><button class="expand-btn">Show more</button></div></div>
+</div></div>
+        
+
+<div class="pagination">
+<span class="current">Index</span>
+<span class="disabled">&larr; Prev</span>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-001.html">Next &rarr;</a>
+</div>
+
+
+        <dialog id="search-modal">
+            <div class="search-modal-header">
+                <input type="text" id="modal-search-input" placeholder="Search..." aria-label="Search transcripts">
+                <button id="modal-search-btn" type="button" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                </button>
+                <button id="modal-close-btn" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+            </div>
+            <div id="search-status"></div>
+            <div id="search-results"></div>
+        </dialog>
+        <script>
+(function() {
+    var totalPages = 5;
+    var searchBox = document.getElementById('search-box');
+    var searchInput = document.getElementById('search-input');
+    var searchBtn = document.getElementById('search-btn');
+    var modal = document.getElementById('search-modal');
+    var modalInput = document.getElementById('modal-search-input');
+    var modalSearchBtn = document.getElementById('modal-search-btn');
+    var modalCloseBtn = document.getElementById('modal-close-btn');
+    var searchStatus = document.getElementById('search-status');
+    var searchResults = document.getElementById('search-results');
+
+    if (!searchBox || !modal) return;
+
+    // Hide search on file:// protocol (doesn't work due to CORS restrictions)
+    if (window.location.protocol === 'file:') return;
+
+    // Show search box (progressive enhancement)
+    searchBox.style.display = 'flex';
+
+    // Gist preview support - detect if we're on gisthost.github.io or gistpreview.github.io
+    var hostname = window.location.hostname;
+    var isGistPreview = hostname === 'gisthost.github.io' || hostname === 'gistpreview.github.io';
+    var gistId = null;
+    var gistOwner = null;
+    var gistInfoLoaded = false;
+
+    if (isGistPreview) {
+        // Extract gist ID from URL query string like ?78a436a8a9e7a2e603738b8193b95410/index.html
+        var queryMatch = window.location.search.match(/^\?([a-f0-9]+)/i);
+        if (queryMatch) {
+            gistId = queryMatch[1];
+        }
+    }
+
+    async function loadGistInfo() {
+        if (!isGistPreview || !gistId || gistInfoLoaded) return;
+        try {
+            var response = await fetch('https://api.github.com/gists/' + gistId);
+            if (response.ok) {
+                var info = await response.json();
+                gistOwner = info.owner.login;
+                gistInfoLoaded = true;
+            }
+        } catch (e) {
+            console.error('Failed to load gist info:', e);
+        }
+    }
+
+    function getPageFetchUrl(pageFile) {
+        if (isGistPreview && gistOwner && gistId) {
+            // Use raw gist URL for fetching content
+            return 'https://gist.githubusercontent.com/' + gistOwner + '/' + gistId + '/raw/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function getPageLinkUrl(pageFile) {
+        if (isGistPreview && gistId) {
+            // Use gistpreview URL format for navigation links
+            return '?' + gistId + '/' + pageFile;
+        }
+        return pageFile;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openModal(query) {
+        modalInput.value = query || '';
+        searchResults.innerHTML = '';
+        searchStatus.textContent = '';
+        modal.showModal();
+        modalInput.focus();
+        if (query) {
+            performSearch(query);
+        }
+    }
+
+    function closeModal() {
+        modal.close();
+        // Update URL to remove search fragment, preserving path and query string
+        if (window.location.hash.startsWith('#search=')) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }
+
+    function updateUrlHash(query) {
+        if (query) {
+            // Preserve path and query string when adding hash
+            history.replaceState(null, '', window.location.pathname + window.location.search + '#search=' + encodeURIComponent(query));
+        }
+    }
+
+    function highlightTextNodes(element, searchTerm) {
+        var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+        var nodesToReplace = [];
+
+        while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node.nodeValue.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1) {
+                nodesToReplace.push(node);
+            }
+        }
+
+        nodesToReplace.forEach(function(node) {
+            var text = node.nodeValue;
+            var regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            var parts = text.split(regex);
+            if (parts.length > 1) {
+                var span = document.createElement('span');
+                parts.forEach(function(part) {
+                    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+                        var mark = document.createElement('mark');
+                        mark.textContent = part;
+                        span.appendChild(mark);
+                    } else {
+                        span.appendChild(document.createTextNode(part));
+                    }
+                });
+                node.parentNode.replaceChild(span, node);
+            }
+        });
+    }
+
+    function fixInternalLinks(element, pageFile) {
+        // Update all internal anchor links to include the page file
+        var links = element.querySelectorAll('a[href^="#"]');
+        links.forEach(function(link) {
+            var href = link.getAttribute('href');
+            link.setAttribute('href', pageFile + href);
+        });
+    }
+
+    function processPage(pageFile, html, query) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, 'text/html');
+        var resultsFromPage = 0;
+
+        // Find all message blocks
+        var messages = doc.querySelectorAll('.message');
+        messages.forEach(function(msg) {
+            var text = msg.textContent || '';
+            if (text.toLowerCase().indexOf(query.toLowerCase()) !== -1) {
+                resultsFromPage++;
+
+                // Get the message ID for linking
+                var msgId = msg.id || '';
+                var pageLinkUrl = getPageLinkUrl(pageFile);
+                var link = pageLinkUrl + (msgId ? '#' + msgId : '');
+
+                // Clone the message HTML and highlight matches
+                var clone = msg.cloneNode(true);
+                // Fix internal links to include the page file
+                fixInternalLinks(clone, pageLinkUrl);
+                highlightTextNodes(clone, query);
+
+                var resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<a href="' + link + '">' +
+                    '<div class="search-result-page">' + escapeHtml(pageFile) + '</div>' +
+                    '<div class="search-result-content">' + clone.innerHTML + '</div>' +
+                    '</a>';
+                searchResults.appendChild(resultDiv);
+            }
+        });
+
+        return resultsFromPage;
+    }
+
+    async function performSearch(query) {
+        if (!query.trim()) {
+            searchStatus.textContent = 'Enter a search term';
+            return;
+        }
+
+        updateUrlHash(query);
+        searchResults.innerHTML = '';
+        searchStatus.textContent = 'Searching...';
+
+        // Load gist info if on gistpreview (needed for constructing URLs)
+        if (isGistPreview && !gistInfoLoaded) {
+            searchStatus.textContent = 'Loading gist info...';
+            await loadGistInfo();
+            if (!gistOwner) {
+                searchStatus.textContent = 'Failed to load gist info. Search unavailable.';
+                return;
+            }
+        }
+
+        var resultsFound = 0;
+        var pagesSearched = 0;
+
+        // Build list of pages to fetch
+        var pagesToFetch = [];
+        for (var i = 1; i <= totalPages; i++) {
+            pagesToFetch.push('page-' + String(i).padStart(3, '0') + '.html');
+        }
+
+        searchStatus.textContent = 'Searching...';
+
+        // Process pages in batches of 3, but show results immediately as each completes
+        var batchSize = 3;
+        for (var i = 0; i < pagesToFetch.length; i += batchSize) {
+            var batch = pagesToFetch.slice(i, i + batchSize);
+
+            // Create promises that process results immediately when each fetch completes
+            var promises = batch.map(function(pageFile) {
+                return fetch(getPageFetchUrl(pageFile))
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Failed to fetch');
+                        return response.text();
+                    })
+                    .then(function(html) {
+                        // Process and display results immediately
+                        var count = processPage(pageFile, html, query);
+                        resultsFound += count;
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    })
+                    .catch(function() {
+                        pagesSearched++;
+                        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + pagesSearched + '/' + totalPages + ' pages...';
+                    });
+            });
+
+            // Wait for this batch to complete before starting the next
+            await Promise.all(promises);
+        }
+
+        searchStatus.textContent = 'Found ' + resultsFound + ' result(s) in ' + totalPages + ' pages';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', function() {
+        openModal(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            openModal(searchInput.value);
+        }
+    });
+
+    modalSearchBtn.addEventListener('click', function() {
+        performSearch(modalInput.value);
+    });
+
+    modalInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(modalInput.value);
+        }
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Check for #search= in URL on page load
+    if (window.location.hash.startsWith('#search=')) {
+        var query = decodeURIComponent(window.location.hash.substring(8));
+        if (query) {
+            searchInput.value = query;
+            openModal(query);
+        }
+    }
+})();
+        </script>
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>

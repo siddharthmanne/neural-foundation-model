@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 4</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 4/5</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-003.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<span class="current">4</span>
+<a href="page-005.html">5</a>
+<a href="page-005.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-06-03T03-37-46-498Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-03T03-37-46-498Z" class="timestamp-link"><time datetime="2026-06-03T03:37:46.498Z" data-timestamp="2026-06-03T03:37:46.498Z">2026-06-03T03:37:46.498Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bzf6zqzfz</task-id>
+<tool-use-id>toolu_01BQTfFGVGHvfsTPtGAQyeKY</tool-use-id>
+<output-file>/private/tmp/claude-502/-Users-Siddharth-neural-foundation-model/d2232076-cbd3-4dc6-9d05-44058a92f8db/tasks/bzf6zqzfz.output</output-file>
+<status>completed</status></p>
+<summary>Background command "Linear eval for animacy" completed (exit code 0)</summary>
+<p></task-notification></p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-37-56-451Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-37-56-451Z" class="timestamp-link"><time datetime="2026-06-03T03:37:56.451Z" data-timestamp="2026-06-03T03:37:56.451Z">2026-06-03T03:37:56.451Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_014KXYr65NQ3h13gJhgh6UM8">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Extract linear eval numbers</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">echo &#34;=== CAT27 LINEAR ===&#34;; cat /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/evals/eval_ntest=n3000_s0_avgcross_subject_choccipital.json | python -c &#34;import json,sys; r=json.load(sys.stdin); p=r[&#39;probe&#39;]; print(&#39;tokens_all bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_tokens_all_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_tokens_all_std&#39;]*100:.2f}\&#34;); print(&#39;tokens_rvq0 bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_tokens_rvq0_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_tokens_rvq0_std&#39;]*100:.2f}\&#34;); print(&#39;raw bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_raw_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_raw_std&#39;]*100:.2f}\&#34;); print(&#39;random bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_random_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_random_std&#39;]*100:.2f}\&#34;)&#34;; echo; echo &#34;=== ANIMACY LINEAR ===&#34;; cat /Users/Siddharth/neural-foundation-model/neural_tokenizers/meg/brainomni/runs/V512_rvq4_win512_sf256_3b_occ_avg/evals/eval_ntest=n3000_s0_animacy_avgcross_subject_choccipital.json | python -c &#34;import json,sys; r=json.load(sys.stdin); p=r[&#39;probe&#39;]; print(&#39;tokens_all bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_tokens_all_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_tokens_all_std&#39;]*100:.2f}\&#34;); print(&#39;tokens_rvq0 bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_tokens_rvq0_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_tokens_rvq0_std&#39;]*100:.2f}\&#34;); print(&#39;raw bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_raw_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_raw_std&#39;]*100:.2f}\&#34;); print(&#39;random bal_acc:&#39;, f\&#34;{p[&#39;bal_acc_random_mean&#39;]*100:.2f} ± {p[&#39;bal_acc_random_std&#39;]*100:.2f}\&#34;)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T03-38-07-293Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T03-38-07-293Z" class="timestamp-link"><time datetime="2026-06-03T03:38:07.293Z" data-timestamp="2026-06-03T03:38:07.293Z">2026-06-03T03:38:07.293Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>=== CAT27 LINEAR ===
+tokens_all bal_acc: 2.80 ± 0.86
+tokens_rvq0 bal_acc: 3.32 ± 1.39
+raw bal_acc: 3.76 ± 1.47
+random bal_acc: 4.23 ± 1.83
+
+=== ANIMACY LINEAR ===
+tokens_all bal_acc: 54.75 ± 5.70
+tokens_rvq0 bal_acc: 52.41 ± 2.45
+raw bal_acc: 55.54 ± 5.83
+random bal_acc: 50.80 ± 3.48</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-17-706Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-17-706Z" class="timestamp-link"><time datetime="2026-06-03T03:38:17.706Z" data-timestamp="2026-06-03T03:38:17.706Z">2026-06-03T03:38:17.706Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-18-319Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-18-319Z" class="timestamp-link"><time datetime="2026-06-03T03:38:18.319Z" data-timestamp="2026-06-03T03:38:18.319Z">2026-06-03T03:38:18.319Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Linear results came back with an interesting twist. Updating the doc.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-30-942Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-30-942Z" class="timestamp-link"><time datetime="2026-06-03T03:38:30.942Z" data-timestamp="2026-06-03T03:38:30.942Z">2026-06-03T03:38:30.942Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_019UfDdS7n1Ac2M9KEEVgeaq">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization_lean.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### 3a — Category27 (chance 3.70%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| **CNN, weighted (bal_acc)** | 4.30 ± 1.48 | 3.74 ± 1.29 | 4.30 ± 2.14 | 3.83 ± 1.03 |
+
+**All four tied at chance.** `raw_occipital` collapsed from Exp 2&#39;s 4.78 →
+4.30 — restricting raw to occipital removed the marginal lift full-head had.
+
+### 3c — Animacy (chance 50%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| **CNN, weighted (bal_acc)** | 48.93 ± 3.00 | 49.82 ± 4.33 | 51.41 ± 4.19 | 50.09 ± 1.52 |
+
+**Raw lift collapsed 58.9 → 51.4** (Exp 2 → Exp 3, −7.5pp, outside Exp 2&#39;s
+σ). Tokens also at chance. Animacy signal in full-head MEG is NOT carried by
+occipital sensors alone.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### 3a — Category27 (chance 3.70%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | 2.80 ± 0.86 | 3.32 ± 1.39 | 3.76 ± 1.47 | 4.23 ± 1.83 |
+| **CNN, weighted (bal_acc)** | 4.30 ± 1.48 | 3.74 ± 1.29 | 4.30 ± 2.14 | 3.83 ± 1.03 |
+
+**All four tied at chance under either probe.** Under linear, tokens_all
+sits *below* random (2.80 &lt; 4.23) — small-sample noise, not signal.
+`raw_occipital` lost the Exp 2 lift in both probes (linear: 6.01 → 3.76;
+CNN: 4.78 → 4.30).
+
+### 3c — Animacy (chance 50%)
+
+| Classifier | tokens_all | tokens_rvq0 | raw | random |
+|---|---|---|---|---|
+| Linear, weighted (bal_acc) | **54.75 ± 5.70** | 52.41 ± 2.45 | 55.54 ± 5.83 | 50.80 ± 3.48 |
+| **CNN, weighted (bal_acc)** | 48.93 ± 3.00 | 49.82 ± 4.33 | 51.41 ± 4.19 | 50.09 ± 1.52 |
+
+**Linear surfaces a token lift the CNN doesn&#39;t.** `tokens_all` 54.75 vs
+random 50.80 (~+4pp) — and notably *up* from Exp 2&#39;s linear 48.5 (+6pp
+gain from restricting to occipital). Raw lift collapsed under both probes
+(Exp 2 → Exp 3: linear 61.1 → 55.5, CNN 58.9 → 51.4) — the full-head raw
+animacy signal was distributed across the scalp.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T03-38-31-958Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T03-38-31-958Z" class="timestamp-link"><time datetime="2026-06-03T03:38:31.958Z" data-timestamp="2026-06-03T03:38:31.958Z">2026-06-03T03:38:31.958Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-37-776Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-37-776Z" class="timestamp-link"><time datetime="2026-06-03T03:38:37.776Z" data-timestamp="2026-06-03T03:38:37.776Z">2026-06-03T03:38:37.776Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-38-594Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-38-594Z" class="timestamp-link"><time datetime="2026-06-03T03:38:38.594Z" data-timestamp="2026-06-03T03:38:38.594Z">2026-06-03T03:38:38.594Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check informational notice, not actionable. The linear-animacy lift contradicts the original verdict — updating that section.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-49-552Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-49-552Z" class="timestamp-link"><time datetime="2026-06-03T03:38:49.552Z" data-timestamp="2026-06-03T03:38:49.552Z">2026-06-03T03:38:49.552Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01E1ADjjzebzU2HS1xekgkJ1">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">meg_tokenization_lean.md</span></div>
+<div class="file-tool-fullpath">/Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">### Verdict
+
+- **Occipital restriction is not the missing ingredient for cat27.** Tokens
+  at chance both with and without the restriction; the restriction also
+  cratered the raw baseline (cat27 −0.5pp, animacy −7.5pp), arguing the
+  linear category signal in full-head MEG is **distributed across the head**,
+  not concentrated in occipital sensors.
+- **Reconstruction-only training remains the bottleneck.** Best val dropped
+  from 1.469 → 1.269 with fewer channels (less to reconstruct = naturally
+  lower loss), but probe metrics didn&#39;t follow — consistent with the
+  cross-Exp-1/2 verdict below.
+- **Salvaged signal:** animacy Jaccard retrieval lifted ~+6pp. Worth keeping
+  in mind if a future tokenizer with bag-of-codes-friendly geometry is built.</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">### Verdict
+
+- **Cat27 unchanged: occipital restriction is not the missing ingredient.**
+  Tokens at chance both with and without restriction; restriction also
+  cratered the raw cat27 baseline (linear −2.3pp, CNN −0.5pp), arguing the
+  linear cat27 signal in full-head MEG is **distributed across the head**,
+  not concentrated in occipital sensors.
+- **Animacy: a partial token lift surfaces under the linear probe.**
+  `tokens_all` linear bal_acc 54.75 vs random 50.80 (~+4pp) — and *up* from
+  Exp 2&#39;s 48.5 (+6pp gain from restricting to occipital). CNN doesn&#39;t see
+  it. The animacy bag-of-codes retrieval also lifted ~+6pp (Jacc@1 56.18
+  vs 49.46). Both signals point to **layer-mixed / bag-of-codes-friendly
+  geometry** that the CNN&#39;s spatial convolutions over the (16, 8) latent
+  grid don&#39;t exploit.
+- **Raw animacy collapsed** (linear 61.1 → 55.5, CNN 58.9 → 51.4) — the
+  full-head raw lift was distributed across the scalp; occipital-only loses
+  most of it.
+- **Reconstruction-only training is still the cat27 bottleneck.** Best val
+  dropped 1.469 → 1.269 with fewer channels (less to reconstruct =
+  naturally lower loss); probe c27 didn&#39;t follow — consistent with the
+  cross-Exp-1/2 verdict below.</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-03T03-38-50-575Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-03T03-38-50-575Z" class="timestamp-link"><time datetime="2026-06-03T03:38:50.575Z" data-timestamp="2026-06-03T03:38:50.575Z">2026-06-03T03:38:50.575Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization_lean.md has been updated successfully. (file state is current in your context — no need to Read it back)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-03T03-38-58-462Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-03T03-38-58-462Z" class="timestamp-link"><time datetime="2026-06-03T03:38:58.462Z" data-timestamp="2026-06-03T03:38:58.462Z">2026-06-03T03:38:58.462Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Spell-check informational notices for terminology consistent with the rest of the doc — not actionable.</p>
+<p>Linear rows are in, verdict updated to reflect what changed. Net of all four rows:</p>
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Cat27 tokens_all</th>
+<th>Animacy tokens_all</th>
+<th>Animacy raw</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linear</td>
+<td>2.80 (chance 3.7)</td>
+<td><strong>54.75</strong> (chance 50, +4 vs random, +6 vs Exp 2)</td>
+<td>55.54</td>
+</tr>
+<tr>
+<td>CNN</td>
+<td>4.30</td>
+<td>48.93</td>
+<td>51.41</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The new finding:</strong> linear-probe animacy <code>tokens_all</code> lifts ~+4pp above random AND ~+6pp above Exp 2's full-head equivalent — but the CNN doesn't see it. Together with the +6pp Jaccard retrieval lift on animacy, this is consistent with a layer-mixed/bag-of-codes-friendly geometry that the CNN's spatial convs over the (16, 8) latent grid don't exploit. Cat27 stays at chance under both probes.</p>
+<p>Ready for part (2) — reconstructed-raw probe feature — whenever you want.</p></div></div></div>
+<div class="message user" id="msg-2026-06-04T04-31-44-159Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T04-31-44-159Z" class="timestamp-link"><time datetime="2026-06-04T04:31:44.159Z" data-timestamp="2026-06-04T04:31:44.159Z">2026-06-04T04:31:44.159Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Can I turn find unused parameters off if there are no modalities with multiple trials for 4M</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-31-58-541Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-31-58-541Z" class="timestamp-link"><time datetime="2026-06-04T04:31:58.541Z" data-timestamp="2026-06-04T04:31:58.541Z">2026-06-04T04:31:58.541Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-00-587Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-00-587Z" class="timestamp-link"><time datetime="2026-06-04T04:32:00.587Z" data-timestamp="2026-06-04T04:32:00.587Z">2026-06-04T04:32:00.587Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Short answer: probably yes if every modality lands in every batch on both the input and target side every step, but you should verify in the training code first — <code>find_unused_parameters=True</code> in 4M usually fires for two distinct reasons, only one of which is about "multi-trial" modalities. Let me check the actual seams.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-01-721Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-01-721Z" class="timestamp-link"><time datetime="2026-06-04T04:32:01.721Z" data-timestamp="2026-06-04T04:32:01.721Z">2026-06-04T04:32:01.721Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01HW9g9CLZvRqd9tgTHAt4DB">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Find where find_unused_parameters is set</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -rn &#34;find_unused_parameters&#34; /Users/Siddharth/neural-foundation-model/external/ml-4m /Users/Siddharth/neural-foundation-model/4m_training 2&gt;/dev/null | head -20</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-04T04-32-01-781Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-04T04-32-01-781Z" class="timestamp-link"><time datetime="2026-06-04T04:32:01.781Z" data-timestamp="2026-06-04T04:32:01.781Z">2026-06-04T04:32:01.781Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/external/ml-4m/run_training_vqvae.py:707:        model = DDP(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)
+/Users/Siddharth/neural-foundation-model/external/ml-4m/run_training_4m.py:512:    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)
+/Users/Siddharth/neural-foundation-model/external/ml-4m/run_training_divae.py:646:        model = DDP(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)
+/Users/Siddharth/neural-foundation-model/external/ml-4m/run_training_vqcontrolnet.py:643:        model = DDP(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-05-615Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-05-615Z" class="timestamp-link"><time datetime="2026-06-04T04:32:05.615Z" data-timestamp="2026-06-04T04:32:05.615Z">2026-06-04T04:32:05.615Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_014on2oh811KczULf7iwmgEb">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Inspect 4M training arg + sampling</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;find_unused_params\|in_domains\|out_domains\|alphas\|modality_sampler\|in_loop_val\|min_tokens\|max_tokens&#34; /Users/Siddharth/neural-foundation-model/external/ml-4m/run_training_4m.py | head -40</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-04T04-32-05-651Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-04T04-32-05-651Z" class="timestamp-link"><time datetime="2026-06-04T04:32:05.651Z" data-timestamp="2026-06-04T04:32:05.651Z">2026-06-04T04:32:05.651Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>198:    parser.add_argument(&#x27;--find_unused_params&#x27;, action=&#x27;store_true&#x27;)
+199:    parser.add_argument(&#x27;--no_find_unused_params&#x27;, action=&#x27;store_false&#x27;, dest=&#x27;find_unused_params&#x27;)
+200:    parser.set_defaults(find_unused_params=False)
+251:            modality_info[mod][&#x27;max_tokens&#x27;] = num_patches
+274:    args.in_domains = sorted(set.union(*[set(cfg[&#x27;in_domains&#x27;].split(&#x27;-&#x27;)) for cfg in train_config.values()]))
+275:    args.out_domains = sorted(set.union(*[set(cfg[&#x27;out_domains&#x27;].split(&#x27;-&#x27;)) for cfg in train_config.values()]))
+276:    args.all_domains = sorted(list(set(args.in_domains) | set(args.out_domains)))
+360:    for mod in args.in_domains:
+370:    for mod in args.out_domains:
+512:    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=args.find_unused_params)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-09-080Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-09-080Z" class="timestamp-link"><time datetime="2026-06-04T04:32:09.080Z" data-timestamp="2026-06-04T04:32:09.080Z">2026-06-04T04:32:09.080Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01W9GWQczPhL6KoPGpyB6H9e">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check current 4M config flag</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;find_unused&#34; /Users/Siddharth/neural-foundation-model/4m_training/configs/4m_things_main.yaml /Users/Siddharth/neural-foundation-model/4m_training/configs/4m_things_data.yaml 2&gt;/dev/null</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-04T04-32-09-108Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-04T04-32-09-108Z" class="timestamp-link"><time datetime="2026-06-04T04:32:09.108Z" data-timestamp="2026-06-04T04:32:09.108Z">2026-06-04T04:32:09.108Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>/Users/Siddharth/neural-foundation-model/4m_training/configs/4m_things_main.yaml:28:find_unused_params: true</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-28-849Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-28-849Z" class="timestamp-link"><time datetime="2026-06-04T04:32:28.849Z" data-timestamp="2026-06-04T04:32:28.849Z">2026-06-04T04:32:28.849Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-30-282Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-30-282Z" class="timestamp-link"><time datetime="2026-06-04T04:32:30.282Z" data-timestamp="2026-06-04T04:32:30.282Z">2026-06-04T04:32:30.282Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_017YuCw7HpnxvpGd4GCEbNCr">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check our masking setup</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">grep -n &#34;min_tokens\|max_tokens\|alphas\|num_input\|num_target\|sampler&#34; /Users/Siddharth/neural-foundation-model/4m_training/lib/neural_masking.py 2&gt;/dev/null | head -30</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-06-04T04-32-30-319Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-04T04-32-30-319Z" class="timestamp-link"><time datetime="2026-06-04T04:32:30.319Z" data-timestamp="2026-06-04T04:32:30.319Z">2026-06-04T04:32:30.319Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>84:        num_input_tokens = random.randint(*self.input_tokens_range)
+85:        num_target_tokens = (
+91:        input_token_budget = self.input_token_budget(num_input_tokens, dir_idx)
+93:        if num_target_tokens is not None:
+95:                input_token_budget, num_target_tokens, dir_idx
+120:                    mod_info[&quot;max_tokens&quot;],
+132:                    mod_info[&quot;max_tokens&quot;],
+145:                    mod_info[&quot;max_tokens&quot;],
+158:                    mod_info[&quot;max_tokens&quot;],
+172:                    mod_info[&quot;max_tokens&quot;],</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-33-272Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-33-272Z" class="timestamp-link"><time datetime="2026-06-04T04:32:33.272Z" data-timestamp="2026-06-04T04:32:33.272Z">2026-06-04T04:32:33.272Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01WzY3NQo28DqRgoXmx3s68U"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/Siddharth/neural-foundation-model/4m_training/lib/neural_masking.py&#34;,
+  &#34;offset&#34;: 60,
+  &#34;limit&#34;: 120
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-06-04T04-32-33-321Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-06-04T04-32-33-321Z" class="timestamp-link"><time datetime="2026-06-04T04:32:33.321Z" data-timestamp="2026-06-04T04:32:33.321Z">2026-06-04T04:32:33.321Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>60	    presence: dict[str, bool],
+61	) -&gt; tuple[list[int], list[int | None]]:
+62	    &quot;&quot;&quot;Set input/target budgets to 0 for token modalities marked absent.&quot;&quot;&quot;
+63	    input_budget = list(input_budget)
+64	    target_budget = list(target_budget)
+65	    for i, mod_name in enumerate(modality_info.keys()):
+66	        if mod_name in presence and not presence[mod_name]:
+67	            input_budget[i] = 0
+68	            if target_budget[i] is not None:
+69	                target_budget[i] = 0
+70	    return input_budget, target_budget
+71	
+72	
+73	class PresenceAwareUnifiedMasking(UnifiedMasking):
+74	    &quot;&quot;&quot;``UnifiedMasking`` that respects per-sample MEG/EEG presence flags.&quot;&quot;&quot;
+75	
+76	    def __call__(self, mod_dict):  # noqa: D102 — mirrors upstream signature
+77	        presence = extract_presence_flags(mod_dict)
+78	
+79	        if self.sampling_weights is not None:
+80	            dir_idx = torch.multinomial(self.sampling_weights, 1).item()
+81	        else:
+82	            dir_idx = random.randint(0, self.num_dirichlets - 1)
+83	
+84	        num_input_tokens = random.randint(*self.input_tokens_range)
+85	        num_target_tokens = (
+86	            random.randint(*self.target_tokens_range)
+87	            if self.target_tokens_range is not None
+88	            else None
+89	        )
+90	
+91	        input_token_budget = self.input_token_budget(num_input_tokens, dir_idx)
+92	
+93	        if num_target_tokens is not None:
+94	            target_token_budget = self.target_token_budget(
+95	                input_token_budget, num_target_tokens, dir_idx
+96	            )
+97	        else:
+98	            target_token_budget = [None] * self.num_modalities
+99	
+100	        input_token_budget, target_token_budget = zero_absent_budgets(
+101	            self.modality_info,
+102	            input_token_budget,
+103	            target_token_budget,
+104	            presence,
+105	        )
+106	
+107	        masked_mod_dict = {}
+108	        for (mod_name, mod_info), input_budget, target_budget in zip(
+109	            self.modality_info.items(),
+110	            input_token_budget,
+111	            target_token_budget,
+112	        ):
+113	            mod_type = mod_info[&quot;type&quot;]
+114	            mod_name_load = (
+115	                mod_name if mod_name in mod_dict else get_transform_key(mod_name)
+116	            )
+117	            if mod_type == &quot;img&quot;:
+118	                masked_mod_dict[mod_name] = self.image_mask(
+119	                    mod_dict[mod_name_load],
+120	                    mod_info[&quot;max_tokens&quot;],
+121	                    input_budget,
+122	                    target_budget,
+123	                )
+124	            elif mod_type == &quot;seq&quot;:
+125	                keep_scheme = (
+126	                    &quot;random&quot;
+127	                    if (&quot;keep&quot; not in mod_info)
+128	                    else mod_info[&quot;keep&quot;][dir_idx]
+129	                )
+130	                masked_mod_dict[mod_name] = self.sequence_mask(
+131	                    mod_dict[mod_name_load],
+132	                    mod_info[&quot;max_tokens&quot;],
+133	                    input_budget,
+134	                    target_budget,
+135	                    keep_scheme,
+136	                )
+137	            elif mod_type == NEURAL_GRID_TYPE:
+138	                # Symmetric neural modalities: parallel grid masking (scatter), like img.
+139	                # image_mask takes BOTH budgets and partitions cells into input vs target
+140	                # (disjoint), so a cell is never both an encoder input and a decoder target
+141	                # -&gt; no input-&gt;target leakage. The decoder branch in fm.cat_decoder_tensors
+142	                # treats any non-seq type as parallel, so targets are per-cell, not shifted.
+143	                masked_mod_dict[mod_name] = self.image_mask(
+144	                    mod_dict[mod_name_load],
+145	                    mod_info[&quot;max_tokens&quot;],
+146	                    input_budget,
+147	                    target_budget,
+148	                )
+149	            elif mod_type == &quot;seq_token&quot;:
+150	                keep_scheme = (
+151	                    &quot;random&quot;
+152	                    if (&quot;keep&quot; not in mod_info)
+153	                    else mod_info[&quot;keep&quot;][dir_idx]
+154	                )
+155	                vocab_offset = mod_info.get(&quot;vocab_offset&quot;, 0)
+156	                masked_mod_dict[mod_name] = self.sequence_token_mask(
+157	                    mod_dict[mod_name_load],
+158	                    mod_info[&quot;max_tokens&quot;],
+159	                    input_budget,
+160	                    target_budget,
+161	                    keep_scheme,
+162	                    vocab_offset=vocab_offset,
+163	                )
+164	            elif mod_type == &quot;seq_emb&quot;:
+165	                keep_scheme = (
+166	                    &quot;random&quot;
+167	                    if (&quot;keep&quot; not in mod_info)
+168	                    else mod_info[&quot;keep&quot;][dir_idx]
+169	                )
+170	                masked_mod_dict[mod_name] = self.sequence_emb_mask_span(
+171	                    mod_dict[mod_name_load],
+172	                    mod_info[&quot;max_tokens&quot;],
+173	                    input_budget,
+174	                    target_budget,
+175	                    keep_scheme,
+176	                )
+177	            else:
+178	                raise ValueError(f&quot;Invalid modality type: {mod_type}&quot;)
+179	</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-32-54-117Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-32-54-117Z" class="timestamp-link"><time datetime="2026-06-04T04:32:54.117Z" data-timestamp="2026-06-04T04:32:54.117Z">2026-06-04T04:32:54.117Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T04-33-10-594Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T04-33-10-594Z" class="timestamp-link"><time datetime="2026-06-04T04:33:10.594Z" data-timestamp="2026-06-04T04:33:10.594Z">2026-06-04T04:33:10.594Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Short answer: <strong>not just based on "no multi-trial modalities" — the actual condition is stricter.</strong> Here's what's actually controlling that flag in our setup.</p>
+<p><code>find_unused_parameters=True</code> is required whenever any parameter can miss a gradient on a forward pass. In our 4M training, two independent causes can fire each step:</p>
+<p><strong>1. Presence flags zero out absent modalities.</strong> <code>PresenceAwareUnifiedMasking.zero_absent_budgets</code> at <a href="4m_training/lib/neural_masking.py#L100">neural_masking.py:100</a> sets a modality's input AND target budgets to 0 when its presence flag is False. If even one sample in a global batch has e.g. MEG absent and no other sample on any rank routes that step's gradient through MEG's encoder+decoder embeddings, those params skip → unused.</p>
+<p><strong>2. The Dirichlet token-budget sampler can assign 0 tokens</strong> to a side of a modality even when the modality is present. With <code>min_tokens=0</code> in our <code>MODALITY_INFO</code> (set for all neural modalities in <a href="4m_training/lib/fourm_neural_modalities.py#L86">fourm_neural_modalities.py:86,107</a>) and the upstream Dirichlet allocator, getting <code>input_budget=0</code> or <code>target_budget=0</code> for a given modality is a regular occurrence, not a rare edge case. That zero kills the gradient through that side's <code>token_emb</code> + (for decoder) <code>to_logits</code>.</p>
+<p>So:</p>
+<ul>
+<li><strong>"No modality has multiple trials"</strong> is not the relevant condition — it's about per-step token allocation, not per-sample trial count.</li>
+<li><strong>You can disable <code>find_unused_params</code> only if BOTH</strong>:</li>
+<li>Every sample in every batch has every modality present (no zero-presence), AND</li>
+<li>The sampler is configured so no modality ever gets 0 tokens on either side (e.g. <code>min_tokens &gt;= 1</code> enforced as a hard floor, or <code>keep</code> schemes that pin &gt;=1 cell per side).</li>
+</ul>
+<p>If either fails on any step, DDP will hang or error with "expected to mark a variable ready only once" or "unused parameter detected." With our current MEG/EEG presence-gated setup, both fail routinely.</p>
+<p><strong>Practical implication for our config:</strong> the <code>find_unused_params: true</code> in <a href="4m_training/configs/4m_things_main.yaml#L28">4m_things_main.yaml:28</a> is load-bearing as long as we have:
+- Variable MEG/EEG presence per sample, OR
+- The default Dirichlet sampler with no nonzero floor.</p>
+<p>If you want to flip it off, the cheapest path is to assert <strong>every sample has every modality</strong> (drop the presence mechanism, only train on the intersection of RGB ∩ MEG ∩ EEG image_ids) AND add a <code>min_tokens=1</code> floor enforced in <code>PresenceAwareUnifiedMasking</code> so the Dirichlet allocation can't zero a side. Even then I'd recommend keeping it on initially and toggling off only after a full epoch runs cleanly with both conditions — DDP failures from this are silent until the wrong rank hits the wrong sample.</p>
+<p>The speedup from <code>find_unused_params=False</code> is typically 5-15% wall time, so it's only worth chasing once everything else is stable.</p></div></div></div>
+<div class="message user" id="msg-2026-06-04T06-07-03-964Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T06-07-03-964Z" class="timestamp-link"><time datetime="2026-06-04T06:07:03.964Z" data-timestamp="2026-06-04T06:07:03.964Z">2026-06-04T06:07:03.964Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><ide_opened_file>The user opened the file /Users/Siddharth/neural-foundation-model/notes/meg_tokenization.md in the IDE. This may or may not be related to the current task.</ide_opened_file></p></div>
+<div class="assistant-text"><p>read @notes/meg_tokenization.md . In the paepr for this experiment and repo, i wanna explain why we chose to do averaged (to decrease noise). this is the methods section, does this belong there. hows this "We will evalaute two methods for MEG tokenization. Given that we have 4 participants in this MEG dataset (and therefore multiple trials per THINGS image), we will finetune one tokenizer on randomized, single-trials of neural data per image ID, and another with averaged trials of neural data per image ID. "</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-07-20-239Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-07-20-239Z" class="timestamp-link"><time datetime="2026-06-04T06:07:20.239Z" data-timestamp="2026-06-04T06:07:20.239Z">2026-06-04T06:07:20.239Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-07-40-449Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-07-40-449Z" class="timestamp-link"><time datetime="2026-06-04T06:07:40.449Z" data-timestamp="2026-06-04T06:07:40.449Z">2026-06-04T06:07:40.449Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Yes — the <em>motivation</em> (why averaging) belongs in Methods, as a one-line "we did X to test Y." The <em>verdict</em> (whether averaging actually helped) belongs in Results/Discussion. The current draft does state what you did but is missing the <em>why</em>, has a couple of accuracy slips, and uses future tense.</p>
+<p>Three things to fix:</p>
+<ol>
+<li>
+<p><strong>The "multiple trials per image" claim is incomplete.</strong> With THINGS-MEG you get repetition from two distinct sources: (i) cross-subject pooling (4 subjects × 1 rep each for the ~22k "exp" images), and (ii) within-subject repetition for the 200 "test" images (12 reps × 4 subjects = 48 trials per test image). So averaging collapses <em>both</em> axes. Worth being precise — a reviewer will notice.</p>
+</li>
+<li>
+<p><strong>Add the motivation.</strong> The standard MEG-decoding argument: single trials are dominated by per-trial measurement noise (high σ, low-frequency drifts, eye movements, etc.); averaging across repetitions / subjects boosts SNR by ~√N for stimulus-locked responses while preserving image-specific signal. The question your experimental contrast tests is whether that SNR boost makes its way into the <em>tokens</em> — i.e., whether the reconstruction objective bottleneck is per-trial noise or something else.</p>
+</li>
+<li>
+<p><strong>Tense + word choice.</strong> "We will evaluate" reads like a proposal; in Methods, past or simple present is more standard. "Randomized, single-trials" is awkward.</p>
+</li>
+</ol>
+<p>A tightened version:</p>
+<blockquote>
+<p>We compare two tokenizer-finetuning regimes on the same BrainOmni backbone to test whether per-trial measurement noise limits the category-discriminative signal preserved in the tokens. THINGS-MEG provides ~22k unique images per subject across 4 subjects, with 200 "test" images additionally repeated 12 times within each subject — so each image_id is associated with ≥4 trials (≥48 for test images). We finetune one tokenizer (<strong>3b_nonavg</strong>) on individual single trials, and a second (<strong>3b_avgcross</strong>) on signals averaged within each image_id across all available subjects and repetitions, increasing per-image SNR by approximately √N for stimulus-locked responses at the cost of removing subject-specific variability. Both checkpoints are then evaluated on the same §X probe suite.</p>
+</blockquote>
+<p>That paragraph: (i) names the regimes, (ii) gives the noise/SNR rationale (1 sentence), (iii) flags the tradeoff (subject variability removed) honestly, (iv) is methods-appropriate — what was done and why, not what the result was.</p>
+<p><strong>What does NOT belong in Methods</strong> (save for Results/Discussion):
+- That averaging <em>didn't</em> rescue category-27 decoding (<a href="notes/meg_tokenization.md">meg_tokenization.md §1.5 / §2</a>) — that's a finding.
+- The "reconstruction-objective-is-the-bottleneck" conclusion — also a finding, follows from the contrast.
+- The "subject signal destroyed by averaging" empirical confirmation (97% → N/A) — a finding.</p>
+<p>The Methods motivation should be <strong>the question the contrast tests</strong>, not its answer. If you put the answer in Methods, you take the suspense out of Results <em>and</em> commit yourself to the conclusion before presenting the evidence for it — both bad rhetorical moves.</p>
+<p>One system-level note (since you asked about this kind of thing): the structure "we contrast A vs B to test hypothesis H" is reusable across the paper — same template will fit the upcoming occipital-only experiment (3b_occ_avg) and any future variant. Worth setting up the Methods section as a small grid (regime name, training-data definition, hypothesis it tests, checkpoint slug) so each new experiment slots in as one row rather than a new paragraph. Keeps the paper's experimental design readable as it grows.</p></div></div></div>
+<div class="message user" id="msg-2026-06-04T06-10-34-094Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T06-10-34-094Z" class="timestamp-link"><time datetime="2026-06-04T06:10:34.094Z" data-timestamp="2026-06-04T06:10:34.094Z">2026-06-04T06:10:34.094Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>problem with this in latex? We compare two tokenizer-finetuning regimes on the same BrainOmni backbone to test whether per-trial measurement noise limits the category-discriminative signal preserved in the tokens. THINGS-MEG provides ~22k unique images per subject across 4 subjects, with 200 "test" images additionally repeated 12 times within each subject — so each image is associated with \ge 4 trials (\ge 48 for test images). We finetune one tokenizeron individual single trials, and a second on signals averaged within each image_id across all available subjects and repetitions, increasing per-image SNR by approximately √N for stimulus-locked responses at the cost of removing subject-specific variability. Both checkpoints are then evaluated on the same evaluation scheme described in 3.3.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-10-43-035Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-10-43-035Z" class="timestamp-link"><time datetime="2026-06-04T06:10:43.035Z" data-timestamp="2026-06-04T06:10:43.035Z">2026-06-04T06:10:43.035Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-10-52-557Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-10-52-557Z" class="timestamp-link"><time datetime="2026-06-04T06:10:52.557Z" data-timestamp="2026-06-04T06:10:52.557Z">2026-06-04T06:10:52.557Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Several LaTeX-specific issues (plus one content typo):</p>
+<ol>
+<li><strong><code>~22k</code></strong> — <code>~</code> is a non-breaking space in LaTeX, not "approximately." Use <code>$\sim$22k</code> or write "approximately 22k".</li>
+<li><strong><code>"test"</code></strong> — straight quotes render as <code>”test”</code> (two right-doubles). Use <code></code>test'' `` (two backticks + two apostrophes).</li>
+<li><strong><code>\ge 4</code> / <code>\ge 48</code></strong> — <code>\ge</code> is a math command; outside math mode it errors. Wrap: <code>$\ge 4$</code>, <code>$\ge 48$</code> (or <code>$\geq 4$</code>).</li>
+<li><strong><code>√N</code></strong> — Unicode root works in XeLaTeX/LuaLaTeX but breaks pdfLaTeX. Safer: <code>$\sqrt{N}$</code>.</li>
+<li><strong><code>image_id</code></strong> — the <code>_</code> is the math subscript operator and errors in text mode. Either escape (<code>image\_id</code>) or use <code>\texttt{image\_id}</code> (recommended — it's a code identifier).</li>
+<li><strong><code>—</code> em dashes</strong> — Unicode char; works in XeLaTeX/LuaLaTeX, breaks pdfLaTeX. Use <code>---</code> for portability.</li>
+<li><strong>Content typo (not LaTeX):</strong> <code>tokenizeron individual</code> → missing space → <code>tokenizer on individual</code>.</li>
+<li><strong>Section reference <code>3.3</code></strong> — hardcoded section numbers go stale when sections are renumbered. Use <code>\ref{sec:eval}</code> or <code>\autoref{sec:eval}</code> with a <code>\label{sec:eval}</code> on the eval section. Same for any forward reference.</li>
+</ol>
+<p>Portable (pdfLaTeX-safe) rewrite:</p>
+<pre><code class="language-latex">We compare two tokenizer-finetuning regimes on the same BrainOmni
+backbone to test whether per-trial measurement noise limits the
+category-discriminative signal preserved in the tokens. THINGS-MEG
+provides approximately 22k unique images per subject across 4 subjects,
+with 200 ``test'' images additionally repeated 12 times within each
+subject---so each image is associated with $\ge 4$ trials ($\ge 48$ for
+test images). We finetune one tokenizer on individual single trials,
+and a second on signals averaged within each \texttt{image\_id} across
+all available subjects and repetitions, increasing per-image SNR by
+approximately $\sqrt{N}$ for stimulus-locked responses at the cost of
+removing subject-specific variability. Both checkpoints are then
+evaluated on the same evaluation scheme described in
+Section~\ref{sec:eval}.
+</code></pre>
+<p>(Where the eval section carries <code>\label{sec:eval}</code>.)</p></div></div></div>
+<div class="message user" id="msg-2026-06-04T06-12-06-049Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-06-04T06-12-06-049Z" class="timestamp-link"><time datetime="2026-06-04T06:12:06.049Z" data-timestamp="2026-06-04T06:12:06.049Z">2026-06-04T06:12:06.049Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>the section is a \subsection Section~\ref{subsection:Neural Data Tokenizer Evaluation}.</p></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-12-12-663Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-12-12-663Z" class="timestamp-link"><time datetime="2026-06-04T06:12:12.663Z" data-timestamp="2026-06-04T06:12:12.663Z">2026-06-04T06:12:12.663Z</time></a></div><div class="message-content">
+<div class="thinking"><div class="thinking-label">Thinking</div></div></div></div>
+<div class="message assistant" id="msg-2026-06-04T06-12-18-908Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-06-04T06-12-18-908Z" class="timestamp-link"><time datetime="2026-06-04T06:12:18.908Z" data-timestamp="2026-06-04T06:12:18.908Z">2026-06-04T06:12:18.908Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p><code>\ref</code> works the same for any sectional level — <code>Section~\ref{subsec:...}</code> will print "Section 3.3.2" (or whatever the subsection number resolves to), which reads fine for a subsection.</p>
+<p>Two small things to fix:</p>
+<p><strong>1. Spaces in labels.</strong> <code>subsection:Neural Data Tokenizer Evaluation</code> will technically compile but breaks hyperref bookmarks and is fragile. Convention is no spaces, no capitals: rename the label to e.g. <code>subsec:neural-tokenizer-eval</code>.</p>
+<p><strong>2. If you want the word "Subsection" to print automatically</strong> (instead of "Section"), use <code>\autoref</code> and override hyperref's default:</p>
+<pre><code class="language-latex">\renewcommand{\subsectionautorefname}{Subsection}  % in preamble
+...
+evaluated on the same evaluation scheme described in
+\autoref{subsec:neural-tokenizer-eval}.
+</code></pre>
+<p>Otherwise just keep <code>Section~\ref{subsec:neural-tokenizer-eval}</code> — most papers refer to subsections as "Section X.Y.Z" anyway, no override needed.</p>
+<p>Concretely, replace the last sentence of the paragraph with:</p>
+<pre><code class="language-latex">Both checkpoints are then evaluated on the same evaluation scheme
+described in Section~\ref{subsec:neural-tokenizer-eval}.
+</code></pre>
+<p>and on the subsection itself:</p>
+<pre><code class="language-latex">\subsection{Neural Data Tokenizer Evaluation}
+\label{subsec:neural-tokenizer-eval}
+</code></pre></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-003.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<span class="current">4</span>
+<a href="page-005.html">5</a>
+<a href="page-005.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>
