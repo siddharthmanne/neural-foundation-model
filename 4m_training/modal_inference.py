@@ -309,14 +309,19 @@ def assemble_figure_cpu(
     model_names: list[str],
     sample_keys: list[str] | None = None,
     n_keys: int = 2,
+    transpose: bool = False,
 ) -> None:
     """Assemble a single comparison figure across all models.
 
-    Layout:
-      columns = selected sample keys  (default: first n_keys=2 from what was generated)
-      rows    = reference rows (rgb, depth_gt) followed by one depth_pred row per model
+    Default layout (transpose=False):
+      rows    = reference rows (rgb, depth_gt) + one depth_pred row per model
+      columns = selected sample keys  (default: first n_keys=2)
 
-    Depth images (grayscale L PNGs) are rendered with the plasma colormap.
+    Transposed layout (transpose=True):
+      rows    = selected sample keys
+      columns = rgb | depth_gt | depth_pred per model
+
+    Depth images are rendered with the plasma colormap.
     Output: {output_dir}/comparison_figure.png
     """
     import json
@@ -350,18 +355,10 @@ def assemble_figure_cpu(
 
     # Reference images (rgb, depth_gt) are identical across models — use first model
     ref_dir = output_dir_path / next(iter(metas))
-    ref_rows = ["rgb", "depth_gt"]
+    ref_types = ["rgb", "depth_gt"]
+    ref_labels = {"rgb": "RGB", "depth_gt": "Depth GT"}
 
-    model_row_names = list(metas.keys())
-    row_labels = ref_rows + model_row_names
-    n_rows = len(row_labels)
-    n_cols = len(display_keys)
-
-    fig, axes = plt.subplots(
-        n_rows, n_cols,
-        figsize=(3.5 * n_cols, 3.0 * n_rows),
-        squeeze=False,
-    )
+    model_names_ordered = list(metas.keys())
 
     def _show(ax, img_path: Path, itype: str) -> None:
         if not img_path.exists():
@@ -369,42 +366,60 @@ def assemble_figure_cpu(
             ax.axis("off")
             return
         arr = np.array(PILImage.open(img_path))
-        if "depth" in itype:
-            ax.imshow(arr, cmap="plasma", vmin=0, vmax=255)
-        else:
-            ax.imshow(arr)
+        ax.imshow(arr, cmap="plasma", vmin=0, vmax=255) if "depth" in itype else ax.imshow(arr)
         ax.axis("off")
 
-    def _row_label(ax, text: str, bold: bool = False) -> None:
-        """Write a row label to the left of the first-column axis."""
+    def _side_label(ax, text: str, bold: bool = False) -> None:
         ax.text(
             -0.08, 0.5, text,
             transform=ax.transAxes,
-            fontsize=18, fontweight="bold" if bold else "normal",
-            va="center", ha="right",
-            clip_on=False,
+            fontsize=13, fontweight="bold" if bold else "normal",
+            va="center", ha="right", clip_on=False,
         )
 
-    # ── Reference rows ────────────────────────────────────────────────────
-    ref_labels = {"rgb": "RGB", "depth_gt": "Depth GT"}
-    for row, itype in enumerate(ref_rows):
-        for col, key in enumerate(display_keys):
-            _show(axes[row][col], ref_dir / f"{key}_{itype}.png", itype)
-        _row_label(axes[row][0], ref_labels.get(itype, itype.replace("_", " ")), bold=True)
+    if not transpose:
+        # rows = ref types + models,  cols = keys
+        n_rows = len(ref_types) + len(model_names_ordered)
+        n_cols = len(display_keys)
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(3.5 * n_cols, 3.0 * n_rows), squeeze=False)
 
-    # ── Column headers (key labels on top row) ────────────────────────────
-    for col, key in enumerate(display_keys):
-        axes[0][col].set_title(f"key {key}", fontsize=13)
+        for row, itype in enumerate(ref_types):
+            for col, key in enumerate(display_keys):
+                _show(axes[row][col], ref_dir / f"{key}_{itype}.png", itype)
+            _side_label(axes[row][0], ref_labels[itype], bold=True)
 
-    # ── One depth_pred row per model ──────────────────────────────────────
-    for m_idx, (model_name, meta) in enumerate(metas.items()):
-        row = len(ref_rows) + m_idx
         for col, key in enumerate(display_keys):
-            _show(axes[row][col], output_dir_path / model_name / f"{key}_depth_pred.png", "depth")
-        cond = meta.get("conditions", {})
-        cond_str = " ".join(f"+{k}" for k, v in cond.items() if v)
-        label = model_name + (f"\n{cond_str}" if cond_str else "")
-        _row_label(axes[row][0], label)
+            axes[0][col].set_title(f"key {key}", fontsize=13)
+
+        for m_idx, (model_name, meta) in enumerate(metas.items()):
+            row = len(ref_types) + m_idx
+            for col, key in enumerate(display_keys):
+                _show(axes[row][col], output_dir_path / model_name / f"{key}_depth_pred.png", "depth")
+            cond = meta.get("conditions", {})
+            cond_str = " ".join(f"+{k}" for k, v in cond.items() if v)
+            _side_label(axes[row][0], model_name + (f"\n{cond_str}" if cond_str else ""))
+
+    else:
+        # rows = keys,  cols = ref types + models
+        n_rows = len(display_keys)
+        n_cols = len(ref_types) + len(model_names_ordered)
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(3.0 * n_cols, 3.5 * n_rows), squeeze=False)
+
+        for row, key in enumerate(display_keys):
+            _side_label(axes[row][0], f"key {key}", bold=True)
+            for col, itype in enumerate(ref_types):
+                _show(axes[row][col], ref_dir / f"{key}_{itype}.png", itype)
+            for m_idx, (model_name, meta) in enumerate(metas.items()):
+                col = len(ref_types) + m_idx
+                _show(axes[row][col], output_dir_path / model_name / f"{key}_depth_pred.png", "depth")
+
+        for col, itype in enumerate(ref_types):
+            axes[0][col].set_title(ref_labels[itype], fontsize=13)
+        for m_idx, (model_name, meta) in enumerate(metas.items()):
+            col = len(ref_types) + m_idx
+            cond = meta.get("conditions", {})
+            cond_str = " ".join(f"+{k}" for k, v in cond.items() if v)
+            axes[0][col].set_title(model_name + (f"\n{cond_str}" if cond_str else ""), fontsize=13)
 
     plt.tight_layout()
     out = output_dir_path / "comparison_figure.png"
@@ -563,6 +578,7 @@ def main(
     no_plot: bool = False,
     mode: str = "infer",
     n_plot_keys: int = 2,
+    transpose: bool = False,
 ) -> None:
     """
     --names              Comma-separated labels for each model (used as output filenames)
@@ -583,6 +599,7 @@ def main(
                          ignored when --sample_key is given explicitly
     --mode               infer (default) | plot_only | avg_depth
                          avg_depth: decode all THINGS tok_depth shards and save average depth map
+    --transpose          Transpose comparison figure (rows=keys, cols=rgb|depth_gt|models)
     """
     names_list       = [n.strip() for n in names.split(",")       if n.strip()]
     checkpoints_list = [c.strip() for c in checkpoints.split(",") if c.strip()]
@@ -609,6 +626,7 @@ def main(
             model_names=names_list,
             sample_keys=keys_list,
             n_keys=n_plot_keys,
+            transpose=transpose,
         )
         return
 
@@ -663,4 +681,5 @@ def main(
             model_names=names_list,
             sample_keys=keys_list,
             n_keys=n_plot_keys,
+            transpose=transpose,
         )
